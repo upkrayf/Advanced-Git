@@ -1,0 +1,24 @@
+<div class="reviews-container">
+  <div class="header-section">
+    <h2>⭐ Customer Reviews</h2>
+    <p>Sentiment analysis of DS6: Customer Feedback Dataset</p>
+  </div>
+
+  <div class="reviews-list">
+    @for (review of reviews; track review.id) {
+      <div class="review-card">
+        <div class="review-header">
+          <strong>{{ review.user }}</strong>
+          <span class="sentiment-tag" [ngClass]="review.sentiment.toLowerCase()">
+            {{ review.sentiment }}
+          </span>
+        </div>
+        <div class="stars">
+          @for (s of getStars(review.rating); track $index) { ⭐ }
+        </div>
+        <p class="comment">"{{ review.comment }}"</p>
+        <small class="date">{{ review.date }}</small>
+      </div>
+    }
+  </div>
+</div>

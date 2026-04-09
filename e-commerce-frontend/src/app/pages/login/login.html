@@ -1,0 +1,40 @@
+<div class="login-container">
+  <div class="login-box">
+    
+    <div class="login-header">
+      <h2>📊 DataPulse</h2>
+      <p class="subtitle">Welcome back! Please login to your account.</p>
+    </div>
+    
+    @if (errorMessage) {
+      <div class="error-box">
+        {{ errorMessage }}
+      </div>
+    }
+
+    <form (ngSubmit)="onLogin()" #loginForm="ngForm">
+      
+      <div class="input-group">
+        <label>Email Address</label>
+        <input type="email" [(ngModel)]="loginData.email" name="email" placeholder="Enter your email" required>
+      </div>
+      
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" [(ngModel)]="loginData.password" name="password" placeholder="Enter your password" required>
+      </div>
+
+      <button type="submit" class="login-btn" [disabled]="!loginForm.form.valid">
+        Sign In
+      </button>
+    </form>
+
+    <div class="test-credentials">
+      <p><strong>Test Accounts:</strong></p>
+      <p>Admin: <span>admin@datapulse.com / 1234</span></p>
+      <p>Corporate: <span>corp@datapulse.com / 1234</span></p>
+      <p>Individual: <span>user@datapulse.com / 1234</span></p>
+    </div>
+
+  </div>
+</div>

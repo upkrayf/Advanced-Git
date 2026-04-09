@@ -1,0 +1,66 @@
+<div class="ai-container">
+  
+  <div class="header-section">
+    <div>
+      <h2>🤖 AI Data Assistant</h2>
+      <p>Ask anything about your store data, I'll analyze and visualize it for you!</p>
+    </div>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-box">
+      ⚠️ {{ errorMessage }}
+    </div>
+  }
+
+  <div class="chat-layout">
+    <div class="suggestions-panel">
+      <h3>Try asking:</h3>
+      <div class="suggestions-list">
+        @for (query of suggestedQueries; track query) {
+          <button class="suggestion-btn" (click)="useSuggestion(query)">
+            {{ query }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="chat-panel">
+      <div class="chat-window">
+        @for (msg of chatHistory; track msg.text) {
+          <div class="msg-wrapper" [ngClass]="msg.role">
+            <div class="msg-bubble">
+              <strong class="sender-name">{{ msg.role === 'user' ? 'You' : 'DataPulse AI' }}</strong>
+              <p>{{ msg.text }}</p>
+            </div>
+          </div>
+        }
+        
+        @if (isLoading) {
+          <div class="msg-wrapper ai">
+            <div class="msg-bubble loading">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="input-area">
+        <input 
+          type="text" 
+          [(ngModel)]="userQuery" 
+          (keyup.enter)="sendMessage()" 
+          placeholder="Ask me to analyze and visualize your data..."
+          [disabled]="isLoading">
+        
+        <button 
+          (click)="sendMessage()" 
+          [disabled]="isLoading || !userQuery.trim()" 
+          class="send-btn">
+          ➤
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

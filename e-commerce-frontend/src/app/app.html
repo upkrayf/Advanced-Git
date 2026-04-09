@@ -1,0 +1,63 @@
+<div class="app-layout" [class.no-sidebar]="!showSidebar">
+  
+  <aside class="sidebar" *ngIf="showSidebar">
+    <div class="logo">
+      <h2>📊 DataPulse</h2>
+      <div class="role-badge" [ngClass]="userRole.toLowerCase()">Role: {{ userRole }}</div>
+    </div>
+
+    <div class="menu-section">
+      <p class="menu-title">MAIN MENU</p>
+      
+      <a *ngIf="userRole === 'ADMIN' || userRole === 'CORPORATE'" routerLink="/dashboard" class="menu-item" routerLinkActive="active">
+        🏠 Dashboard
+      </a>
+      
+      <a *ngIf="userRole === 'ADMIN' || userRole === 'CORPORATE'" routerLink="/analytics" class="menu-item" routerLinkActive="active">
+        📈 Analytics
+      </a>
+
+      <a routerLink="/ai-assistant" class="menu-item" routerLinkActive="active">
+        🤖 AI Assistant <span class="badge">New</span>
+      </a>
+
+      <a routerLink="/products" class="menu-item" routerLinkActive="active">
+        📦 Products
+      </a>
+
+      <a routerLink="/orders" class="menu-item" routerLinkActive="active">
+        🛒 {{ userRole === 'INDIVIDUAL' ? 'Orders' : 'Orders' }}
+      </a>
+    </div>
+
+    <div class="menu-section">
+      <p class="menu-title">MANAGEMENT</p>
+      
+      <a *ngIf="userRole === 'ADMIN'" routerLink="/customers" class="menu-item" routerLinkActive="active">
+        👥 Customers
+      </a>
+
+      <a *ngIf="userRole === 'ADMIN'" routerLink="/settings" class="menu-item" routerLinkActive="active">
+        ⚙️ Store Settings
+      </a> 
+
+      <a *ngIf="userRole === 'ADMIN' || userRole === 'CORPORATE'" routerLink="/shipments" class="menu-item" routerLinkActive="active">
+        🚚 Shipments
+      </a>
+
+      <a *ngIf="userRole === 'ADMIN' || userRole === 'CORPORATE'" routerLink="/reviews" class="menu-item" routerLinkActive="active">
+        ⭐ Reviews
+      </a>
+
+            
+      <a (click)="logout()" class="menu-item logout" style="cursor: pointer;">
+        🚪 Logout
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+
+</div>

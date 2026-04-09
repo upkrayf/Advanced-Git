@@ -1,0 +1,62 @@
+.reviews-container {
+  padding: 30px;
+  background-color: #0b0c10;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 25px;
+}
+
+/* Yorum Kartı */
+.review-card {
+  background: #1f2833;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #66fcf1; /* Dekoratif yan çizgi */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.review-header strong {
+  color: white;
+  font-size: 16px;
+}
+
+/* Sentiment Etiketleri */
+.sentiment-tag {
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.sentiment-tag.positive { background: rgba(0, 230, 118, 0.1); color: #00e676; border: 1px solid #00e676; }
+.sentiment-tag.negative { background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; }
+.sentiment-tag.neutral { background: rgba(255, 165, 2, 0.1); color: #ffa502; border: 1px solid #ffa502; }
+
+.stars {
+  color: #ffa502;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.comment {
+  font-style: italic;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.date {
+  color: #636e72;
+  font-size: 12px;
+}

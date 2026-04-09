@@ -1,0 +1,28 @@
+<div class="analytics-container">
+  <div class="header-section">
+    <h2>📈 Analytics & Insights</h2>
+    <p>Performance tracking based on Kaggle Sales Datasets</p>
+  </div>
+
+  <div class="stats-grid">
+    @for (item of stats; track item.label) {
+      <div class="stat-card">
+        <span class="stat-icon">{{ item.icon }}</span>
+        <div class="stat-info">
+          <h3>{{ item.label }}</h3>
+          <p class="value">{{ item.value }}</p>
+          <span class="growth" [class.negative]="item.growth.includes('-')">
+            {{ item.growth }} since last month
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="charts-section">
+    <div class="chart-box">
+      <h3>Sales Trends (Monthly)</h3>
+      <div class="mock-chart">[Sales Trend Chart Will Be Here]</div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,63 @@
+<div class="customers-container">
+  
+  <div class="header-section">
+    <div>
+      <h2>👥 Customer Management</h2>
+      <p>View and manage your customers</p>
+    </div>
+    <button class="add-customer-btn">+ Add Customer</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card" *ngFor="let kpi of customerKpis">
+      <div class="kpi-icon">{{ kpi.icon }}</div>
+      <div class="kpi-info">
+        <div class="kpi-value">{{ kpi.value }}</div>
+        <div class="kpi-title">{{ kpi.title }}</div>
+      </div>
+      <div class="kpi-trend">{{ kpi.trend }}</div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>CUSTOMER</th>
+          <th>MEMBERSHIP</th>
+          <th>TOTAL SPENT</th>
+          <th>ORDERS</th>
+          <th>STATUS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let customer of customersList">
+          <td>
+            <div class="customer-info">
+              <div class="avatar">{{ customer.name.charAt(0) }}</div>
+              <div class="details">
+                <span class="name">{{ customer.name }}</span>
+                <span class="email">{{ customer.email }}</span>
+              </div>
+            </div>
+          </td>
+          
+          <td>
+            <span class="membership-badge" [ngClass]="customer.membership.toLowerCase()">
+              {{ customer.membership }}
+            </span>
+          </td>
+          
+          <td><strong>{{ customer.spent }}</strong></td>
+          <td class="text-gray">{{ customer.orders }}</td>
+          
+          <td>
+            <span class="status-dot" [class.active]="customer.status === 'Active'"></span>
+            <span class="text-gray">{{ customer.status }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

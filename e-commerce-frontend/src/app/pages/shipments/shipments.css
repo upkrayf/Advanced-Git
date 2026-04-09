@@ -1,0 +1,150 @@
+.shipments-container {
+  padding: 30px 40px;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.header-section h2 {
+  font-size: 28px;
+  color: #66fcf1;
+  margin: 0 0 5px 0;
+}
+
+.header-section p {
+  color: #c5c6c7;
+  margin: 0;
+  font-size: 14px;
+}
+
+.create-shipment-btn {
+  background: linear-gradient(45deg, #7928ca, #ff007f);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.create-shipment-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 0, 127, 0.4);
+}
+
+/* KPI Kartları */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.kpi-card {
+  background: #1f2833;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-5px);
+  border-color: #4facfe;
+}
+
+.kpi-icon-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 15px;
+  font-size: 24px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.kpi-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+/* Tablo Tasarımı */
+.table-container {
+  background: #1f2833;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+thead th {
+  color: #636e72;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 15px 20px;
+  border-bottom: 1px solid #2a3644;
+}
+
+tbody td {
+  padding: 15px 20px;
+  border-bottom: 1px solid #2a3644;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+tbody tr:hover {
+  background-color: #252f3c;
+}
+
+.tracking-id {
+  color: #4facfe;
+  font-family: monospace;
+  font-size: 15px;
+}
+
+.order-id {
+  color: #c5c6c7;
+  font-weight: 600;
+}
+
+.text-gray {
+  color: #c5c6c7;
+}
+
+/* Kargo Durum Rozetleri */
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.in-transit { background: rgba(79, 172, 254, 0.1); color: #4facfe; border: 1px solid rgba(79, 172, 254, 0.3); }
+.pending { background: rgba(255, 165, 2, 0.1); color: #ffa502; border: 1px solid rgba(255, 165, 2, 0.3); }
+.delivered { background: rgba(0, 230, 118, 0.1); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); }

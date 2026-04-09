@@ -1,0 +1,56 @@
+<div class="shipments-container">
+  
+  <div class="header-section">
+    <div>
+      <h2>🚚 Shipments Tracking</h2>
+      <p>Real-time monitoring based on your <strong>{{ userRole }}</strong> access level</p>
+    </div>
+    
+    @if (userRole === 'ADMIN' || userRole === 'CORPORATE') {
+      <button class="create-shipment-btn">+ Create Shipment</button>
+    }
+  </div>
+
+  <div class="kpi-grid">
+    @for (kpi of shipmentKpis; track kpi.title) {
+      <div class="kpi-card">
+        <div class="kpi-icon-wrapper" [style.background-color]="kpi.color + '20'">
+          <span class="kpi-icon">{{ kpi.icon }}</span>
+        </div>
+        <div class="kpi-info">
+          <div class="kpi-value">{{ kpi.value }}</div>
+          <div class="kpi-title" [style.color]="kpi.color">{{ kpi.title }}</div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>TRACKING ID</th>
+          <th>ORDER</th>
+          <th>CUSTOMER</th>
+          <th>WAREHOUSE</th> <th>MODE</th>      <th>STATUS</th>
+          <th>ETA</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (shipment of shipmentsList; track shipment.id) {
+          <tr>
+            <td class="tracking-id">{{ shipment.id }}</td>
+            <td class="order-id">{{ shipment.orderId }}</td>
+            <td>{{ shipment.customer }}</td>
+            <td class="text-gray">{{ shipment.warehouse }}</td> <td class="text-gray">{{ shipment.mode }}</td>      <td>
+              <span class="status-badge" [ngClass]="getStatusClass(shipment.status)">
+                • {{ shipment.status }}
+              </span>
+            </td>
+            <td><strong>{{ shipment.eta }}</strong></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

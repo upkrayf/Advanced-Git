@@ -1,0 +1,17 @@
+<div class="products-container">
+  <div class="header-section">
+    <h2>📦 Ürün Kataloğu</h2>
+    <button class="add-btn">+ Yeni Ürün</button>
+  </div>
+
+  <div class="products-grid">
+    <div class="product-card" *ngFor="let p of productsList" [routerLink]="['/products', p.id]">
+      <div class="product-icon">{{ p.icon }}</div>
+      <h3>{{ p.name }}</h3>
+      <div class="card-footer">
+        <span class="price">{{ p.price }}</span>
+        <span class="stock">{{ p.stock }}</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+# Datasetler
+*.csv
+*.tsv
+backend/src/main/resources/data/
+
+# Klasörler
+backend/target/
+e-commerce-frontend/node_modules/
+e-commerce-frontend/.angular/
+e-commerce-frontend/dist/
+
+# IDE
+.idea/
+.vscode/

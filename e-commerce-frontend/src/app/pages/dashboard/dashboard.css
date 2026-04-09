@@ -1,0 +1,92 @@
+.dashboard-container {
+  padding: 30px 40px;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.header h1 {
+  font-size: 32px;
+  margin: 0 0 5px 0;
+  background: linear-gradient(90deg, #66fcf1, #00f2fe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header p {
+  color: #c5c6c7;
+  margin-bottom: 30px;
+  font-size: 15px;
+}
+
+/* KPI Kartları Grid Yapısı */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px;
+  margin-bottom: 35px;
+}
+
+/* KPI Kart Tasarımı */
+.kpi-card {
+  background: #1f2833;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 4px solid; /* Renk TS'den gelecek */
+  transition: transform 0.3s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-5px);
+  background: #252f3c;
+}
+
+.kpi-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.kpi-icon {
+  font-size: 24px;
+}
+
+.kpi-title {
+  color: #c5c6c7;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.kpi-value {
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+/* Grafik Alanı */
+.chart-container {
+  background: #1f2833;
+  border-radius: 16px;
+  padding: 25px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chart-container h2 {
+  font-size: 18px;
+  color: #66fcf1;
+  margin: 0 0 20px 0;
+}
+
+.canvas-wrapper {
+  position: relative;
+  height: 350px;
+  width: 100%;
+}

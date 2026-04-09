@@ -1,0 +1,77 @@
+/* Sayfa Ana Konteynırı */
+.analytics-container {
+  padding: 30px;
+  background-color: #0b0c10;
+  color: #c5c6c7;
+}
+
+/* Başlık Bölümü */
+.header-section h2 {
+  color: #66fcf1;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+/* İstatistik Izgarası (Grid) */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin-top: 30px;
+}
+
+/* İstatistik Kartı */
+.stat-card {
+  background: #1f2833;
+  padding: 25px;
+  border-radius: 16px;
+  border: 1px solid rgba(102, 252, 241, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  border-color: #66fcf1;
+}
+
+.stat-icon {
+  font-size: 32px;
+  background: rgba(102, 252, 241, 0.1);
+  padding: 15px;
+  border-radius: 12px;
+}
+
+.stat-info h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #c5c6c7;
+}
+
+.stat-info .value {
+  font-size: 26px;
+  font-weight: bold;
+  color: white;
+  margin: 5px 0;
+}
+
+.growth {
+  font-size: 12px;
+  color: #00e676; /* Pozitif büyüme */
+}
+
+.growth.negative {
+  color: #ff4757; /* Negatif büyüme */
+}
+
+/* Grafik Kutusu */
+.charts-section {
+  margin-top: 40px;
+  background: #1f2833;
+  padding: 30px;
+  border-radius: 16px;
+  border: 1px solid rgba(102, 252, 241, 0.1);
+  text-align: center;
+}
