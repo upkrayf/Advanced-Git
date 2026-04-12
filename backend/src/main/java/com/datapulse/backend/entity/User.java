@@ -1,5 +1,8 @@
 package com.datapulse.backend.entity;
 
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -22,6 +25,17 @@ public class User {
     @Column(name = "gender")
     private String gender; // DS2'den gelecek (Male, Female)
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private CustomerProfile profile;
+
+    @OneToMany(mappedBy = "owner")
+    private List<Store> stores; 
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Order> orders;
+
     public User() {}
 
     public User(String email, String passwordHash, String roleType, String gender) {
@@ -42,4 +56,10 @@ public class User {
     public void setRoleType(String roleType) { this.roleType = roleType; }
     public String getGender() { return gender; }
     public void setGender(String gender) { this.gender = gender; }
+    public CustomerProfile getProfile() { return profile; }
+    public void setProfile(CustomerProfile profile) { this.profile = profile; }
+    public List<Store> getStores() { return stores; }
+    public void setStores(List<Store> stores) { this.stores = stores; }
+    public List<Order> getOrders() { return orders; }
+    public void setOrders(List<Order> orders) { this.orders = orders; }
 }

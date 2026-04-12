@@ -2,11 +2,12 @@ package com.datapulse.backend.config;
 
 import com.datapulse.backend.entity.Category;
 import com.datapulse.backend.entity.Product;
+import com.datapulse.backend.entity.Store;
 import com.datapulse.backend.entity.User;
 import com.datapulse.backend.repository.CategoryRepository;
 import com.datapulse.backend.repository.ProductRepository;
+import com.datapulse.backend.repository.StoreRepository;
 import com.datapulse.backend.repository.UserRepository;
-import com.datapulse.backend.service.EtlService; // 1. SERVİSİ İMPORT ETTİK
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,60 +20,56 @@ public class DataSeeder {
 
     @Bean
     CommandLineRunner initDatabase(
-            ProductRepository productRepository, 
             UserRepository userRepository,
-            CategoryRepository categoryRepository,
             PasswordEncoder passwordEncoder,
-            EtlService etlService) { // 2. PARAMETRE OLARAK EKLEDİK
-        
+            CategoryRepository categoryRepository,
+            StoreRepository storeRepository,
+            ProductRepository productRepository) {
+
         return args -> {
-            
-            // 1. ADIM: TEST KULLANICILARI
             if (userRepository.count() == 0) {
-                createUser(userRepository, passwordEncoder, "admin@datapulse.com", "1234", "ADMIN");
-                createUser(userRepository, passwordEncoder, "corp@datapulse.com", "1234", "CORPORATE");
-                createUser(userRepository, passwordEncoder, "user@datapulse.com", "1234", "INDIVIDUAL");
-                System.out.println("✅ Test kullanıcıları oluşturuldu!");
+                User admin = createUser(userRepository, passwordEncoder, "admin@datapulse.com", "1234", "ADMIN");
+                User corp = createUser(userRepository, passwordEncoder, "corp@datapulse.com", "1234", "CORPORATE");
+                User user = createUser(userRepository, passwordEncoder, "user@datapulse.com", "1234", "INDIVIDUAL");
+                seedSampleData(categoryRepository, storeRepository, productRepository, corp);
+                System.out.println("Test kullanıcıları ve örnek veriler oluşturuldu!");
+            } else {
+                System.out.println("Kullanıcılar zaten mevcut, atlanıyor.");
             }
-
-            /*// 2. ADIM: MANUEL KATEGORİLER
-            Category clothing = categoryRepository.findByName("Clothing")
-                    .orElseGet(() -> categoryRepository.save(new Category("Clothing")));
-            
-            Category electronics = categoryRepository.findByName("Electronics")
-                    .orElseGet(() -> categoryRepository.save(new Category("Electronics")));
-*/
-/* /* 
-            // 3. ADIM: MANUEL ÖRNEK ÜRÜNLER (Frontend testi için)
-            if (productRepository.count() == 0) {
-                saveProduct(productRepository, "Classic Cotton T-Shirt", "29.99", 124, clothing, "👕");
-                saveProduct(productRepository, "Running Sneakers Pro", "89.99", 56, clothing, "👟");
-                saveProduct(productRepository, "Smart Watch Series X", "299.99", 18, electronics, "⌚");
-                saveProduct(productRepository, "Wireless Headphones", "149.99", 42, electronics, "🎧");
-                System.out.println("✅ Manuel başlangıç ürünleri eklendi!");
-            }
-*/
-           
-            
-            System.out.println("🔄 Kaggle veri setleri işleniyor...");
-            etlService.runEtlProcess(); 
-
         };
     }
 
- /*   private void saveProduct(ProductRepository repo, String name, String price, int stock, Category cat, String icon) {
-        Product p = new Product();
-        p.setName(name);
-        p.setUnitPrice(new BigDecimal(price));
-        
-        repo.save(p);
-    }*/
-
-    private void createUser(UserRepository repo, PasswordEncoder encoder, String email, String pass, String role) {
+    private User createUser(UserRepository repo, PasswordEncoder encoder,
+            String email, String pass, String role) {
         User u = new User();
         u.setEmail(email);
         u.setPasswordHash(encoder.encode(pass));
         u.setRoleType(role);
-        repo.save(u);
+        return repo.save(u);
+    }
+
+    private void seedSampleData(CategoryRepository categoryRepository,
+                                StoreRepository storeRepository,
+                                ProductRepository productRepository,
+                                User corpUser) {
+        Category category = new Category();
+        category.setName("Electronics");
+        categoryRepository.save(category);
+
+        Store store = new Store();
+        store.setName("Datapulse Store");
+        store.setStatus("ACTIVE");
+        store.setOwner(corpUser);
+        storeRepository.save(store);
+
+        Product product = new Product();
+        product.setName("Datapulse Smart Band");
+        product.setSku("DP-001");
+        product.setDescription("Akıllı bileklik, adım sayar ve bildirim özellikleri.");
+        product.setCategory(category);
+        product.setStore(store);
+        product.setUnitPrice(new BigDecimal("129.99"));
+        product.setStockQuantity(120);
+        productRepository.save(product);
     }
 }

@@ -1,6 +1,8 @@
 package com.datapulse.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "reviews")
@@ -17,10 +19,12 @@ public class Review {
 
     private String sentiment; // Positive, Negative, Neutral (AI/ETL tarafından doldurulacak)
 
-    private String date; // Yorum tarihi
+    @Column(name = "review_date")
+    private LocalDate date; // Yorum tarihi
 
     @ManyToOne
     @JoinColumn(name = "product_id")
+    @JsonIgnore
     private Product product; // Hangi ürün için yapıldığı
 
     // Boş Constructor (JPA için zorunlu)
@@ -40,8 +44,8 @@ public class Review {
     public String getSentiment() { return sentiment; }
     public void setSentiment(String sentiment) { this.sentiment = sentiment; }
 
-    public String getDate() { return date; }
-    public void setDate(String date) { this.date = date; }
+    public LocalDate getDate() { return date; }
+    public void setDate(LocalDate date) { this.date = date; }
 
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }

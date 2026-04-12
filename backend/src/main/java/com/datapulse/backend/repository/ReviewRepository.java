@@ -3,8 +3,9 @@ package com.datapulse.backend.repository;
 import com.datapulse.backend.entity.Review;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-    // İleride belirli bir ürüne ait yorumları çekmek istersen buraya metod ekleyebiliriz
+    List<Review> findByProduct_Id(Long productId);
 }

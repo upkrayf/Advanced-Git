@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByCategory(String category);
+    List<Product> findByCategory_Name(String categoryName);
+    List<Product> findByNameContainingIgnoreCase(String term);
     Optional<Product> findBySku(String sku);
 }

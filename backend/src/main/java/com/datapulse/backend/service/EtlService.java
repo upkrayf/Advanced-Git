@@ -2,269 +2,434 @@ package com.datapulse.backend.service;
 
 import com.datapulse.backend.entity.*;
 import com.datapulse.backend.repository.*;
-import com.opencsv.*;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.io.InputStreamReader;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class EtlService {
 
+    private static final Logger logger = LoggerFactory.getLogger(EtlService.class);
+
     private final CategoryRepository categoryRepository;
+    private final StoreRepository storeRepository;
     private final ProductRepository productRepository;
-    private final OrderRepository orderRepository;
-    private final ShipmentRepository shipmentRepository;
     private final UserRepository userRepository;
+    private final CustomerProfileRepository customerProfileRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final ShipmentRepository shipmentRepository;
     private final PaymentRepository paymentRepository;
     private final ReviewRepository reviewRepository;
-    private final CustomerProfileRepository customerProfileRepository;
-    private final StoreRepository storeRepository;
-    private final OrderItemRepository orderItemRepository;
 
-    public EtlService(CategoryRepository categoryRepository, ProductRepository productRepository,
-                      OrderRepository orderRepository, ShipmentRepository shipmentRepository,
-                      UserRepository userRepository, PaymentRepository paymentRepository,
-                      ReviewRepository reviewRepository, CustomerProfileRepository customerProfileRepository,
-                      StoreRepository storeRepository, OrderItemRepository orderItemRepository) {
+    @Value("${etl.data-dir:./data}")
+    private String dataDir;
+
+    public EtlService(CategoryRepository categoryRepository,
+                      StoreRepository storeRepository,
+                      ProductRepository productRepository,
+                      UserRepository userRepository,
+                      CustomerProfileRepository customerProfileRepository,
+                      OrderRepository orderRepository,
+                      OrderItemRepository orderItemRepository,
+                      ShipmentRepository shipmentRepository,
+                      PaymentRepository paymentRepository,
+                      ReviewRepository reviewRepository) {
         this.categoryRepository = categoryRepository;
+        this.storeRepository = storeRepository;
         this.productRepository = productRepository;
-        this.orderRepository = orderRepository;
-        this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
+        this.customerProfileRepository = customerProfileRepository;
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.shipmentRepository = shipmentRepository;
         this.paymentRepository = paymentRepository;
         this.reviewRepository = reviewRepository;
-        this.customerProfileRepository = customerProfileRepository;
-        this.storeRepository = storeRepository;
-        this.orderItemRepository = orderItemRepository;
     }
 
-    @Transactional
-    public void runEtlProcess() {
-        System.out.println("🚀 ETL Final Operasyonu Başlıyor...");
-        try {
-            importCategories();
-            importUsersAndProfiles();
-            Store store = ensureStore();
-            importProducts(store);
-            importOrders();         // Mükerrer kontrolü eklendi
-            importOrderItems();     // Hata koruması eklendi
-            importPayments();
-            importShipments();
-            importReviews();
-
-            System.out.println("✅ ETL BAŞARIYLA BİTTİ BEREN! Artık Frontend'e geçebiliriz.");
-        } catch (Exception e) {
-            System.err.println("❌ KRİTİK HATA: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void importCategories() throws Exception {
-        if (categoryRepository.count() > 0) return;
-        Set<String> names = new HashSet<>();
-        try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/data/ds4.csv")))) {
-            reader.readNext(); String[] line;
-            while ((line = reader.readNext()) != null) {
-                if (line.length > 9) names.add(line[9].trim());
+    public Map<String, Object> loadAllDatasets() {
+        Path folder = Paths.get(dataDir);
+        if (!Files.exists(folder) || !Files.isDirectory(folder)) {
+            Path fallback = Paths.get("src/main/resources/data");
+            if (Files.exists(fallback) && Files.isDirectory(fallback)) {
+                folder = fallback;
             }
         }
-        names.forEach(n -> categoryRepository.save(new Category(n)));
-        System.out.println("📂 Kategoriler yüklendi.");
-    }
 
-    private void importUsersAndProfiles() throws Exception {
-        if (userRepository.count() > 5) return;
-        try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/data/ds2.csv")))) {
-            reader.readNext(); String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 100) {
-                User u = new User();
-                u.setEmail("user_" + line[0] + "@datapulse.com");
-                u.setPasswordHash("pass123");
-                u.setRoleType("INDIVIDUAL");
-                u.setGender(line[1]);
-                u = userRepository.save(u);
+        Map<String, Object> results = new LinkedHashMap<>();
 
-                CustomerProfile p = new CustomerProfile();
-                p.setUser(u);
-                p.setAge(Integer.parseInt(line[2]));
-                p.setCity(line[3]);
-                p.setMembershipType(line[4]);
-                customerProfileRepository.save(p);
-                count++;
-            }
+        if (!Files.exists(folder) || !Files.isDirectory(folder)) {
+            results.put("status", "missing");
+            results.put("message", "ETL data directory not found: " + folder.toAbsolutePath());
+            return results;
         }
-        System.out.println("👤 Kullanıcılar yüklendi.");
-    }
 
-    private void importProducts(Store store) throws Exception {
-        if (productRepository.count() > 5) return;
-        List<Category> cats = categoryRepository.findAll();
-        try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/data/ds1.csv")))) {
-            reader.readNext(); String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 150) {
-                if (productRepository.findBySku(line[1]).isPresent()) continue;
-                Product p = new Product();
-                p.setSku(line[1]);
-                p.setName(line[2]);
-                p.setUnitPrice(new BigDecimal(line[5]));
-                p.setStore(store);
-                p.setIcon("📦");
-                if (!cats.isEmpty()) p.setCategory(cats.get(count % cats.size()));
-                p.setDescription(line[2]);
-                p.setStockQuantity(Integer.valueOf(line[3]));
-                productRepository.save(p);
-                count++;
-            }
-        }
-        System.out.println("📦 Ürünler yüklendi.");
-    }
+        List<String> supportedFiles = Arrays.asList("ds1.csv", "ds2.csv", "ds3.csv", "ds4.csv", "ds5.csv", "ds6.tsv");
 
-    private void importOrders() throws Exception {
-        if (orderRepository.count() > 5) return;
-        List<User> users = userRepository.findAll();
-        Set<String> processedOrderNumbers = new HashSet<>(); 
-        
-        try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/data/ds5.csv")))) {
-            reader.readNext(); String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 100) {
-                String orderNum = line[7];
-                // Hem RAM'de hem DB'de kontrol ediyoruz
-                if (processedOrderNumbers.contains(orderNum) || orderRepository.existsByOrderNumber(orderNum)) {
-                    continue; 
+        for (String fileName : supportedFiles) {
+            Path path = folder.resolve(fileName);
+            if (Files.exists(path)) {
+                try {
+                    int processed = processFile(path);
+                    results.put(fileName, "processed=" + processed);
+                } catch (Exception e) {
+                    logger.warn("ETL load failed for {}: {}", fileName, e.getMessage());
+                    results.put(fileName, "failed: " + e.getMessage());
                 }
-                Order o = new Order();
-                o.setOrderNumber(orderNum);
-                o.setStatus(line[1]);
-                o.setGrandTotal(new BigDecimal(line[6]));
-                o.setOrderDate(LocalDateTime.now());
-                o.setUser(users.get(count % users.size()));
-                orderRepository.save(o);
-                processedOrderNumbers.add(orderNum);
-                count++;
+            } else {
+                results.put(fileName, "skipped (not found)");
             }
         }
-        System.out.println("🛒 Siparişler yüklendi.");
+
+        results.put("status", "done");
+        results.put("dataDir", folder.toAbsolutePath().toString());
+        return results;
     }
 
-    private void importOrderItems() throws Exception {
-    if (orderItemRepository.count() > 5) return;
+    private int processFile(Path path) throws IOException {
+        char delimiter = path.toString().toLowerCase().endsWith(".tsv") ? '\t' : ',';
+        try (CSVReader reader = new CSVReaderBuilder(Files.newBufferedReader(path, StandardCharsets.UTF_8))
+                .withCSVParser(new CSVParserBuilder().withSeparator(delimiter).build())
+                .build()) {
+            List<String[]> rows = reader.readAll();
+            if (rows.isEmpty()) {
+                return 0;
+            }
 
-    // 1. ADIM: Hızlandırmak için tüm siparişleri ve ürünleri bir kerede RAM'e alıyoruz
-    // Map<SiparişNo, SiparişNesnesi>
-    Map<String, Order> orderMap = new HashMap<>();
-    orderRepository.findAll().forEach(o -> orderMap.put(o.getOrderNumber(), o));
+            String[] header = rows.get(0);
+            Map<String, Integer> columnIndex = createIndexMap(header);
+            List<String[]> dataRows = rows.subList(1, rows.size());
+            if (looksLikeReviewDataset(columnIndex)) {
+                return importReviews(dataRows, columnIndex);
+            } else if (looksLikeShipmentDataset(columnIndex)) {
+                return importShipments(dataRows, columnIndex);
+            } else if (looksLikeProfileDataset(columnIndex)) {
+                return importCustomerProfiles(dataRows, columnIndex);
+            } else if (looksLikePaymentDataset(columnIndex)) {
+                return importPayments(dataRows, columnIndex);
+            } else if (looksLikeOrderDataset(columnIndex)) {
+                return importOrders(dataRows, columnIndex);
+            } else if (looksLikeProductDataset(columnIndex)) {
+                return importProducts(dataRows, columnIndex);
+            }
+            logger.info("ETL skipped unsupported dataset: {}", path.getFileName());
+            return 0;
+        }
+    }
 
-    // Map<SKU, ÜrünNesnesi>
-    Map<String, Product> productMap = new HashMap<>();
-    productRepository.findAll().forEach(p -> productMap.put(p.getSku(), p));
+    private Map<String, Integer> createIndexMap(String[] header) {
+        Map<String, Integer> indexMap = new HashMap<>();
+        for (int i = 0; i < header.length; i++) {
+            indexMap.put(header[i].trim().toLowerCase(), i);
+        }
+        return indexMap;
+    }
 
-    System.out.println("⚡ Hafıza hazır, eşleştirme başlıyor...");
+    private boolean looksLikeReviewDataset(Map<String, Integer> index) {
+        return index.containsKey("review") || index.containsKey("rating") || index.containsKey("comment");
+    }
 
-    try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/data/ds5.csv")))) {
-        reader.readNext(); // Header atla
-        String[] line;
+    private boolean looksLikeShipmentDataset(Map<String, Integer> index) {
+        return index.containsKey("warehouse_block") || index.containsKey("mode_of_shipment") || index.containsKey("product_importance");
+    }
+
+    private boolean looksLikeProfileDataset(Map<String, Integer> index) {
+        return index.containsKey("age") || index.containsKey("city") || index.containsKey("membership_type") || index.containsKey("gender");
+    }
+
+    private boolean looksLikePaymentDataset(Map<String, Integer> index) {
+        return index.containsKey("payment_type") || index.containsKey("payment_value") || index.containsKey("grand_total") || index.containsKey("paymentmethod");
+    }
+
+    private boolean looksLikeOrderDataset(Map<String, Integer> index) {
+        return index.containsKey("invoiceno") || index.containsKey("orderid") || index.containsKey("grandtotal") || index.containsKey("order_number") || index.containsKey("orderstatus");
+    }
+
+    private boolean looksLikeProductDataset(Map<String, Integer> index) {
+        return index.containsKey("sku") || index.containsKey("product_name") || index.containsKey("unit_price") || index.containsKey("price");
+    }
+
+    private int importProducts(List<String[]> rows, Map<String, Integer> index) {
         int count = 0;
-        
-        while ((line = reader.readNext()) != null && count < 150) {
-            String orderNum = line[7];
-            String sku = line[3];
+        for (String[] row : rows) {
+            if (row.length == 0) continue;
+            String sku = getValue(row, index, "sku", "productcode", "product id", "productid");
+            String name = getValue(row, index, "product_name", "name", "productname");
+            String categoryName = getValue(row, index, "category", "category_name", "sub_category");
+            String storeName = getValue(row, index, "store", "shop", "marketplace");
+            String priceValue = getValue(row, index, "unit_price", "price", "sale_price");
+            String stockValue = getValue(row, index, "stock_quantity", "stock", "quantity", "available_stock");
+            String description = getValue(row, index, "description", "product_description", "desc");
 
-            // 2. ADIM: Veritabanı yerine doğrudan Map'ten (RAM) kontrol et
-            Order order = orderMap.get(orderNum);
-            Product product = productMap.get(sku);
-
-            if (order != null && product != null) {
-                OrderItem item = new OrderItem();
-                item.setOrder(order);
-                item.setProduct(product);
-                item.setQuantity(Integer.parseInt(line[5]));
-                item.setPrice(new BigDecimal(line[4]));
-                
-                orderItemRepository.save(item);
-                count++;
-                
-                if (count % 25 == 0) System.out.println("🗒️ Kalem eşleşti: " + count);
+            if (name == null || name.isBlank()) {
+                continue;
             }
-        }
-    }
-    System.out.println("✅ Sipariş kalemleri saniyeler içinde yüklendi.");
-}
 
-    private void importPayments() throws Exception {
-        if (paymentRepository.count() > 5) return;
-        List<Order> orders = orderRepository.findAll();
-        try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/data/ds5.csv")))) {
-            reader.readNext(); String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < orders.size()) {
-                Payment p = new Payment();
-                p.setOrder(orders.get(count));
-                p.setPaymentType(line[11]);
-                p.setPaymentValue(orders.get(count).getGrandTotal());
-                paymentRepository.save(p);
-                count++;
+            Category category = null;
+            if (categoryName != null && !categoryName.isBlank()) {
+                category = categoryRepository.findByName(categoryName)
+                        .orElseGet(() -> categoryRepository.save(createCategory(categoryName)));
             }
-        }
-        System.out.println("💰 Ödemeler yüklendi.");
-    }
 
-    private void importShipments() throws Exception {
-        if (shipmentRepository.count() > 5) return;
-        List<Order> orders = orderRepository.findAll();
-        try (CSVReader reader = new CSVReader(new InputStreamReader(getClass().getResourceAsStream("/data/ds3.csv")))) {
-            reader.readNext(); String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < orders.size()) {
-                Shipment s = new Shipment();
-                s.setWarehouseBlock(line[1]);
-                s.setModeOfShipment(line[2]);
-                s.setProductImportance(line[7]);
-                s.setReachingOnTime(Integer.parseInt(line[11]));
-                Order o = orders.get(count);
-                o.setShipment(s);
-                orderRepository.save(o);
-                count++;
+            Store store = null;
+            if (storeName != null && !storeName.isBlank()) {
+                store = storeRepository.findAll().stream()
+                        .filter(s -> storeName.equalsIgnoreCase(s.getName()))
+                        .findFirst()
+                        .orElseGet(() -> storeRepository.save(createStore(storeName)));
             }
+
+            Product product = null;
+            if (sku != null && !sku.isBlank()) {
+                product = productRepository.findBySku(sku).orElse(null);
+            }
+            if (product == null) {
+                product = new Product();
+                product.setSku(sku);
+            }
+            product.setName(name);
+            product.setDescription(description);
+            product.setCategory(category);
+            product.setStore(store);
+            product.setUnitPrice(parseBigDecimal(priceValue));
+            product.setStockQuantity(parseInteger(stockValue));
+            productRepository.save(product);
+            count++;
         }
-        System.out.println("🚚 Kargolar yüklendi.");
+        return count;
     }
 
-    private void importReviews() throws Exception {
-        if (reviewRepository.count() > 5) return;
-        List<Product> products = productRepository.findAll();
-        CSVParser parser = new CSVParserBuilder().withSeparator('\t').build();
-        try (CSVReader reader = new CSVReaderBuilder(new InputStreamReader(getClass().getResourceAsStream("/data/ds6.tsv")))
-                .withCSVParser(parser).build()) {
-            reader.readNext(); String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 100) {
-                Review r = new Review();
-                int stars = Integer.parseInt(line[7]);
-                r.setRating(stars);
-                r.setComment(line[13]);
-                r.setSentiment(stars >= 4 ? "Positive" : "Negative");
-                r.setProduct(products.get(count % products.size()));
-                r.setDate(line[14]);
-                reviewRepository.save(r);
-                count++;
+    private int importCustomerProfiles(List<String[]> rows, Map<String, Integer> index) {
+        int count = 0;
+        for (String[] row : rows) {
+            String email = getValue(row, index, "email", "user_email", "customer_email", "email_address");
+            if (email == null || email.isBlank()) {
+                continue;
             }
+            User user = userRepository.findByEmail(email)
+                    .orElseGet(() -> userRepository.save(createUser(email, "INDIVIDUAL")));
+            String ageValue = getValue(row, index, "age");
+            String city = getValue(row, index, "city", "location", "customer_city");
+            String membership = getValue(row, index, "membership_type", "membership", "customer_type");
+            String gender = getValue(row, index, "gender");
+
+            CustomerProfile profile = customerProfileRepository.findByUserId(user.getId())
+                    .orElseGet(() -> {
+                        CustomerProfile p = new CustomerProfile();
+                        p.setUser(user);
+                        return p;
+                    });
+            profile.setAge(parseInteger(ageValue));
+            profile.setCity(city);
+            profile.setMembershipType(membership);
+            user.setGender(gender);
+            customerProfileRepository.save(profile);
+            userRepository.save(user);
+            count++;
         }
-        System.out.println("⭐ Yorumlar yüklendi.");
+        return count;
     }
 
-    private Store ensureStore() {
-        return storeRepository.findAll().stream().findFirst().orElseGet(() -> {
-            Store s = new Store();
-            s.setName("DataPulse Global Store");
-            s.setStatus("ACTIVE");
-            return storeRepository.save(s);
-        });
+    private int importShipments(List<String[]> rows, Map<String, Integer> index) {
+        int count = 0;
+        for (String[] row : rows) {
+            Shipment shipment = new Shipment();
+            shipment.setWarehouseBlock(getValue(row, index, "warehouse_block", "warehouseblock"));
+            shipment.setModeOfShipment(getValue(row, index, "mode_of_shipment", "modeofshipment"));
+            shipment.setProductImportance(getValue(row, index, "product_importance", "productimportance"));
+            shipment.setReachingOnTime(parseInteger(getValue(row, index, "reached_on_time", "reaching_on_time", "reachingontime", "reachedontime")));
+            shipmentRepository.save(shipment);
+            count++;
+        }
+        return count;
+    }
+
+    private int importOrders(List<String[]> rows, Map<String, Integer> index) {
+        int count = 0;
+        for (String[] row : rows) {
+            String orderNumber = getValue(row, index, "invoiceno", "orderid", "order_number", "invoice_no", "order_no");
+            if (orderNumber == null || orderNumber.isBlank()) {
+                continue;
+            }
+            Order order = orderRepository.findByOrderNumber(orderNumber)
+                    .orElseGet(() -> {
+                        Order newOrder = new Order();
+                        newOrder.setOrderNumber(orderNumber);
+                        return newOrder;
+                    });
+
+            order.setOrderDate(parseDateTime(getValue(row, index, "order_date", "orderdate", "date")).orElse(LocalDateTime.now()));
+            order.setGrandTotal(parseBigDecimal(getValue(row, index, "grandtotal", "grand_total", "total", "amount")));
+            String status = getValue(row, index, "status", "orderstatus", "order_status");
+            if (status != null) {
+                order.setStatus(status);
+            }
+            String email = getValue(row, index, "customer_email", "email", "user_email");
+            if (email != null && !email.isBlank()) {
+                User user = userRepository.findByEmail(email).orElseGet(() -> userRepository.save(createUser(email, "INDIVIDUAL")));
+                order.setUser(user);
+            }
+            orderRepository.save(order);
+            count++;
+        }
+        return count;
+    }
+
+    private int importPayments(List<String[]> rows, Map<String, Integer> index) {
+        int count = 0;
+        for (String[] row : rows) {
+            String orderNumber = getValue(row, index, "invoice_no", "orderid", "order_number", "orderid");
+            if (orderNumber == null || orderNumber.isBlank()) {
+                continue;
+            }
+            Order order = orderRepository.findByOrderNumber(orderNumber).orElse(null);
+            if (order == null) {
+                continue;
+            }
+            Payment payment = new Payment();
+            payment.setOrder(order);
+            payment.setPaymentType(getValue(row, index, "payment_type", "paymentmethod", "payment_method"));
+            payment.setPaymentValue(parseBigDecimal(getValue(row, index, "payment_value", "payment_amount", "amount", "grand_total")));
+            paymentRepository.save(payment);
+            count++;
+        }
+        return count;
+    }
+
+    private int importReviews(List<String[]> rows, Map<String, Integer> index) {
+        int count = 0;
+        for (String[] row : rows) {
+            String productSku = getValue(row, index, "sku", "product_id", "product_sku");
+            String ratingValue = getValue(row, index, "rating", "review_score", "stars");
+            String comment = getValue(row, index, "review", "comment", "feedback");
+            String sentiment = getValue(row, index, "sentiment");
+            String reviewDate = getValue(row, index, "review_date", "date", "timestamp");
+
+            Product product = null;
+            if (productSku != null && !productSku.isBlank()) {
+                product = productRepository.findBySku(productSku).orElse(null);
+            }
+            if (product == null && comment != null && !comment.isBlank()) {
+                product = productRepository.findAll().stream().findFirst().orElse(null);
+            }
+            if (product == null) {
+                continue;
+            }
+            Review review = new Review();
+            review.setProduct(product);
+            review.setRating(parseInteger(ratingValue));
+            review.setComment(comment);
+            review.setSentiment(sentiment);
+            parseDate(reviewDate).ifPresent(review::setDate);
+            reviewRepository.save(review);
+            count++;
+        }
+        return count;
+    }
+
+    private String getValue(String[] row, Map<String, Integer> index, String... possibleKeys) {
+        for (String key : possibleKeys) {
+            Integer idx = index.get(key.trim().toLowerCase());
+            if (idx != null && idx < row.length) {
+                String value = row[idx];
+                if (value != null && !value.isBlank()) {
+                    return value.trim();
+                }
+            }
+        }
+        return null;
+    }
+
+    private Category createCategory(String name) {
+        Category category = new Category();
+        category.setName(name);
+        return category;
+    }
+
+    private Store createStore(String name) {
+        Store store = new Store();
+        store.setName(name);
+        store.setStatus("ACTIVE");
+        return store;
+    }
+
+    private User createUser(String email, String role) {
+        User user = new User();
+        user.setEmail(email);
+        user.setPasswordHash("[ETL_IMPORT]");
+        user.setRoleType(role);
+        return user;
+    }
+
+    private BigDecimal parseBigDecimal(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return new BigDecimal(raw.replaceAll("[^0-9.,-]", "").replace(',', '.'));
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private Integer parseInteger(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(raw.replaceAll("[^0-9-]", ""));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Optional<LocalDateTime> parseDateTime(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(LocalDateTime.parse(raw, DateTimeFormatter.ISO_DATE_TIME));
+        } catch (Exception ignored) {
+        }
+        try {
+            return Optional.of(LocalDateTime.parse(raw, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        } catch (Exception ignored) {
+        }
+        try {
+            return Optional.of(LocalDate.parse(raw, DateTimeFormatter.ISO_DATE).atStartOfDay());
+        } catch (Exception ignored) {
+        }
+        return Optional.of(LocalDateTime.now());
+    }
+
+    private Optional<LocalDate> parseDate(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(LocalDate.parse(raw, DateTimeFormatter.ISO_DATE));
+        } catch (Exception ignored) {
+        }
+        try {
+            return Optional.of(LocalDate.parse(raw, DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        } catch (Exception ignored) {
+        }
+        return Optional.empty();
     }
 }

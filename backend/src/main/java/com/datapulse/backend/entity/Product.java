@@ -1,7 +1,9 @@
 package com.datapulse.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -34,6 +36,10 @@ public class Product {
     @JoinColumn(name = "store_id")
     private Store store;
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Review> reviews;
+
     @Column(name = "icon")
     private String icon;
 
@@ -58,5 +64,7 @@ public class Product {
     public void setIcon(String icon) { this.icon = icon; }
     public Store getStore() {return store;}
     public void setStore(Store store) {this.store = store;}
+    public List<Review> getReviews() { return reviews; }
+    public void setReviews(List<Review> reviews) { this.reviews = reviews; }
     
 }

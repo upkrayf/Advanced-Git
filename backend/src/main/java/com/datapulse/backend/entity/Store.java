@@ -1,5 +1,5 @@
 package com.datapulse.backend.entity;
-
+import java.util.List;
 import jakarta.persistence.*;
 
 @Entity
@@ -19,6 +19,8 @@ public class Store {
     @JoinColumn(name = "owner_id")
     private User owner; // Mağaza sahibi olan "Corporate" kullanıcı
 
+    @OneToMany(mappedBy = "store")
+    private List<Product> products;
     public Store() {}
 
     // Getter ve Setterlar
