@@ -1,13 +1,8 @@
 package com.datapulse.backend.dto;
 
 public class QueryRequest {
-    private String sql;
+    private String query;
 
-    public String getSql() {
-        return sql;
-    }
-
-    public void setSql(String sql) {
-        this.sql = sql;
-    }
+    public String getQuery() { return query; }
+    public void setQuery(String query) { this.query = query; }
 }

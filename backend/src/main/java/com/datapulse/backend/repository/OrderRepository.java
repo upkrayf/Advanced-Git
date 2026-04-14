@@ -13,6 +13,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // 2. Satır: Hata anında tüm kayıtları liste olarak çekebilmek için
     List<Order> findAllByOrderNumber(String orderNumber);
+    List<Order> findByStatus(String status);
 
    
 }

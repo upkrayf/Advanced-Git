@@ -21,8 +21,8 @@ public class JwtUtil {
     private final long expirationMillis;
 
     public JwtUtil(
-            @Value("${jwt.secret:ChangeThisSecretToAStrongRandomValueForProduction!!!}") String secret,
-            @Value("${jwt.expiration-ms:86400000}") long expirationMillis) {
+            @Value("${app.jwt.secret:gizliAnahtar12345678901234567890123456}") String secret,
+            @Value("${app.jwt.expiration:86400000}") long expirationMillis) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMillis = expirationMillis;
     }

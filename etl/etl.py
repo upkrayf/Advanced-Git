@@ -1,313 +1,665 @@
-import pandas as pd
-import numpy as np
-from sqlalchemy import create_engine, text
-import warnings
-warnings.filterwarnings("ignore")
+#!/usr/bin/env python3
+"""ETL script for creating the project database from the CSV/TSV dataset files.
 
-# ============================================================
-#  AYARLAR
-# ============================================================
-DEV_MODE = True  # DEV_MODE = False yaparak gerçek veritabanına bağlanabilirsin
-DB_USER     = "root"
-DB_PASSWORD = "admin"        # <- kendi şifreni yaz
-DB_HOST     = "localhost"
-DB_PORT     = "3306"
-DB_NAME     = "datapulse_db"  # <- kendi db adını yaz
+Usage:
+  pip install sqlalchemy bcrypt pymysql
+  export DATABASE_URL='mysql+pymysql://root:admin@localhost/datapulse_db'
+  python etl.py
 
-engine = create_engine(
-    f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}",
-    echo=False
+If DATABASE_URL is not set, the script creates a local SQLite database file at etl.db.
+"""
+import csv
+import datetime
+import os
+import re
+import random
+from decimal import Decimal
+from pathlib import Path
+
+try:
+    import bcrypt
+except ImportError:
+    bcrypt = None
+
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    Text,
+    DateTime,
+    Date,
+    Numeric,
+    ForeignKey,
 )
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
-def log(msg):
-    print(f"\n{'='*50}\n  {msg}\n{'='*50}")
+Base = declarative_base()
+DATA_DIR = Path(__file__).resolve().parent / "data"
+MAX_ROWS = 1000
 
-def safe_load(df, table_name, chunk_size=500):
-    total, errors = 0, 0
-    for i in range(0, len(df), chunk_size):
-        chunk = df.iloc[i:i+chunk_size]
+
+def normalize_key(value: str) -> str:
+    if value is None:
+        return ""
+    key = value.strip().lower()
+    key = re.sub(r"[^a-z0-9]+", "_", key)
+    return key.strip("_")
+
+
+def parse_int(value, default=None):
+    if value is None:
+        return default
+    try:
+        return int(float(str(value).strip()))
+    except Exception:
+        return default
+
+
+def parse_decimal(value, default=Decimal("0.0")):
+    if value is None:
+        return default
+    try:
+        text = str(value).strip().replace('\\n', '').replace('\\r', '').replace(' ', '')
+        if text == '':
+            return default
+        return Decimal(text)
+    except Exception:
         try:
-            chunk.to_sql(table_name, engine, if_exists="append", index=False)
-            total += len(chunk)
-        except Exception as e:
-            errors += len(chunk)
-            print(f"    ! HATA ({table_name}): {str(e)[:200]}")
-    print(f"  → {table_name}: {total} kayıt yüklendi, {errors} atlandı")
-    return total
+            return Decimal(str(value).strip().replace(',', '.'))
+        except Exception:
+            return default
 
 
-# ============================================================
-#  ADIM 0 — Tabloları temizle
-# ============================================================
-log("ADIM 0: Tablolar temizleniyor...")
+def parse_datetime(value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text == "":
+        return None
 
-with engine.connect() as conn:
-    conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-    for table in ["reviews", "shipments", "order_items", "payments",
-                  "orders", "products", "customer_profiles",
-                  "stores", "categories", "users"]:
+    formats = [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+        "%m/%d/%Y",
+        "%m/%d/%Y %H:%M",
+        "%m/%d/%Y %H:%M:%S",
+        "%d-%m-%Y",
+        "%d-%m-%Y %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+        "%m-%d-%y",
+        "%m-%d-%Y",
+        "%Y/%m/%d",
+        "%d.%m.%Y",
+    ]
+    for fmt in formats:
         try:
-            conn.execute(text(f"TRUNCATE TABLE {table}"))
-            print(f"  → {table} temizlendi")
-        except Exception as e:
-            print(f"  ! {table}: {e}")
-    conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
-    conn.commit()
+            return datetime.datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    # Last resort: try to parse ISO-like formats
+    try:
+        return datetime.datetime.fromisoformat(text)
+    except Exception:
+        return None
 
 
-# ============================================================
-#  ADIM 1 — CATEGORIES
-# ============================================================
-log("ADIM 1: Categories yükleniyor...")
-
-categories = pd.DataFrame([
-    {"id": 1,  "name": "Electronics"},
-    {"id": 2,  "name": "Clothing"},
-    {"id": 3,  "name": "Home & Garden"},
-    {"id": 4,  "name": "Books"},
-    {"id": 5,  "name": "Sports"},
-    {"id": 6,  "name": "Beauty"},
-    {"id": 7,  "name": "Toys"},
-    {"id": 8,  "name": "Food"},
-    {"id": 9,  "name": "Automotive"},
-    {"id": 10, "name": "Office"},
-])
-categories["parent_id"] = None
-safe_load(categories, "categories")
+def parse_date(value):
+    dt = parse_datetime(value)
+    return dt.date() if dt else None
 
 
-# ============================================================
-#  ADIM 2 — STORES
-# ============================================================
-log("ADIM 2: Stores yükleniyor...")
-
-stores = pd.DataFrame([
-    {"id": 1, "name": "UCI Global Store", "status": "OPEN", "owner_id": None},
-    {"id": 2, "name": "Amazon US Store",  "status": "OPEN", "owner_id": None},
-    {"id": 3, "name": "Pakistan Store",   "status": "OPEN", "owner_id": None},
-])
-safe_load(stores, "stores")
+def hash_password(password: str) -> str:
+    if bcrypt:
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    return password
 
 
-# ============================================================
-#  ADIM 3 — DS2: USERS ve CUSTOMER_PROFILES
-# ============================================================
-log("ADIM 3: DS2 — Users ve CustomerProfiles yükleniyor...")
-
-# BURAYA EKLENDI: nrows=1000
-df2 = pd.read_csv("data/ds2.csv", nrows=1000)
-df2 = df2.dropna(subset=["Customer ID"]).drop_duplicates(subset=["Customer ID"])
-print(f"  DS2: {len(df2)} satır (Sınırlandırılmış)")
-
-users = pd.DataFrame()
-users["id"]            = (df2["Customer ID"].astype(int) + 10000).astype(int)
-users["email"]         = "user" + df2["Customer ID"].astype(str) + "@datapulse.com"
-users["password_hash"] = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LMTIHLMfGXi"
-users["role_type"]     = "INDIVIDUAL"
-users["gender"]        = df2["Gender"].values
-
-safe_load(users, "users")
-
-profiles = pd.DataFrame()
-profiles["age"]             = pd.to_numeric(df2["Age"], errors="coerce").values
-profiles["city"]            = df2["City"].values
-profiles["membership_type"] = df2["Membership Type"].values
-profiles["user_id"]         = users["id"].values
-
-safe_load(profiles, "customer_profiles")
+def get_database_url() -> str:
+    url = os.environ.get("DATABASE_URL") or os.environ.get("ETL_DATABASE_URL")
+    if url:
+        return url
+    return f"sqlite:///{Path(__file__).resolve().parent/'etl.db'}"
 
 
-# ============================================================
-#  ADIM 4 — DS1: PRODUCTS, ORDERS, ORDER_ITEMS
-# ============================================================
-log("ADIM 4: DS1 — Products, Orders, OrderItems yükleniyor...")
+def read_dataset(file_name: str, delimiter=",", encoding="latin1"):
+    path = DATA_DIR / file_name
+    rows = []
+    with open(path, "r", encoding=encoding, errors="ignore") as fp:
+        reader = csv.reader(fp, delimiter=delimiter)
+        try:
+            header_row = next(reader)
+        except StopIteration:
+            return []
+        header = [normalize_key(col) for col in header_row]
+        for raw_row in reader:
+            if not raw_row or all(not cell.strip() for cell in raw_row):
+                continue
+            row = raw_row
+            if len(row) == len(header) + 1 and row[0].isdigit():
+                row = row[1:]
+            # If the row has fewer values, pad with empty strings.
+            if len(row) < len(header):
+                row = list(row) + [""] * (len(header) - len(row))
+            rows.append({header[i]: row[i].strip() if i < len(row) else "" for i in range(len(header))})
+    return rows
 
-# BURAYA EKLENDI: nrows=1000
-df1 = pd.read_csv("data/ds1.csv", encoding="latin1", nrows=1000)
-print(f"  DS1 ham: {len(df1)} satır (Sınırlandırılmış)")
 
-df1 = df1.dropna(subset=["Invoice", "StockCode"])
-df1 = df1[pd.to_numeric(df1["Quantity"], errors="coerce") > 0]
-df1 = df1[pd.to_numeric(df1["Price"],    errors="coerce") > 0]
-df1["InvoiceDate"] = pd.to_datetime(df1["InvoiceDate"], errors="coerce")
-df1 = df1.dropna(subset=["InvoiceDate"])
-df1["Quantity"] = pd.to_numeric(df1["Quantity"], errors="coerce").fillna(1).astype(int)
-df1["Price"]    = pd.to_numeric(df1["Price"],    errors="coerce").fillna(0)
+def load_users(ds2, ds5, ds1):
+    users = []
+    mapped = {}
 
-products_raw = df1[["StockCode", "Description", "Price"]].drop_duplicates(subset=["StockCode"])
-products_raw = products_raw.dropna(subset=["Description"])
-
-np.random.seed(42)
-products = pd.DataFrame()
-products["id"]             = range(1, len(products_raw) + 1)
-products["sku"]            = products_raw["StockCode"].astype(str).values
-products["name"]           = products_raw["Description"].astype(str).str[:200].values
-products["description"]    = products_raw["Description"].astype(str).values  
-products["unit_price"]     = products_raw["Price"].values
-products["stock_quantity"] = np.random.randint(10, 500, size=len(products))  
-products["category_id"]    = np.random.randint(1, 11, size=len(products))
-products["store_id"]       = 1
-products["icon"]           = None
-
-sku_to_id = dict(zip(products["sku"], products["id"]))
-safe_load(products, "products")
-
-orders_raw = df1.drop_duplicates(subset=["Invoice"])
-orders = pd.DataFrame()
-orders["id"]           = range(1, len(orders_raw) + 1)
-orders["order_number"] = orders_raw["Invoice"].astype(str).values   
-orders["order_date"]   = orders_raw["InvoiceDate"].values            
-orders["grand_total"]  = 0.0
-orders["status"]       = "COMPLETED"
-
-customer_ids = pd.to_numeric(orders_raw["Customer ID"], errors="coerce")
-orders["user_id"]      = (customer_ids + 10000).astype("Int64")
-
-invoice_to_order_id = dict(zip(orders_raw["Invoice"].values, orders["id"].values))
-safe_load(orders, "orders")
-
-order_items = pd.DataFrame()
-order_items["order_id"]   = df1["Invoice"].map(invoice_to_order_id)
-order_items["product_id"] = df1["StockCode"].astype(str).map(sku_to_id)
-order_items["quantity"]   = df1["Quantity"].values
-order_items["price"]      = df1["Price"].values
-order_items = order_items.dropna(subset=["order_id", "product_id"])
-order_items["order_id"]   = order_items["order_id"].astype(int)
-order_items["product_id"] = order_items["product_id"].astype(int)
-
-safe_load(order_items, "order_items")
-
-print("  → Orders grand_total güncelleniyor...")
-with engine.connect() as conn:
-    conn.execute(text("""
-        UPDATE orders o
-        SET grand_total = (
-            SELECT COALESCE(SUM(oi.quantity * oi.price), 0)
-            FROM order_items oi WHERE oi.order_id = o.id
+    def add_user(customer_id, gender, source):
+        if not customer_id:
+            return None
+        key = str(customer_id).strip()
+        if key == "" or key.lower() == "nan":
+            return None
+        if key in mapped:
+            return mapped[key]
+        email = f"customer_{re.sub(r'[^0-9a-zA-Z]', '_', key)}@example.com"
+        gender_text = None
+        if gender:
+            gender_lower = gender.strip().lower()
+            if gender_lower.startswith("m"):
+                gender_text = "Male"
+            elif gender_lower.startswith("f"):
+                gender_text = "Female"
+            else:
+                gender_text = gender.strip()
+        user = User(
+            email=email,
+            password_hash=hash_password("123"),
+            role_type="INDIVIDUAL",
+            gender=gender_text or "Unknown",
         )
-    """))
-    conn.commit()
-print("  → grand_total güncellendi")
+        mapped[key] = user
+        users.append(user)
+        return user
+
+    users.append(User(email="admin@test.com", password_hash=hash_password("123"), role_type="ADMIN", gender="Unknown"))
+    corporate_user = User(email="corporate@test.com", password_hash=hash_password("123"), role_type="CORPORATE", gender="Unknown")
+    users.append(corporate_user)
+
+    for row in ds2:
+        add_user(row.get("customer_id"), row.get("gender"), "ds2")
+        if len(users) >= MAX_ROWS:
+            break
+
+    for row in ds5:
+        add_user(row.get("customer_id"), row.get("gender"), "ds5")
+        if len(users) >= MAX_ROWS:
+            break
+
+    for row in ds1:
+        add_user(row.get("customer_id"), row.get("country"), "ds1")
+        if len(users) >= MAX_ROWS:
+            break
+
+    return users, mapped, corporate_user
 
 
-# ============================================================
-#  ADIM 5 — DS3: SHIPMENTS
-# ============================================================
-log("ADIM 5: DS3 — Shipments yükleniyor...")
-
-# BURAYA EKLENDI: nrows=1000
-df3 = pd.read_csv("data/ds3.csv", nrows=1000)
-df3 = df3.dropna(subset=["ID"]).drop_duplicates(subset=["ID"])
-print(f"  DS3: {len(df3)} satır (Sınırlandırılmış)")
-
-shipments = pd.DataFrame()
-shipments["id"]                 = df3["ID"].astype(int)
-shipments["warehouse_block"]    = df3["Warehouse_block"].values       
-shipments["mode_of_shipment"]   = df3["Mode_of_Shipment"].values      
-shipments["reaching_on_time"]   = pd.to_numeric(
-                                      df3["Reached.on.Time_Y.N"],
-                                      errors="coerce"
-                                  ).fillna(1).astype(int).values      
-shipments["product_importance"] = df3["Product_importance"].values    
-
-safe_load(shipments, "shipments")
+def load_categories(ds4, ds5, ds6):
+    categories = {}
+    def add_category(name):
+        if not name:
+            return
+        key = name.strip().title()
+        if key and key not in categories:
+            categories[key] = Category(name=key)
+    for row in ds4:
+        add_category(row.get("category"))
+        add_category(row.get("product_category"))
+    for row in ds5:
+        add_category(row.get("category_name_1"))
+    for row in ds6:
+        add_category(row.get("product_category"))
+    if not categories:
+        categories["General"] = Category(name="General")
+    return list(categories.values()), categories
 
 
-# ============================================================
-#  ADIM 6 — DS4: ORDERS (Amazon)
-# ============================================================
-log("ADIM 6: DS4 — Amazon Orders yükleniyor...")
-
-# BURAYA EKLENDI: nrows=1000
-df4 = pd.read_csv("data/ds4.csv", encoding="latin1", nrows=1000)
-df4.columns = df4.columns.str.strip()
-df4 = df4.dropna(subset=["Order ID"]).drop_duplicates(subset=["Order ID"])
-df4["Date"] = pd.to_datetime(df4["Date"], errors="coerce")
-print(f"  DS4: {len(df4)} satır (Sınırlandırılmış)")
-
-amazon_orders = pd.DataFrame()
-amazon_orders["id"]           = range(100001, 100001 + len(df4))
-amazon_orders["order_number"] = df4["Order ID"].astype(str).values
-amazon_orders["order_date"]   = df4["Date"].values
-amazon_orders["grand_total"]  = pd.to_numeric(df4["Amount"], errors="coerce").fillna(0).values
-amazon_orders["status"]       = df4["Status"].fillna("COMPLETED").values
-amazon_orders["user_id"]      = None
-
-safe_load(amazon_orders, "orders")
+def load_stores(corporate_user):
+    store = Store(name="Pulse Store", status="Active", owner=corporate_user)
+    return [store]
 
 
-# ============================================================
-#  ADIM 7 — DS5: ORDERS ve PAYMENTS (Pakistan)
-# ============================================================
-log("ADIM 7: DS5 — Pakistan Orders ve Payments yükleniyor...")
-
-# BURAYA EKLENDI: nrows=1000
-df5 = pd.read_csv("data/ds5.csv", encoding="latin1", nrows=1000)
-unnamed_cols = [c for c in df5.columns if "Unnamed" in c]
-df5 = df5.drop(columns=unnamed_cols, errors="ignore")
-df5 = df5.dropna(subset=["increment_id"]).drop_duplicates(subset=["increment_id"])
-df5["created_at"] = pd.to_datetime(df5["created_at"], errors="coerce")
-print(f"  DS5: {len(df5)} satır (Sınırlandırılmış)")
-
-pak_orders = pd.DataFrame()
-pak_orders["id"]           = range(200001, 200001 + len(df5))
-pak_orders["order_number"] = df5["increment_id"].astype(str).values
-pak_orders["order_date"]   = df5["created_at"].values
-pak_orders["grand_total"]  = pd.to_numeric(df5["grand_total"], errors="coerce").fillna(0).values
-pak_orders["status"]       = df5["status"].fillna("COMPLETED").values
-pak_orders["user_id"]      = None
-
-safe_load(pak_orders, "orders")
-
-payments = pd.DataFrame()
-payments["payment_type"]  = df5["payment_method"].fillna("CASH").values  
-payments["payment_value"] = pak_orders["grand_total"].values              
-payments["order_id"]      = pak_orders["id"].values
-
-safe_load(payments, "payments")
+def build_product_sku(row, fallback=None):
+    for key in ("sku", "stockcode", "product_id", "asin", "item_id"):
+        value = row.get(key)
+        if value:
+            return str(value).strip()
+    return str(fallback).strip() if fallback else None
 
 
-# ============================================================
-#  ADIM 8 — DS6: REVIEWS
-# ============================================================
-log("ADIM 8: DS6 — Amazon Reviews yükleniyor...")
+def load_products(ds1, ds4, ds5, ds6, categories, store):
+    products = {}
 
-# DEĞİŞTİRİLDİ: nrows=50000 yerine nrows=1000 yapıldı
-df6 = pd.read_csv("data/ds6.tsv", sep="\t", encoding="utf-8",
-                  nrows=1000, on_bad_lines="skip")
-df6 = df6.dropna(subset=["star_rating"])
-df6["star_rating"] = pd.to_numeric(df6["star_rating"], errors="coerce")
-df6 = df6[df6["star_rating"].between(1, 5)]
-print(f"  DS6: {len(df6)} satır (Sınırlandırılmış)")
+    def add_product(sku, name=None, description=None, price=None, category_name=None):
+        if not sku:
+            return None
+        sku = str(sku).strip()
+        if sku == "" or sku in products or len(products) >= MAX_ROWS:
+            return products.get(sku)
+        category = None
+        if category_name:
+            category = categories.get(str(category_name).strip().title())
+        if not category and categories:
+            category = next(iter(categories.values()))
+        unit_price = parse_decimal(price, default=Decimal("0.0"))
+        quantity = random.randint(5, 200)
+        product = Product(
+            sku=sku,
+            name=str(name or sku)[:255],
+            description=str(description or name or sku)[:1000],
+            unit_price=unit_price,
+            stock_quantity=quantity,
+            category=category,
+            store=store,
+            icon="https://via.placeholder.com/150",
+        )
+        products[sku] = product
+        return product
 
-def sentiment(r):
-    if r >= 4:   return "POSITIVE"
-    elif r == 3: return "NEUTRAL"
-    else:        return "NEGATIVE"
+    for row in ds1:
+        add_product(
+            build_product_sku(row),
+            name=row.get("description"),
+            description=row.get("description"),
+            price=row.get("price") or row.get("unit_price"),
+            category_name=row.get("category"),
+        )
+        if len(products) >= MAX_ROWS:
+            break
 
-reviews = pd.DataFrame()
-reviews["comment"]    = df6["review_body"].fillna("").astype(str).str[:1000].values  
-reviews["rating"]     = df6["star_rating"].astype(int).values                        
-reviews["sentiment"]  = df6["star_rating"].apply(sentiment).values
-reviews["review_date"]       = df6["review_date"].astype(str).values                        
-reviews["product_id"] = None  
+    for row in ds5:
+        add_product(
+            build_product_sku(row),
+            name=row.get("sku"),
+            description=row.get("sku"),
+            price=row.get("price") or row.get("grand_total"),
+            category_name=row.get("category_name_1"),
+        )
+        if len(products) >= MAX_ROWS:
+            break
 
-safe_load(reviews, "reviews")
+    for row in ds6:
+        add_product(
+            build_product_sku(row),
+            name=row.get("product_title"),
+            description=row.get("review_body") or row.get("product_title"),
+            price=row.get("price"),
+            category_name=row.get("product_category"),
+        )
+        if len(products) >= MAX_ROWS:
+            break
+
+    for row in ds4:
+        sku = row.get("sku") or row.get("asin") or ""
+        if not sku and "last_row_values" in row:
+            raw = row["last_row_values"]
+            if len(raw) > 11:
+                sku = raw[11]
+        add_product(
+            sku,
+            name=row.get("style") or row.get("sku"),
+            description=row.get("category"),
+            price=row.get("amount"),
+            category_name=row.get("category"),
+        )
+        if len(products) >= MAX_ROWS:
+            break
+
+    return list(products.values()), products
 
 
-# ============================================================
-#  SONUÇ
-# ============================================================
-log("ETL TAMAMLANDI — Özet")
+def load_shipments(ds3):
+    shipments = []
+    for row in ds3:
+        if len(shipments) >= MAX_ROWS:
+            break
+        shipments.append(
+            Shipment(
+                warehouse_block=row.get("warehouse_block"),
+                mode_of_shipment=row.get("mode_of_shipment") or row.get("mode_of_shipment"),
+                reaching_on_time=parse_int(row.get("reached_on_time_y_n"), default=0),
+                product_importance=row.get("product_importance"),
+            )
+        )
+    if not shipments:
+        shipments.append(Shipment(warehouse_block="A", mode_of_shipment="Road", reaching_on_time=1, product_importance="medium"))
+    return shipments
 
-with engine.connect() as conn:
-    for table in ["categories", "stores", "users", "customer_profiles",
-                  "products", "orders", "order_items",
-                  "shipments", "payments", "reviews"]:
-        try:
-            count = conn.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
-            print(f"  {table:<25} → {count:>8} kayıt")
-        except Exception as e:
-            print(f"  {table:<25} → HATA: {e}")
 
-print("\n  Tüm veriler yüklendi!")
+def load_orders(ds1, ds4, ds5, users_map):
+    orders = {}
+
+    def add_order(key, order_number, order_date, status, total, user_key):
+        if not key or key in orders or len(orders) >= MAX_ROWS:
+            return None
+        user = users_map.get(str(user_key)) or users_map.get(str(user_key).split('.')[0])
+        if not user:
+            user = next(iter(users_map.values()), None)
+        order = Order(
+            order_number=str(order_number)[:255],
+            order_date=parse_datetime(order_date) or datetime.datetime.now(),
+            grand_total=parse_decimal(total, default=Decimal("0.0")),
+            status=str(status or "Completed")[:255],
+            user=user,
+        )
+        orders[key] = order
+        return order
+
+    invoices = {}
+    for row in ds1:
+        invoice = row.get("invoice") or row.get("order")
+        if not invoice:
+            continue
+        invoices.setdefault(invoice, []).append(row)
+    for invoice, rows in invoices.items():
+        if len(orders) >= MAX_ROWS:
+            break
+        total = Decimal("0.0")
+        for row in rows:
+            total += parse_decimal(row.get("price"), default=Decimal("0.0")) * Decimal(parse_int(row.get("quantity"), default=1))
+        status = "Cancelled" if str(invoice).upper().startswith("C") else "Completed"
+        add_order(invoice, invoice, rows[0].get("invoice_date"), status, total, rows[0].get("customer_id"))
+
+    for row in ds5:
+        order_key = row.get("increment_id") or row.get("item_id")
+        if not order_key or order_key in orders or len(orders) >= MAX_ROWS:
+            continue
+        status = row.get("status") or "Completed"
+        order_date = row.get("created_at") or row.get("working_date")
+        total = row.get("grand_total") or row.get("price")
+        add_order(order_key, order_key, order_date, status, total, row.get("customer_id"))
+
+    for row in ds4:
+        order_key = row.get("courindex") or row.get("order_id")
+        if not order_key or order_key in orders or len(orders) >= MAX_ROWS:
+            continue
+        status = row.get("status") or "Completed"
+        order_date = row.get("date") or row.get("order_date")
+        total = row.get("amount")
+        add_order(order_key, order_key, order_date, status, total, row.get("customer_id") or row.get("customer_id"))
+
+    return list(orders.values()), orders
+
+
+def load_order_items(ds1, ds5, orders_map, products_map):
+    order_items = []
+
+    def add_item(order_key, product_sku, quantity, price):
+        if len(order_items) >= MAX_ROWS:
+            return
+        order = orders_map.get(order_key)
+        product = products_map.get(str(product_sku).strip())
+        if not order or not product:
+            return
+        order_items.append(
+            OrderItem(
+                order=order,
+                product=product,
+                quantity=parse_int(quantity, default=1),
+                price=parse_decimal(price, default=Decimal("0.0")),
+            )
+        )
+
+    for row in ds1:
+        invoice = row.get("invoice")
+        if invoice:
+            add_item(invoice, row.get("stockcode"), row.get("quantity"), row.get("price"))
+    for row in ds5:
+        order_key = row.get("increment_id") or row.get("item_id")
+        add_item(order_key, row.get("sku"), row.get("qty_ordered"), row.get("price"))
+    return order_items
+
+
+def load_payments(ds5, orders_map):
+    payments = []
+    seen_orders = set()
+    for row in ds5:
+        if len(payments) >= MAX_ROWS:
+            break
+        order_key = row.get("increment_id") or row.get("item_id")
+        if not order_key or order_key in seen_orders:
+            continue
+        order = orders_map.get(order_key)
+        if not order:
+            continue
+        payments.append(
+            Payment(
+                payment_type=row.get("payment_method") or "unknown",
+                payment_value=parse_decimal(row.get("grand_total") or row.get("price"), default=Decimal("0.0")),
+                order=order,
+            )
+        )
+        seen_orders.add(order_key)
+    return payments
+
+
+def load_reviews(ds6, products_map):
+    reviews = []
+    for row in ds6:
+        if len(reviews) >= MAX_ROWS:
+            break
+        product = products_map.get(str(row.get("product_id")).strip())
+        if not product:
+            product = next(iter(products_map.values()), None)
+        if not product:
+            continue
+        rating = parse_int(row.get("star_rating"), default=0)
+        sentiment = "Positive" if rating >= 4 else "Neutral" if rating == 3 else "Negative"
+        reviews.append(
+            Review(
+                comment=row.get("review_body") or row.get("review_headline"),
+                rating=rating,
+                sentiment=sentiment,
+                date=parse_date(row.get("review_date")) or datetime.date.today(),
+                product=product,
+            )
+        )
+    return reviews
+
+
+def load_customer_profiles(ds2, users_map):
+    profiles = []
+    for row in ds2:
+        if len(profiles) >= MAX_ROWS:
+            break
+        customer_id = str(row.get("customer_id") or "").strip()
+        user = users_map.get(customer_id)
+        if not user:
+            continue
+        profiles.append(
+            CustomerProfile(
+                age=parse_int(row.get("age")),
+                city=row.get("city"),
+                membership_type=row.get("membership_type"),
+                user=user,
+            )
+        )
+    return profiles
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role_type = Column(String(50), nullable=False)
+    gender = Column(String(50))
+    profile = relationship("CustomerProfile", back_populates="user", uselist=False)
+    stores = relationship("Store", back_populates="owner")
+    orders = relationship("Order", back_populates="user")
+
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), unique=True, nullable=False)
+    parent_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    products = relationship("Product", back_populates="category")
+
+
+class Store(Base):
+    __tablename__ = "stores"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    status = Column(String(50))
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("User", back_populates="stores")
+    products = relationship("Product", back_populates="store")
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True)
+    sku = Column(String(255), unique=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    unit_price = Column(Numeric(12, 2), nullable=False)
+    stock_quantity = Column(Integer)
+    category_id = Column(Integer, ForeignKey("categories.id"))
+    store_id = Column(Integer, ForeignKey("stores.id"))
+    icon = Column(String(1024))
+    category = relationship("Category", back_populates="products")
+    store = relationship("Store", back_populates="products")
+    reviews = relationship("Review", back_populates="product")
+
+
+class Shipment(Base):
+    __tablename__ = "shipments"
+
+    id = Column(Integer, primary_key=True)
+    warehouse_block = Column(String(50))
+    mode_of_shipment = Column(String(100))
+    reaching_on_time = Column(Integer)
+    product_importance = Column(String(50))
+    order = relationship("Order", back_populates="shipment", uselist=False)
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_key=True)
+    order_number = Column(String(255))
+    order_date = Column(DateTime)
+    grand_total = Column(Numeric(12, 2))
+    status = Column(String(255))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    shipment_id = Column(Integer, ForeignKey("shipments.id"))
+    user = relationship("User", back_populates="orders")
+    shipment = relationship("Shipment", back_populates="order")
+    items = relationship("OrderItem", back_populates="order")
+    payments = relationship("Payment", back_populates="order")
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(Integer, primary_key=True)
+    order_id = Column(Integer, ForeignKey("orders.id"))
+    product_id = Column(Integer, ForeignKey("products.id"))
+    quantity = Column(Integer)
+    price = Column(Numeric(12, 2), nullable=False)
+    order = relationship("Order", back_populates="items")
+    product = relationship("Product")
+
+
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True)
+    payment_type = Column(String(255))
+    payment_value = Column(Numeric(12, 2))
+    order_id = Column(Integer, ForeignKey("orders.id"))
+    order = relationship("Order", back_populates="payments")
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id = Column(Integer, primary_key=True)
+    comment = Column(Text)
+    rating = Column(Integer)
+    sentiment = Column(String(50))
+    date = Column(Date)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Product", back_populates="reviews")
+
+
+class CustomerProfile(Base):
+    __tablename__ = "customer_profiles"
+
+    id = Column(Integer, primary_key=True)
+    age = Column(Integer)
+    city = Column(String(255))
+    membership_type = Column(String(255))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="profile")
+
+
+def assign_shipments_to_orders(orders, shipments):
+    for i, order in enumerate(orders):
+        if i < len(shipments):
+            order.shipment = shipments[i]
+
+
+def main():
+    engine = create_engine(get_database_url(), echo=False, future=True)
+    Session = sessionmaker(bind=engine)
+    Base.metadata.create_all(engine)
+
+    ds1 = read_dataset("ds1.csv", delimiter=",")
+    ds2 = read_dataset("ds2.csv", delimiter=",")
+    ds3 = read_dataset("ds3.csv", delimiter=",")
+    ds4 = read_dataset("ds4.csv", delimiter=",")
+    ds5 = read_dataset("ds5.csv", delimiter=",")
+    ds6 = read_dataset("ds6.tsv", delimiter="\t")
+
+    users, users_map, corporate_user = load_users(ds2, ds5, ds1)
+    categories, categories_map = load_categories(ds4, ds5, ds6)
+    stores = load_stores(corporate_user)
+    products, products_map = load_products(ds1, ds4, ds5, ds6, categories_map, stores[0])
+    shipments = load_shipments(ds3)
+    orders, orders_map = load_orders(ds1, ds4, ds5, users_map)
+    order_items = load_order_items(ds1, ds5, orders_map, products_map)
+    payments = load_payments(ds5, orders_map)
+    reviews = load_reviews(ds6, products_map)
+    profiles = load_customer_profiles(ds2, users_map)
+
+    assign_shipments_to_orders(orders, shipments)
+
+    with Session() as session:
+        session.add_all(users)
+        session.add_all(categories)
+        session.add_all(stores)
+        session.add_all(products)
+        session.add_all(shipments)
+        session.add_all(orders)
+        session.add_all(order_items)
+        session.add_all(payments)
+        session.add_all(reviews)
+        session.add_all(profiles)
+        session.commit()
+
+    print("ETL tamamlandı. Tablo satırları: ")
+    print(f"users={min(len(users), MAX_ROWS)}")
+    print(f"categories={len(categories)}")
+    print(f"stores={len(stores)}")
+    print(f"products={min(len(products), MAX_ROWS)}")
+    print(f"shipments={min(len(shipments), MAX_ROWS)}")
+    print(f"orders={min(len(orders), MAX_ROWS)}")
+    print(f"order_items={min(len(order_items), MAX_ROWS)}")
+    print(f"payments={min(len(payments), MAX_ROWS)}")
+    print(f"reviews={min(len(reviews), MAX_ROWS)}")
+    print(f"customer_profiles={min(len(profiles), MAX_ROWS)}")
+
+
+if __name__ == "__main__":
+    main()

@@ -3,19 +3,18 @@ package com.datapulse.backend.dto;
 public class AuthResponse {
     private String token;
     private String refreshToken;
-    private String role;
+    private String roleType;
 
-    public AuthResponse(String token, String refreshToken, String role) {
+    public AuthResponse(String token, String refreshToken, String roleType) {
         this.token = token;
         this.refreshToken = refreshToken;
-        this.role = role;
+        this.roleType = roleType;
     }
 
-    // Getter ve Setter'lar
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }
     public String getRefreshToken() { return refreshToken; }
     public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    public String getRoleType() { return roleType; }
+    public void setRoleType(String roleType) { this.roleType = roleType; }
 }
