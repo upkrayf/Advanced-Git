@@ -1,7 +1,6 @@
 package com.datapulse.backend.controller;
 
 import com.datapulse.backend.dto.AuthResponse;
-import com.datapulse.backend.dto.AuthResponse;
 import com.datapulse.backend.dto.LoginRequest;
 import com.datapulse.backend.dto.RefreshTokenRequest;
 import com.datapulse.backend.dto.RegisterRequest;

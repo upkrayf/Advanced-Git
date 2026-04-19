@@ -5,8 +5,6 @@ import com.datapulse.backend.entity.User;
 import com.datapulse.backend.repository.OrderRepository;
 import com.datapulse.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 import java.util.List;
 
 @Service

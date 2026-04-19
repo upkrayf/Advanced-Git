@@ -2,7 +2,6 @@ package com.datapulse.backend.service;
 
 import com.datapulse.backend.config.JwtUtil;
 import com.datapulse.backend.dto.AuthResponse;
-import com.datapulse.backend.dto.AuthResponse;
 import com.datapulse.backend.dto.LoginRequest;
 import com.datapulse.backend.dto.RefreshTokenRequest;
 import com.datapulse.backend.dto.RegisterRequest;

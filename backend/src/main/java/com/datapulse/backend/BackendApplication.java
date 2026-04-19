@@ -39,7 +39,7 @@ public class BackendApplication {
             ProductRepository productRepository
     ) {
         return args -> {
-            if (userRepository.count() == 0) {
+            if (userRepository.findByEmail("admin@test.com").isEmpty()) {
                 User admin = new User("admin@test.com", passwordEncoder.encode("123"), "ADMIN", "Male");
                 User corporate = new User("corporate@test.com", passwordEncoder.encode("123"), "CORPORATE", "Female");
                 User individual = new User("individual@test.com", passwordEncoder.encode("123"), "INDIVIDUAL", "Male");
@@ -60,7 +60,7 @@ public class BackendApplication {
                         return storeRepository.save(store);
                     });
 
-            if (productRepository.count() == 0) {
+            if (productRepository.findBySku("SP100").isEmpty()) {
                 Product p1 = new Product();
                 p1.setSku("SP100");
                 p1.setName("Smartphone Pro");
