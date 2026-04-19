@@ -1,0 +1,94 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Hoş Geldin, {{ userName }}! 👋</h1>
+        <p class="page-sub">Alışveriş panelinize genel bakış</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-primary" routerLink="/individual/shop">🛍️ Alışverişe Devam</button>
+      </div>
+    </div>
+ 
+    <!-- KPIs -->
+    <div class="kpi-grid" *ngIf="stats">
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Harcama</div>
+        <div class="kpi-value">{{ formatCurrency(stats.totalSpent) }}</div>
+        <span class="kpi-badge badge-green">Tüm zamanlar</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Aktif Siparişler</div>
+        <div class="kpi-value">{{ stats.activeOrders }}</div>
+        <span class="kpi-badge badge-amber">Kargo yolunda</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Sipariş</div>
+        <div class="kpi-value">{{ stats.totalOrders }}</div>
+        <span class="kpi-badge badge-green">Tüm zamanlar</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bekleyen Yorumlar</div>
+        <div class="kpi-value">{{ stats.pendingReviews }}</div>
+        <span class="kpi-badge" style="background:#2e2e48; color:#9a9ab0;">Değerlendirme bekliyor</span>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Spending Chart -->
+      <div class="card">
+        <div class="card-title">Kategori Bazlı Harcama</div>
+        <div style="display:flex; align-items:flex-end; gap:8px; height:120px; padding:8px 0;">
+          <div *ngFor="let cat of spendingByCategory" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
+            <div style="font-size:10px; color:#7a7a9a; margin-bottom:3px;">${{ (cat.amount / 1000).toFixed(1) }}K</div>
+            <div class="bar" [style.height]="getBarHeight(cat.amount)" style="background: linear-gradient(180deg,#6c63ff,#534ab7); width:100%; border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:9px; color:#4a4a6a; margin-top:3px; text-align:center; overflow:hidden; max-width:40px; white-space:nowrap; text-overflow:ellipsis;">{{ cat.categoryName }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Shipments -->
+      <div class="card">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          Kargo Durumum
+          <a routerLink="/individual/shipment-tracking" style="font-size:11px; color:#6c63ff; text-decoration:none;">Tümü →</a>
+        </div>
+        <div *ngFor="let s of activeShipments" class="activity-item">
+          <div class="activity-dot" [style.background]="s.status === 'DELIVERED' ? '#1d9e75' : s.status === 'SHIPPED' ? '#ba7517' : '#6c63ff'"></div>
+          <span class="activity-text">#{{ s.orderId }} — {{ s.carrier || '' }}</span>
+          <span class="activity-time">{{ getShipStatusLabel(s.status) }}</span>
+        </div>
+        <div *ngIf="!activeShipments.length" style="text-align:center; color:#4a4a6a; font-size:12px; padding:1rem;">Aktif kargo yok.</div>
+      </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        Son Siparişlerim
+        <a routerLink="/individual/orders" style="font-size:11px; color:#6c63ff; text-decoration:none;">Tümü →</a>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Sipariş No</th><th>Mağaza</th><th>Tutar</th><th>Tarih</th><th>Durum</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let o of recentOrders" style="cursor:pointer;" routerLink="/individual/orders/{{ o.id }}">
+            <td style="color:#6c63ff;">#{{ o.id }}</td>
+            <td style="color:#f0f0f5;">{{ o.storeName || '-' }}</td>
+            <td>{{ formatCurrency(o.totalAmount) }}</td>
+            <td style="color:#7a7a9a; font-size:11px;">{{ o.createdAt | slice:0:10 }}</td>
+            <td><span class="status-pill" [class]="getStatusClass(o.status)">{{ getStatusLabel(o.status) }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- AI Chat -->
+    <div class="card">
+      <div class="card-title">AI Alışveriş Asistanı</div>
+      <app-ai-chat />
+    </div>
+
+  </div>
+</div>

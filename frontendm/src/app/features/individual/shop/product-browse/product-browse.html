@@ -1,0 +1,86 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Ürünler</h1>
+        <p class="page-sub">{{ totalElements }} ürün listeleniyor</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" routerLink="/individual/cart">🛒 Sepet</button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px; flex-wrap:wrap;">
+      <input type="text" [(ngModel)]="search" placeholder="Ürün ara..." (keyup.enter)="onSearch()"
+        style="flex:2; min-width:160px; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
+      <select [(ngModel)]="selectedCategory" (change)="onSearch()"
+        style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#9a9ab0; font-size:12px; cursor:pointer;">
+        <option [value]="0">Tüm Kategoriler</option>
+        <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+      </select>
+      <select [(ngModel)]="sortBy"
+        style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#9a9ab0; font-size:12px; cursor:pointer;">
+        <option value="rating">Önce En Çok Puan Alan</option>
+        <option value="price_asc">Önce En Ucuz</option>
+        <option value="price_desc">Önce En Pahalı</option>
+      </select>
+      <button class="btn-outline" (click)="onSearch()">🔍 Ara</button>
+    </div>
+
+    <!-- Cart Success Toast -->
+    <div *ngIf="cartSuccess" style="position:fixed; top:1rem; right:1rem; background:#1a2e1a; border:0.5px solid #1d9e75; border-radius:8px; padding:10px 16px; color:#1d9e75; font-size:12px; z-index:100;">
+      ✓ {{ cartSuccess }} sepete eklendi
+    </div>
+
+    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:3rem;">Yükleniyor…</div>
+
+    <!-- Product Grid -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px;" *ngIf="!loading">
+      <div *ngFor="let p of sortedProducts"
+        class="card" style="cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; position:relative; overflow:hidden;"
+        onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(108,99,255,0.2)'"
+        onmouseleave="this.style.transform=''; this.style.boxShadow=''">
+
+        <div style="height:140px; background:#12121a; border-radius:6px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; overflow:hidden;" routerLink="/individual/shop/{{ p.id }}">
+          <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.name" style="max-height:100%; max-width:100%; object-fit:contain;" onerror="this.style.opacity='0'" />
+          <span *ngIf="!p.imageUrl" style="font-size:40px; opacity:0.3;">📦</span>
+        </div>
+
+        <div routerLink="/individual/shop/{{ p.id }}">
+          <div style="font-size:13px; font-weight:500; color:#f0f0f5; margin-bottom:4px; line-height:1.3;">{{ p.name }}</div>
+          <div style="font-size:11px; color:#4a4a6a; margin-bottom:6px;">{{ p.categoryName }}</div>
+
+          <div style="display:flex; align-items:center; gap:4px; margin-bottom:8px;">
+            <span style="color:#f0c000; font-size:12px;">
+              <span *ngFor="let s of getStars(p.rating || 0)">{{ s <= (p.rating || 0) ? '★' : '☆' }}</span>
+            </span>
+            <span style="font-size:11px; color:#4a4a6a;">({{ p.reviewCount || 0 }})</span>
+          </div>
+
+          <div style="font-size:16px; font-weight:600; color:#1d9e75; margin-bottom:10px;">{{ formatCurrency(p.price) }}</div>
+        </div>
+
+        <div style="display:flex; gap:6px;">
+          <button class="btn-outline" style="flex:1; font-size:11px;" routerLink="/individual/shop/{{ p.id }}">Detay</button>
+          <button class="btn-primary" style="flex:1; font-size:11px;" (click)="addToCart(p, $event)" [disabled]="(p.stock || 0) === 0">
+            {{ (p.stock || 0) === 0 ? 'Tükendi' : '🛒 Ekle' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Load More -->
+    <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-top:1.5rem;" *ngIf="totalPages > 1">
+      <span style="font-size:12px; color:#7a7a9a;">{{ products.length }} / {{ totalElements }} ürün yüklendi</span>
+      <button class="btn-outline" (click)="loadMore()" [disabled]="loadingMore || page >= totalPages - 1" style="min-width:180px;">
+        <ng-container *ngIf="!loadingMore">Daha fazla göster</ng-container>
+        <ng-container *ngIf="loadingMore">Yükleniyor...</ng-container>
+      </button>
+    </div>
+
+  </div>
+</div>
