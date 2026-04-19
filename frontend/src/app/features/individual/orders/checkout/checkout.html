@@ -1,0 +1,57 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Ödeme</h1>
+        <p class="page-sub">Siparişini tamamla</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" routerLink="/individual/cart">← Sepete Dön</button>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div *ngIf="success" class="card" style="text-align:center; padding:3rem;">
+      <div style="font-size:48px; margin-bottom:12px;">✅</div>
+      <div style="font-size:18px; color:#1d9e75; margin-bottom:8px;">Siparişiniz Alındı!</div>
+      <div style="font-size:13px; color:#7a7a9a;">Siparişlerim sayfasına yönlendiriliyorsunuz…</div>
+    </div>
+
+    <div *ngIf="!success" class="grid-2">
+      <!-- Form -->
+      <div class="card">
+        <div class="card-title">Teslimat Adresi</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <input type="text" [(ngModel)]="address" placeholder="Mahalle, Cadde, Sokak, No *"
+            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px;">
+            <input type="text" [(ngModel)]="city" placeholder="Şehir *"
+              style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
+            <input type="text" [(ngModel)]="postalCode" placeholder="Posta Kodu"
+              style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
+          </div>
+          <div *ngIf="error" style="color:#e24b4a; font-size:12px;">{{ error }}</div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="card">
+        <div class="card-title">Sipariş Özeti</div>
+        <div *ngFor="let item of items" class="activity-item">
+          <span class="activity-text">{{ item.product.name }} x{{ item.quantity }}</span>
+          <span class="activity-time">{{ formatCurrency(item.product.price * item.quantity) }}</span>
+        </div>
+        <div style="border-top:0.5px solid #2e2e3e; padding-top:12px; margin-top:8px; display:flex; justify-content:space-between; font-size:16px; font-weight:600; color:#1d9e75;">
+          <span>Toplam</span>
+          <span>{{ formatCurrency(total) }}</span>
+        </div>
+        <button class="btn-primary" (click)="placeOrder()" [disabled]="loading" style="width:100%; margin-top:16px; padding:12px; font-size:14px;">
+          {{ loading ? 'İşleniyor…' : '✓ Siparişi Tamamla' }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

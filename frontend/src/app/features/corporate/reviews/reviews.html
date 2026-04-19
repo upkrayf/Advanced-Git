@@ -1,0 +1,58 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Yorumlar</h1>
+        <p class="page-sub">Ortalama puan: {{ avgRating.toFixed(1) }} / 5 ⭐ — {{ reviews.length }} yorum</p>
+      </div>
+    </div>
+
+    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:3rem;">Yükleniyor…</div>
+
+    <div *ngIf="!loading">
+      <div *ngFor="let r of reviews" class="card" style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div>
+            <div style="font-weight:500; color:#f0f0f5;">{{ r.productName }}</div>
+            <div style="font-size:11px; color:#4a4a6a;">{{ r.userName }} — {{ r.createdAt | slice:0:10 }}</div>
+          </div>
+          <div style="color:#f0c000; font-size:16px;">
+            <span *ngFor="let s of getStars(r.rating)">{{ s <= r.rating ? '★' : '☆' }}</span>
+          </div>
+        </div>
+
+        <div style="font-size:13px; color:#c0c0d0; margin-bottom:8px;">{{ r.comment }}</div>
+
+        <div *ngIf="r.storeResponse" style="background:#1a2e1a; border-radius:6px; padding:10px 12px; font-size:12px; color:#1d9e75; margin-bottom:8px;">
+          <strong>Mağaza Yanıtı:</strong> {{ r.storeResponse }}
+        </div>
+
+        <div *ngIf="respondingTo !== r.id && !r.storeResponse">
+          <button class="btn-outline" (click)="respond(r.id)" style="font-size:11px;">💬 Yanıtla</button>
+        </div>
+
+        <div *ngIf="respondingTo === r.id" style="display:flex; gap:8px; margin-top:6px;">
+          <input type="text" [(ngModel)]="responseText" placeholder="Yanıtınızı yazın..."
+            style="flex:1; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
+          <button class="btn-primary" (click)="submitResponse()" style="font-size:11px;">Gönder</button>
+          <button class="btn-outline" (click)="respondingTo = null" style="font-size:11px;">İptal</button>
+        </div>
+      </div>
+
+      <div *ngIf="!reviews.length" style="text-align:center; color:#4a4a6a; font-size:13px; padding:3rem;">
+        Henüz yorum yok.
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#7a7a9a; margin-top:1rem;" *ngIf="totalPages > 1">
+        <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>
+          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()">Sonraki →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

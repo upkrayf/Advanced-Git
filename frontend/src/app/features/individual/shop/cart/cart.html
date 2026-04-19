@@ -1,0 +1,65 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Sepetim</h1>
+        <p class="page-sub">{{ itemCount }} ürün</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" (click)="clearCart()" *ngIf="items.length > 0">🗑 Sepeti Temizle</button>
+        <button class="btn-primary" routerLink="/individual/checkout" *ngIf="items.length > 0">Ödemeye Geç →</button>
+      </div>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!items.length" class="card" style="text-align:center; padding:3rem;">
+      <div style="font-size:48px; margin-bottom:16px;">🛒</div>
+      <div style="font-size:16px; color:#7a7a9a; margin-bottom:16px;">Sepetiniz boş</div>
+      <button class="btn-primary" routerLink="/individual/shop">Alışverişe Başla</button>
+    </div>
+
+    <!-- Cart Items -->
+    <div *ngIf="items.length">
+      <div *ngFor="let item of items" class="card" style="margin-bottom:8px; display:flex; align-items:center; gap:16px;">
+        <div style="width:60px; height:60px; background:#12121a; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+          <img *ngIf="item.product.imageUrl" [src]="item.product.imageUrl" style="max-height:100%; max-width:100%;" onerror="this.style.opacity='0'" />
+          <span *ngIf="!item.product.imageUrl" style="font-size:24px; opacity:0.3;">📦</span>
+        </div>
+
+        <div style="flex:1;">
+          <div style="font-weight:500; color:#f0f0f5; font-size:14px;">{{ item.product.name }}</div>
+          <div style="font-size:11px; color:#4a4a6a;">{{ item.product.categoryName }}</div>
+        </div>
+
+        <div style="font-size:14px; color:#1d9e75; font-weight:500; min-width:80px; text-align:right;">
+          {{ formatCurrency(item.product.price) }}
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button class="btn-outline" (click)="updateQty(item.product.id, item.quantity - 1)" style="padding:4px 8px; font-size:12px;">−</button>
+          <span style="min-width:24px; text-align:center; color:#f0f0f5;">{{ item.quantity }}</span>
+          <button class="btn-outline" (click)="updateQty(item.product.id, item.quantity + 1)" style="padding:4px 8px; font-size:12px;">+</button>
+        </div>
+
+        <div style="font-size:14px; color:#f0f0f5; font-weight:600; min-width:90px; text-align:right;">
+          {{ formatCurrency(item.product.price * item.quantity) }}
+        </div>
+
+        <button class="btn-outline" (click)="removeItem(item.product.id)" style="color:#e24b4a; border-color:#3d1515; font-size:12px;">✕</button>
+      </div>
+
+      <!-- Total -->
+      <div class="card" style="margin-top:1rem; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:14px; color:#7a7a9a;">Toplam ({{ itemCount }} ürün):</span>
+        <span style="font-size:22px; font-weight:700; color:#1d9e75;">{{ formatCurrency(total) }}</span>
+      </div>
+
+      <div style="text-align:right; margin-top:12px;">
+        <button class="btn-primary" routerLink="/individual/checkout" style="padding:12px 32px; font-size:14px;">Ödemeye Geç →</button>
+      </div>
+    </div>
+
+  </div>
+</div>

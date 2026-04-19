@@ -1,0 +1,91 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Mağaza Analitik</h1>
+        <p class="page-sub">Satış ve performans metrikleri</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" [class.btn-primary]="period === 'daily'" (click)="changePeriod('daily')">Günlük</button>
+        <button class="btn-outline" [class.btn-primary]="period === 'monthly'" (click)="changePeriod('monthly')">Aylık</button>
+        <button class="btn-outline" [class.btn-primary]="period === 'yearly'" (click)="changePeriod('yearly')">Yıllık</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" *ngIf="kpis">
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Gelir</div>
+        <div class="kpi-value">{{ formatCurrency(kpis.totalRevenue) }}</div>
+        <span class="kpi-badge badge-green">Tüm zamanlar</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bugünkü Siparişler</div>
+        <div class="kpi-value">{{ kpis.ordersToday }}</div>
+        <span class="kpi-badge badge-green">Sipariş</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Ort. Sipariş Değeri</div>
+        <div class="kpi-value">{{ formatCurrency(kpis.avgOrderValue) }}</div>
+        <span class="kpi-badge badge-green">AOV</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Ürün</div>
+        <div class="kpi-value">{{ kpis.totalProducts }}</div>
+        <span class="kpi-badge" [class.badge-red]="kpis.lowStockItems > 0" [class.badge-green]="!kpis.lowStockItems">{{ kpis.lowStockItems }} düşük stok</span>
+      </div>
+    </div>
+
+    <!-- Revenue -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Gelir Trendi</div>
+      <div style="display:flex; align-items:flex-end; gap:8px; height:150px; padding:8px 0;">
+        <div *ngFor="let bar of revenueData" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
+          <div style="font-size:10px; color:#7a7a9a; margin-bottom:4px;">${{ (bar.value / 1000).toFixed(0) }}K</div>
+          <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: linear-gradient(180deg,#1d9e75,#0f7a5a); width:100%; border-radius:3px 3px 0 0;"></div>
+          <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.label }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Top Products -->
+      <div class="card">
+        <div class="card-title">En Çok Satan Ürünler</div>
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Ürün</th><th>Satış</th><th>Gelir</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let p of topProducts; let i = index">
+              <td style="color:#6c63ff;">{{ i + 1 }}</td>
+              <td style="color:#f0f0f5;">{{ p.productName }}</td>
+              <td>{{ p.totalSold }}</td>
+              <td style="color:#1d9e75;">{{ formatCurrency(p.revenue) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Category + Order Status -->
+      <div class="card">
+        <div class="card-title">Sipariş Durumları</div>
+        <div *ngFor="let s of orderStatus" style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span style="color:#c0c0d0;">{{ s.status }}</span>
+            <span style="color:#7a7a9a;">{{ s.count | number }}</span>
+          </div>
+          <div style="height:5px; background:#1a1a24; border-radius:3px; overflow:hidden;">
+            <div [style.width]="'60%'" [style.background]="getStatusColor(s.status)" style="height:100%; border-radius:3px;"></div>
+          </div>
+        </div>
+        <div class="card-title" style="margin-top:1rem;">Kategori Dağılımı</div>
+        <div *ngFor="let cat of categorySales" class="activity-item">
+          <span class="activity-text">{{ cat.categoryName }}</span>
+          <span style="color:#6c63ff;">{{ cat.percentage.toFixed(1) }}%</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,174 @@
+
+> aap@0.0.0 build
+> ng build
+
+❯ Building...
+✔ Building...
+Application bundle generation failed. [1.224 seconds] - 2026-04-19T08:37:07.157Z
+
+▲ [WARNING] NG8107: NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. Find more at https://v21.angular.dev/extended-diagnostics/NG8107 [plugin angular-compiler]
+
+    src/app/features/individual/profile/profile.html:27:24:
+      27 │           {{ user.name?.charAt(0)?.toUpperCase() }}
+         ╵                         ~~~~~~
+
+  Warning occurs in the template of component Profile.
+
+    src/app/features/individual/profile/profile.ts:13:15:
+      13 │   templateUrl: './profile.html',
+         ╵                ~~~~~~~~~~~~~~~~
+
+
+✘ [ERROR] TS2367: This comparison appears to be unintentional because the types '"ADMIN"' and '"CORPORATE"' have no overlap. [plugin angular-compiler]
+
+    src/app/features/admin/dashboard/dashboard.html:116:62:
+      116 │ ...lass.pill-amber]="u.roleType === 'CORPORATE'" [class.pill-gree...
+          ╵                      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component AdminDashboard.
+
+    src/app/features/admin/dashboard/dashboard.ts:14:15:
+      14 │   templateUrl: './dashboard.html',
+         ╵                ~~~~~~~~~~~~~~~~~~
+
+
+✘ [ERROR] TS2367: This comparison appears to be unintentional because the types '"ADMIN"' and '"INDIVIDUAL"' have no overlap. [plugin angular-compiler]
+
+    src/app/features/admin/dashboard/dashboard.html:116:110:
+      116 │ ...lass.pill-green]="u.roleType === 'INDIVIDUAL'" style="backgrou...
+          ╵                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component AdminDashboard.
+
+    src/app/features/admin/dashboard/dashboard.ts:14:15:
+      14 │   templateUrl: './dashboard.html',
+         ╵                ~~~~~~~~~~~~~~~~~~
+
+
+✘ [ERROR] TS2741: Property 'description' is missing in type '{ id: number; name: string; price: number; stock: number; categoryName: string; }' but required in type 'ProductModel'. [plugin angular-compiler]
+
+    src/app/features/corporate/inventory/inventory.ts:33:10:
+      33 │           { id: 1, name: 'iPhone 15 Pro', price: 1199, stock: 24, ...
+         ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  'description' is declared here.
+
+    src/app/core/models/product.model.ts:4:2:
+      4 │   description: string;
+        ╵   ~~~~~~~~~~~
+
+
+✘ [ERROR] TS2741: Property 'description' is missing in type '{ id: number; name: string; price: number; stock: number; categoryName: string; }' but required in type 'ProductModel'. [plugin angular-compiler]
+
+    src/app/features/corporate/inventory/inventory.ts:34:10:
+      34 │           { id: 2, name: 'AirPods Pro', price: 249, stock: 8, cate...
+         ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  'description' is declared here.
+
+    src/app/core/models/product.model.ts:4:2:
+      4 │   description: string;
+        ╵   ~~~~~~~~~~~
+
+
+✘ [ERROR] TS2741: Property 'description' is missing in type '{ id: number; name: string; price: number; stock: number; categoryName: string; }' but required in type 'ProductModel'. [plugin angular-compiler]
+
+    src/app/features/corporate/inventory/inventory.ts:35:10:
+      35 │           { id: 3, name: 'iPad Air', price: 799, stock: 2, categor...
+         ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  'description' is declared here.
+
+    src/app/core/models/product.model.ts:4:2:
+      4 │   description: string;
+        ╵   ~~~~~~~~~~~
+
+
+✘ [ERROR] TS2741: Property 'description' is missing in type '{ id: number; name: string; price: number; stock: number; categoryName: string; }' but required in type 'ProductModel'. [plugin angular-compiler]
+
+    src/app/features/corporate/inventory/inventory.ts:36:10:
+      36 │           { id: 4, name: 'MacBook Air', price: 1299, stock: 0, cat...
+         ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  'description' is declared here.
+
+    src/app/core/models/product.model.ts:4:2:
+      4 │   description: string;
+        ╵   ~~~~~~~~~~~
+
+
+✘ [ERROR] TS2741: Property 'description' is missing in type '{ id: number; name: string; price: number; stock: number; categoryName: string; }' but required in type 'ProductModel'. [plugin angular-compiler]
+
+    src/app/features/corporate/inventory/inventory.ts:37:10:
+      37 │           { id: 5, name: 'Samsung 4K TV', price: 899, stock: 12, c...
+         ╵           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  'description' is declared here.
+
+    src/app/core/models/product.model.ts:4:2:
+      4 │   description: string;
+        ╵   ~~~~~~~~~~~
+
+
+✘ [ERROR] NG8002: Can't bind to 'ngModel' since it isn't a known property of 'input'. [plugin angular-compiler]
+
+    src/app/features/corporate/products/product-detail/product-detail.html:54:33:
+      54 │ ...input type="text" [(ngModel)]="reviewResponse" placeholder="Yan...
+         ╵                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component CorporateProductDetail.
+
+    src/app/features/corporate/products/product-detail/product-detail.ts:14:15:
+      14 │   templateUrl: './product-detail.html',
+         ╵                ~~~~~~~~~~~~~~~~~~~~~~~
+
+
+✘ [ERROR] TS2305: Module '"../../core/services/review"' has no exported member 'Review'. [plugin angular-compiler]
+
+    src/app/features/products/product-detail.ts:6:9:
+      6 │ import { Review } from '../../core/services/review';
+        ╵          ~~~~~~
+
+
+✘ [ERROR] NG2003: No suitable injection token for parameter 'reviewService' of class 'ProductDetail'.
+  Consider using the @Inject decorator to specify an injection token. [plugin angular-compiler]
+
+    src/app/features/products/product-detail.ts:425:12:
+      425 │     private reviewService: Review,
+          ╵             ~~~~~~~~~~~~~
+
+  This type does not have a value, so it cannot be used as injection token.
+
+    src/app/features/products/product-detail.ts:425:27:
+      425 │     private reviewService: Review,
+          ╵                            ~~~~~~
+
+
+✘ [ERROR] TS7006: Parameter 'data' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/features/products/product-detail.ts:455:13:
+      455 │       next: (data) => {
+          ╵              ~~~~
+
+
+✘ [ERROR] TS7006: Parameter 'err' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/features/products/product-detail.ts:458:14:
+      458 │       error: (err) => console.error('Error fetching reviews', err)
+          ╵               ~~~
+
+
+✘ [ERROR] TS7006: Parameter 'savedReview' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/features/products/product-detail.ts:496:13:
+      496 │       next: (savedReview) => {
+          ╵              ~~~~~~~~~~~
+
+
+✘ [ERROR] TS7006: Parameter 'err' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/features/products/product-detail.ts:502:14:
+      502 │       error: (err) => {
+          ╵               ~~~
+
+

@@ -1,0 +1,17 @@
+[
+    {
+        "id": 1,
+        "name": "Elektronik",
+        "description": "Telefon, bilgisayar ve akıllı cihazlar"
+    },
+    {
+        "id": 2,
+        "name": "Giyim",
+        "description": "Kadın, erkek ve çocuk giyim ürünleri"
+    },
+    {
+        "id": 3,
+        "name": "Ev & Yaşam",
+        "description": "Mobilya, dekorasyon ve mutfak gereçleri"
+    }
+]

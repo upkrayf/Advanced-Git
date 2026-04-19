@@ -1,0 +1,35 @@
+[
+    {
+        "id": 1001,
+        "userId": 1,
+        "orderDate": "2024-05-12T14:30:00Z",
+        "status": "delivered",
+        "totalAmount": 1500.00,
+        "items": [
+            {
+                "productId": 101,
+                "quantity": 1,
+                "unitPrice": 1250.00
+            },
+            {
+                "productId": 102,
+                "quantity": 1,
+                "unitPrice": 250.00
+            }
+        ]
+    },
+    {
+        "id": 1002,
+        "userId": 3,
+        "orderDate": "2024-05-14T09:15:00Z",
+        "status": "processing",
+        "totalAmount": 3400.00,
+        "items": [
+            {
+                "productId": 103,
+                "quantity": 1,
+                "unitPrice": 3400.00
+            }
+        ]
+    }
+]

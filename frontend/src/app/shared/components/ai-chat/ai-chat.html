@@ -1,0 +1,13 @@
+<div class="ai-chat-container">
+  <div class="ai-chat-messages">
+    <div *ngFor="let message of messages" [ngClass]="{ 'message-user': message.sender === 'user', 'message-assistant': message.sender === 'assistant' }">
+      <span class="sender">{{ message.sender === 'user' ? 'Siz' : 'Asistan' }}:</span>
+      <span class="text">{{ message.text }}</span>
+    </div>
+  </div>
+
+  <form class="ai-chat-form" (ngSubmit)="sendQuestion()">
+    <input name="question" [(ngModel)]="question" placeholder="Sorunuzu yazın..." />
+    <button type="submit" [disabled]="loading">Gönder</button>
+  </form>
+</div>

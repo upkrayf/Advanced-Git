@@ -1,0 +1,63 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Harcama Analitik</h1>
+        <p class="page-sub">Kişisel harcama takibiniz</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" [class.btn-primary]="period === 'daily'" (click)="changePeriod('daily')">Günlük</button>
+        <button class="btn-outline" [class.btn-primary]="period === 'monthly'" (click)="changePeriod('monthly')">Aylık</button>
+        <button class="btn-outline" [class.btn-primary]="period === 'yearly'" (click)="changePeriod('yearly')">Yıllık</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" *ngIf="stats">
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Harcama</div>
+        <div class="kpi-value">{{ formatCurrency(stats.totalSpent) }}</div>
+        <span class="kpi-badge badge-green">Tüm zamanlar</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Sipariş</div>
+        <div class="kpi-value">{{ stats.totalOrders }}</div>
+        <span class="kpi-badge badge-green">Sipariş</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Aktif Siparişler</div>
+        <div class="kpi-value">{{ stats.activeOrders }}</div>
+        <span class="kpi-badge badge-amber">Beklemede</span>
+      </div>
+    </div>
+
+    <!-- Spending Trend -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Harcama Trendi</div>
+      <div style="display:flex; align-items:flex-end; gap:8px; height:140px; padding:8px 0;">
+        <div *ngFor="let bar of spendingTrend" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
+          <div style="font-size:10px; color:#7a7a9a; margin-bottom:3px;">${{ bar.value }}</div>
+          <div class="bar" [style.height]="getTrendBarHeight(bar.value)" style="background: linear-gradient(180deg,#6c63ff,#534ab7); width:100%; border-radius:3px 3px 0 0;"></div>
+          <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.label }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spending by Category -->
+    <div class="card">
+      <div class="card-title">Kategori Bazlı Harcama</div>
+      <div *ngFor="let cat of spendingByCategory" style="margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+          <span style="color:#c0c0d0;">{{ cat.categoryName }}</span>
+          <span style="color:#1d9e75;">{{ formatCurrency(cat.amount) }}</span>
+        </div>
+        <div style="height:6px; background:#1a1a24; border-radius:3px; overflow:hidden;">
+          <div [style.width]="getCategoryBarWidth(cat.amount)" style="background: linear-gradient(90deg,#6c63ff,#1d9e75); height:100%; border-radius:3px; transition:width 0.5s;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

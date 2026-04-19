@@ -1,0 +1,96 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">{{ product?.name || 'Ürün Detayı' }}</h1>
+        <p class="page-sub">{{ product?.categoryName }} — {{ product?.storeName }}</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" routerLink="/individual/shop">← Ürünler</button>
+        <button class="btn-outline" routerLink="/individual/cart">🛒 Sepet</button>
+      </div>
+    </div>
+
+    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:3rem;">Yükleniyor…</div>
+
+    <!-- Cart Success -->
+    <div *ngIf="cartSuccess" style="position:fixed; top:1rem; right:1rem; background:#1a2e1a; border:0.5px solid #1d9e75; border-radius:8px; padding:12px 20px; color:#1d9e75; font-size:13px; z-index:100;">
+      ✓ Ürün sepete eklendi!
+      <a routerLink="/individual/cart" style="color:#6c63ff; margin-left:8px;">Sepete Git →</a>
+    </div>
+
+    <div *ngIf="product && !loading" class="grid-2">
+      <div class="card">
+        <div style="height:220px; background:#12121a; border-radius:8px; margin-bottom:1.2rem; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          <img *ngIf="product.imageUrl" [src]="product.imageUrl" [alt]="product.name" style="max-height:100%; max-width:100%; object-fit:contain;" onerror="this.style.opacity='0'" />
+          <span *ngIf="!product.imageUrl" style="font-size:60px; opacity:0.3;">📦</span>
+        </div>
+
+        <div style="font-size:28px; font-weight:700; color:#1d9e75; margin-bottom:8px;">{{ formatCurrency(product.price) }}</div>
+
+        <div style="display:flex; align-items:center; gap:4px; margin-bottom:12px;">
+          <span style="color:#f0c000; font-size:16px;">
+            <span *ngFor="let s of getStars(product.rating || 0)">{{ s <= (product.rating || 0) ? '★' : '☆' }}</span>
+          </span>
+          <span style="font-size:12px; color:#7a7a9a;">{{ avgRating() }} / 5 ({{ reviews.length }} yorum)</span>
+        </div>
+
+        <div style="font-size:12px; color:#9a9ab0; margin-bottom:16px; line-height:1.6;">{{ product.description }}</div>
+
+        <div style="font-size:12px; color:#7a7a9a; margin-bottom:12px;">
+          <span *ngIf="(product.stock || 0) > 0" style="color:#1d9e75;">✓ Stokta: {{ product.stock }} adet</span>
+          <span *ngIf="(product.stock || 0) === 0" style="color:#e24b4a;">✗ Stok Yok</span>
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+          <button class="btn-outline" (click)="quantity = quantity > 1 ? quantity - 1 : 1" style="padding:6px 12px;">−</button>
+          <span style="font-size:16px; color:#f0f0f5; min-width:30px; text-align:center;">{{ quantity }}</span>
+          <button class="btn-outline" (click)="quantity = quantity + 1" style="padding:6px 12px;">+</button>
+        </div>
+
+        <button class="btn-primary" (click)="addToCart()" [disabled]="(product.stock || 0) === 0" style="width:100%; padding:12px; font-size:14px;">
+          {{ (product.stock || 0) === 0 ? 'Stok Yok' : '🛒 Sepete Ekle' }}
+        </button>
+
+        <button class="btn-outline" (click)="showReviewForm = !showReviewForm" style="width:100%; margin-top:8px;">⭐ Yorum Yaz</button>
+
+        <!-- Review form -->
+        <div *ngIf="showReviewForm" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; gap:4px;">
+            <button *ngFor="let s of [1,2,3,4,5]" (click)="newReview.rating = s"
+              style="font-size:20px; background:none; border:none; cursor:pointer;"
+              [style.color]="s <= newReview.rating ? '#f0c000' : '#4a4a6a'">★</button>
+          </div>
+          <textarea [(ngModel)]="newReview.comment" placeholder="Yorumunuzu yazın..." rows="3"
+            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px; color:#f0f0f5; font-size:12px; outline:none; resize:vertical;"></textarea>
+          <div *ngIf="reviewError" style="color:#e24b4a; font-size:11px;">{{ reviewError }}</div>
+          <button class="btn-primary" (click)="submitReview()" style="font-size:12px;">Yorum Gönder</button>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="card">
+        <div class="card-title">Müşteri Yorumları ({{ reviews.length }})</div>
+        <div *ngFor="let r of reviews" style="padding:12px 0; border-bottom:0.5px solid #1e1e2e;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span style="font-weight:500; color:#f0f0f5; font-size:13px;">{{ r.userName }}</span>
+            <span style="font-size:11px; color:#7a7a9a;">{{ r.createdAt | slice:0:10 }}</span>
+          </div>
+          <div style="color:#f0c000; font-size:14px; margin-bottom:4px;">
+            <span *ngFor="let s of getStars(r.rating)">{{ s <= r.rating ? '★' : '☆' }}</span>
+          </div>
+          <div style="font-size:12px; color:#c0c0d0; margin-bottom:6px;">{{ r.comment }}</div>
+          <div *ngIf="r.storeResponse" style="background:#1a2e1a; border-radius:6px; padding:8px; font-size:11px; color:#1d9e75;">
+            <strong>Mağaza:</strong> {{ r.storeResponse }}
+          </div>
+        </div>
+        <div *ngIf="!reviews.length" style="text-align:center; color:#4a4a6a; font-size:12px; padding:2rem;">
+          Henüz yorum yok. İlk yorumu siz yazın!
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

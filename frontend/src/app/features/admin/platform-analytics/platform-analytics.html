@@ -1,0 +1,103 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Platform Analitik</h1>
+        <p class="page-sub">Tüm platform metrikleri</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" [class.btn-primary]="period === 'daily'" (click)="changePeriod('daily')">Günlük</button>
+        <button class="btn-outline" [class.btn-primary]="period === 'monthly'" (click)="changePeriod('monthly')">Aylık</button>
+        <button class="btn-outline" [class.btn-primary]="period === 'yearly'" (click)="changePeriod('yearly')">Yıllık</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" *ngIf="kpis">
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Kullanıcı</div>
+        <div class="kpi-value">{{ kpis.totalUsers | number }}</div>
+        <span class="kpi-badge badge-green">+{{ kpis.newUsersThisMonth }} bu ay</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Sipariş</div>
+        <div class="kpi-value">{{ kpis.totalOrders | number }}</div>
+        <span class="kpi-badge badge-green">+{{ kpis.newOrdersToday }} bugün</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Platform Geliri</div>
+        <div class="kpi-value">{{ formatCurrency(kpis.totalRevenue) }}</div>
+        <span class="kpi-badge badge-green">Tüm zamanlar</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Aktif Mağazalar</div>
+        <div class="kpi-value">{{ kpis.activeStores }}</div>
+        <span class="kpi-badge badge-green">/ {{ kpis.totalStores }} toplam</span>
+      </div>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Gelir Trendi — {{ formatCurrency(getTotalRevenue()) }} toplam</div>
+      <div style="display:flex; align-items: flex-end; gap: 8px; height: 160px; padding: 8px 0;">
+        <div *ngFor="let bar of revenueData" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
+          <div style="font-size:10px; color:#7a7a9a; margin-bottom:4px;">{{ formatCurrency(bar.value) }}</div>
+          <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: linear-gradient(180deg,#6c63ff,#534ab7); width:100%; border-radius:3px 3px 0 0;"></div>
+          <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.label }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Order Status -->
+      <div class="card">
+        <div class="card-title">Sipariş Durumu Dağılımı</div>
+        <div *ngFor="let s of orderStatus" style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span style="color:#c0c0d0;">{{ s.status }}</span>
+            <span style="color:#7a7a9a;">{{ s.count | number }}</span>
+          </div>
+          <div style="height:6px; background:#1a1a24; border-radius:3px; overflow:hidden;">
+            <div [style.width]="'60%'" [style.background]="getStatusColor(s.status)" style="height:100%; border-radius:3px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Sales -->
+      <div class="card">
+        <div class="card-title">Kategori Bazlı Satışlar</div>
+        <div *ngFor="let cat of categorySales" class="activity-item">
+          <span class="activity-text">{{ cat.categoryName }}</span>
+          <span style="color:#6c63ff; font-size:12px;">{{ cat.percentage.toFixed(1) }}%</span>
+          <span class="activity-time">{{ formatCurrency(cat.totalRevenue) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="card">
+      <div class="card-title">En Çok Satan Ürünler (Top 10)</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ürün Adı</th>
+            <th>Satış Adedi</th>
+            <th>Toplam Gelir</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of topProducts; let i = index">
+            <td style="color:#6c63ff; font-weight:500;">{{ i + 1 }}</td>
+            <td style="color:#f0f0f5;">{{ p.productName }}</td>
+            <td>{{ p.totalSold | number }}</td>
+            <td>{{ formatCurrency(p.revenue) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>

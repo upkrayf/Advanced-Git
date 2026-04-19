@@ -1,0 +1,115 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Mağaza Paneli</h1>
+        <p class="page-sub">Satış ve stok durumunuza genel bakış</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" routerLink="/corporate/analytics">📊 Analitik</button>
+        <button class="btn-primary" routerLink="/corporate/products/new">+ Ürün Ekle</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" *ngIf="kpis">
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Gelir</div>
+        <div class="kpi-value">{{ formatCurrency(kpis.totalRevenue) }}</div>
+        <span class="kpi-badge badge-green">Tüm zamanlar</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bugünkü Siparişler</div>
+        <div class="kpi-value">{{ kpis.ordersToday }}</div>
+        <span class="kpi-badge badge-green">Sipariş</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Ort. Sipariş Değeri</div>
+        <div class="kpi-value">{{ formatCurrency(kpis.avgOrderValue) }}</div>
+        <span class="kpi-badge badge-green">Avg</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bekleyen Kargo</div>
+        <div class="kpi-value">{{ kpis.pendingShipments }}</div>
+        <span class="kpi-badge badge-red">Beklemede</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Ürün</div>
+        <div class="kpi-value">{{ kpis.totalProducts }}</div>
+        <span class="kpi-badge" [class.badge-red]="kpis.lowStockItems > 0" [class.badge-green]="kpis.lowStockItems === 0">
+          {{ kpis.lowStockItems }} düşük stok
+        </span>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Aylık Gelir Trendi</div>
+        <div style="display:flex; align-items:flex-end; gap:8px; height:140px; padding:8px 0;">
+          <div *ngFor="let bar of revenueData" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
+            <div style="font-size:10px; color:#7a7a9a; margin-bottom:4px;">${{ (bar.value / 1000).toFixed(0) }}K</div>
+            <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: linear-gradient(180deg,#1d9e75,#0f7a5a); width:100%; border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.label }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Sipariş Durumları</div>
+        <div *ngFor="let s of orderStatus" style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span style="color:#c0c0d0;">{{ getStatusLabel(s.status) }}</span>
+            <span style="color:#7a7a9a;">{{ s.count | number }}</span>
+          </div>
+          <div style="height:5px; background:#1a1a24; border-radius:3px; overflow:hidden;">
+            <div [style.width]="'65%'" [style.background]="getStatusColor(s.status)" style="height:100%; border-radius:3px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Orders + Top Products -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          Son Siparişler
+          <a routerLink="/corporate/orders" style="font-size:11px; color:#6c63ff; text-decoration:none;">Tümü →</a>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Sipariş</th><th>Müşteri</th><th>Tutar</th><th>Durum</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let o of recentOrders" style="cursor:pointer;" routerLink="/corporate/orders/{{ o.id }}">
+              <td style="color:#6c63ff;">#{{ o.id }}</td>
+              <td>{{ o.customerName }}</td>
+              <td>{{ formatCurrency(o.totalAmount) }}</td>
+              <td><span class="status-pill" [class]="getStatusClass(o.status)">{{ getStatusLabel(o.status) }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          En Çok Satan Ürünler
+          <a routerLink="/corporate/products" style="font-size:11px; color:#6c63ff; text-decoration:none;">Tümü →</a>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Ürün</th><th>Satış</th><th>Gelir</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let p of topProducts">
+              <td style="color:#f0f0f5;">{{ p.productName }}</td>
+              <td>{{ p.totalSold }}</td>
+              <td>{{ formatCurrency(p.revenue) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:1.5rem;">Yükleniyor…</div>
+
+  </div>
+</div>

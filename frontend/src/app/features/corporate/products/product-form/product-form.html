@@ -1,0 +1,76 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">{{ editMode ? 'Ürün Düzenle' : 'Yeni Ürün Ekle' }}</h1>
+        <p class="page-sub">{{ editMode ? 'Mevcut ürünü güncelle' : 'Mağazana yeni ürün ekle' }}</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" routerLink="/corporate/products">← Geri</button>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:600px;">
+      <div style="display:flex; flex-direction:column; gap:16px;">
+
+        <div>
+          <label style="font-size:12px; color:#7a7a9a; display:block; margin-bottom:6px;">Ürün Adı *</label>
+          <input type="text" [(ngModel)]="product.name" placeholder="Ürün adını girin"
+            style="width:100%; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none; box-sizing:border-box;" />
+        </div>
+
+        <div>
+          <label style="font-size:12px; color:#7a7a9a; display:block; margin-bottom:6px;">Açıklama</label>
+          <textarea [(ngModel)]="product.description" placeholder="Ürün açıklaması" rows="3"
+            style="width:100%; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none; resize:vertical; box-sizing:border-box;"></textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div>
+            <label style="font-size:12px; color:#7a7a9a; display:block; margin-bottom:6px;">Fiyat ($) *</label>
+            <input type="number" [(ngModel)]="product.price" placeholder="0.00" min="0" step="0.01"
+              style="width:100%; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none; box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="font-size:12px; color:#7a7a9a; display:block; margin-bottom:6px;">Stok Miktarı</label>
+            <input type="number" [(ngModel)]="product.stock" placeholder="0" min="0"
+              style="width:100%; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none; box-sizing:border-box;" />
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:12px; color:#7a7a9a; display:block; margin-bottom:6px;">Kategori</label>
+          <select [(ngModel)]="product.categoryId"
+            style="width:100%; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#9a9ab0; font-size:13px; cursor:pointer; box-sizing:border-box;">
+            <option [value]="undefined">Kategori seçin</option>
+            <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:12px; color:#7a7a9a; display:block; margin-bottom:6px;">Görsel URL</label>
+          <input type="text" [(ngModel)]="product.imageUrl" placeholder="https://..."
+            style="width:100%; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none; box-sizing:border-box;" />
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" [(ngModel)]="product.isActive" id="isActive" style="cursor:pointer;" />
+          <label for="isActive" style="font-size:13px; color:#9a9ab0; cursor:pointer;">Ürün Aktif</label>
+        </div>
+
+        <div *ngIf="error" style="color:#e24b4a; font-size:12px;">{{ error }}</div>
+
+        <div style="display:flex; gap:8px;">
+          <button class="btn-outline" routerLink="/corporate/products">İptal</button>
+          <button class="btn-primary" (click)="save()" [disabled]="loading">
+            {{ loading ? 'Kaydediliyor…' : (editMode ? 'Güncelle' : 'Kaydet') }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

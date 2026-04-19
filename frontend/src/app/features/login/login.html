@@ -1,0 +1,44 @@
+<div class="login-wrapper">
+    <div class="login-card">
+
+        <div class="logo">
+            <img src="images/mes.png"  alt="cano"  class="logo-img"/>
+            <span class="logo-text">MES</span>
+        </div>
+
+        <h1 class="login-title">Hoş geldiniz</h1>
+        <p class="login-sub">Hesabınıza giriş yapın</p>
+
+        <form (ngSubmit)="onLogin()">
+
+            <div class="field-wrap">
+                <label class="field-label">E-posta</label>
+                <input class="field-input" type="email" placeholder="ornek@email.com" [(ngModel)]="email" name="email"
+                    required />
+            </div>
+
+            <div class="field-wrap">
+                <label class="field-label">Şifre</label>
+                <input class="field-input" type="password" placeholder="••••••••" [(ngModel)]="password" name="password"
+                    required />
+            </div>
+
+            <span class="forgot">Şifremi unuttum</span>
+
+            <p class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+            <button class="btn-login" type="submit">Giriş Yap</button>
+
+        </form>
+
+        <div class="demo-accounts">
+            <p class="demo-title">Demo hesaplar</p>
+            <div class="demo-btns">
+                <button class="demo-btn" (click)="fillDemo('admin')">Admin</button>
+                <button class="demo-btn" (click)="fillDemo('corporate')">Corporate</button>
+                <button class="demo-btn" (click)="fillDemo('individual')">Individual</button>
+            </div>
+        </div>
+
+    </div>
+</div>

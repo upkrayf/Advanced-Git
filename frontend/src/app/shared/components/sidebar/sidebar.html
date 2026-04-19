@@ -1,0 +1,99 @@
+<div class="sidebar" [class.corporate]="role === 'CORPORATE'" [class.individual]="role === 'INDIVIDUAL'">
+
+  <div class="sidebar-logo">
+    <div class="logo-icon">D</div>
+    <span class="logo-text">DataPulse</span>
+  </div>
+
+  <!-- ADMIN MENÜ -->
+  <div class="sidebar-section" *ngIf="role === 'ADMIN'">
+    <div class="sidebar-label">Yönetim</div>
+    <div class="sidebar-item" [class.active]="isActive('/admin/dashboard')" routerLink="/admin/dashboard">
+      <span class="s-icon">📊</span> Dashboard
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/admin/user-management')" routerLink="/admin/user-management">
+      <span class="s-icon">👥</span> Kullanıcılar
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/admin/store-management')" routerLink="/admin/store-management">
+      <span class="s-icon">🏪</span> Mağazalar
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/admin/category-management')" routerLink="/admin/category-management">
+      <span class="s-icon">🏷️</span> Kategoriler
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/admin/platform-analytics')" routerLink="/admin/platform-analytics">
+      <span class="s-icon">📈</span> Platform Analitik
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/admin/audit-logs')" routerLink="/admin/audit-logs">
+      <span class="s-icon">📋</span> Audit Logs
+    </div>
+  </div>
+
+  <!-- CORPORATE MENÜ -->
+  <div class="sidebar-section" *ngIf="role === 'CORPORATE'">
+    <div class="sidebar-label">Mağazam</div>
+    <div class="sidebar-item" [class.active]="isActive('/corporate/dashboard')" routerLink="/corporate/dashboard">
+      <span class="s-icon">📊</span> Dashboard
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/corporate/products')" routerLink="/corporate/products">
+      <span class="s-icon">📦</span> Ürünler
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/corporate/orders')" routerLink="/corporate/orders">
+      <span class="s-icon">🧾</span> Siparişler
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/corporate/inventory')" routerLink="/corporate/inventory">
+      <span class="s-icon">📚</span> Envanter
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/corporate/customers')" routerLink="/corporate/customers">
+      <span class="s-icon">👤</span> Müşteriler
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/corporate/analytics')" routerLink="/corporate/analytics">
+      <span class="s-icon">📈</span> Analitik
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/corporate/shipments')" routerLink="/corporate/shipments">
+      <span class="s-icon">🚚</span> Gönderiler
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/corporate/reviews')" routerLink="/corporate/reviews">
+      <span class="s-icon">⭐</span> Yorumlar
+    </div>
+  </div>
+
+  <!-- INDIVIDUAL MENÜ -->
+  <div class="sidebar-section" *ngIf="role === 'INDIVIDUAL'">
+    <div class="sidebar-label">Hesabım</div>
+    <div class="sidebar-item" [class.active]="isActive('/individual/dashboard')" routerLink="/individual/dashboard">
+      <span class="s-icon">🏠</span> Dashboard
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/individual/shop')" routerLink="/individual/shop">
+      <span class="s-icon">🛍️</span> Alışveriş
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/individual/cart')" routerLink="/individual/cart">
+      <span class="s-icon">🛒</span> Sepet
+      <span *ngIf="cartCount > 0" style="background:#6c63ff; color:white; border-radius:10px; font-size:10px; padding:1px 6px; margin-left:auto;">{{ cartCount }}</span>
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/individual/checkout')" routerLink="/individual/checkout">
+      <span class="s-icon">💳</span> Ödeme
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/individual/orders')" routerLink="/individual/orders">
+      <span class="s-icon">📦</span> Siparişlerim
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/individual/shipment-tracking')" routerLink="/individual/shipment-tracking">
+      <span class="s-icon">🚚</span> Kargo Takibi
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/individual/reviews')" routerLink="/individual/reviews">
+      <span class="s-icon">⭐</span> Yorumlarım
+    </div>
+    <div class="sidebar-item" [class.active]="isActive('/individual/spending-analytics')" routerLink="/individual/spending-analytics">
+      <span class="s-icon">📊</span> Harcama Analitik
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-item" *ngIf="role === 'INDIVIDUAL'" routerLink="/individual/profile" [class.active]="isActive('/individual/profile')">
+      <span class="s-icon">👤</span> Profilim
+    </div>
+    <div class="sidebar-item" (click)="logout()" style="cursor:pointer;">
+      <span class="s-icon">🚪</span> Çıkış
+    </div>
+  </div>
+
+</div>

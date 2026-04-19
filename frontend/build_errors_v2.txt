@@ -1,0 +1,39 @@
+
+> aap@0.0.0 build
+> ng build
+
+❯ Building...
+✔ Building...
+Initial chunk files | Names               |  Raw size | Estimated transfer size
+chunk-QYYLDS6E.js   | -                   | 272.98 kB |                74.01 kB
+main-ROBB3B2S.js    | main                |   4.80 kB |                 1.15 kB
+styles-D6WUVRJL.css | styles              |   2.25 kB |               647 bytes
+chunk-6VH76HEL.js   | -                   |   1.31 kB |               491 bytes
+
+                    | Initial total       | 281.34 kB |                76.30 kB
+
+Lazy chunk files    | Names               |  Raw size | Estimated transfer size
+chunk-CAGXRE3F.js   | -                   |  35.57 kB |                 7.54 kB
+chunk-BRTOOTGP.js   | product-detail      |  12.47 kB |                 3.55 kB
+chunk-SMUOWFQI.js   | product-detail      |  10.90 kB |                 3.50 kB
+chunk-DASWANAR.js   | product-browse      |  10.59 kB |                 3.38 kB
+chunk-GVM7EUUG.js   | user-management     |  10.08 kB |                 3.06 kB
+chunk-6SYJUY7F.js   | dashboard           |  10.01 kB |                 3.47 kB
+chunk-RH6BYSOW.js   | -                   |   9.07 kB |                 2.38 kB
+chunk-G7YPM6JV.js   | dashboard           |   8.69 kB |                 2.89 kB
+chunk-OCWI4QPN.js   | dashboard           |   8.52 kB |                 2.85 kB
+chunk-YE5HWIZ3.js   | product-detail      |   8.35 kB |                 2.88 kB
+chunk-VG7XVF7N.js   | platform-analytics  |   7.79 kB |                 2.66 kB
+chunk-2JNPZKEM.js   | category-management |   7.63 kB |                 2.45 kB
+chunk-LCQHARPM.js   | product-list        |   7.48 kB |                 2.66 kB
+chunk-PPDSXAUC.js   | analytics           |   7.17 kB |                 2.50 kB
+chunk-LKBMQVK4.js   | product-form        |   6.75 kB |                 2.07 kB
+...and 25 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [1.684 seconds] - 2026-04-19T08:41:04.234Z
+
+▲ [WARNING] angular:styles/component:css;3557b856ea1c76a98a49ca1289fcfd966b3f95acc19630532bcad262fb6e11f6;/Users/yusufk/Desktop/Dersler/advanced/Gitproje/Advanced-Proje/frontend/src/app/features/products/product-detail.ts exceeded maximum budget. Budget 4.00 kB was not met by 170 bytes with a total of 4.17 kB.
+
+
+Output location: /Users/yusufk/Desktop/Dersler/advanced/Gitproje/Advanced-Proje/frontend/dist/aap
+

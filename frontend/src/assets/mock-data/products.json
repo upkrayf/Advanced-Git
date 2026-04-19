@@ -1,0 +1,29 @@
+[
+    {
+        "id": 101,
+        "name": "Kablosuz Kulaklık Pro",
+        "price": 1250.00,
+        "description": "Aktif gürültü engelleyicili, uzun şarj ömürlü bluetooth kulaklık.",
+        "categoryId": 1,
+        "stock": 45,
+        "image": "https://via.placeholder.com/150"
+    },
+    {
+        "id": 102,
+        "name": "Pamuklu Basic Tişört",
+        "price": 250.00,
+        "description": "%100 organik pamuk rahat kesim tişört.",
+        "categoryId": 2,
+        "stock": 120,
+        "image": "https://via.placeholder.com/150"
+    },
+    {
+        "id": 103,
+        "name": "Akıllı Kahve Makinesi",
+        "price": 3400.00,
+        "description": "Telefon kontrollü, zamanlayıcılı filtre kahve makinesi.",
+        "categoryId": 3,
+        "stock": 12,
+        "image": "https://via.placeholder.com/150"
+    }
+]

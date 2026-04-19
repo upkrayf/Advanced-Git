@@ -1,0 +1,59 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Audit Logs</h1>
+        <p class="page-sub">Platform işlem kayıtları</p>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px;">
+      <input type="text" [(ngModel)]="search" placeholder="İşlem, kullanıcı veya detay ara..."
+        style="flex:1; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
+    </div>
+
+    <div class="card">
+      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
+      <table class="data-table" *ngIf="!loading">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>İşlem</th>
+            <th>Kullanıcı</th>
+            <th>Varlık</th>
+            <th>Detay</th>
+            <th>IP</th>
+            <th>Tarih</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of filteredLogs">
+            <td style="color:#4a4a6a;">{{ log.id }}</td>
+            <td>
+              <span class="status-pill" [style.background]="getActionColor(log.action) + '22'" [style.color]="getActionColor(log.action)">
+                {{ log.action }}
+              </span>
+            </td>
+            <td style="color:#9a9ab0;">{{ log.userName || ('User#' + log.userId) }}</td>
+            <td style="color:#7a7a9a; font-size:11px;">{{ log.entityType }} #{{ log.entityId }}</td>
+            <td style="color:#c0c0d0; font-size:11px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ log.details || '-' }}</td>
+            <td style="color:#4a4a6a; font-size:11px; font-family:monospace;">{{ log.ipAddress || '-' }}</td>
+            <td style="color:#7a7a9a; font-size:11px; white-space:nowrap;">{{ formatDate(log.createdAt) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:#7a7a9a;" *ngIf="totalPages > 1">
+        <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>
+          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()">Sonraki →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

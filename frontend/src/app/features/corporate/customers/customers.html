@@ -1,0 +1,56 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Müşteriler</h1>
+        <p class="page-sub">{{ totalElements }} kayıtlı müşteri</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px;">
+      <input type="text" [(ngModel)]="search" placeholder="Ad veya e-posta ara..." (keyup.enter)="onSearch()"
+        style="flex:1; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
+      <button class="btn-outline" (click)="onSearch()">🔍 Ara</button>
+    </div>
+
+    <div class="card">
+      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
+      <table class="data-table" *ngIf="!loading">
+        <thead>
+          <tr>
+            <th>Müşteri</th>
+            <th>Şehir</th>
+            <th>Telefon</th>
+            <th>Toplam Sipariş</th>
+            <th>Toplam Harcama</th>
+            <th>Son Sipariş</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of customers">
+            <td>
+              <div style="font-weight:500; color:#f0f0f5;">{{ c.name }}</div>
+              <div style="font-size:10px; color:#4a4a6a;">{{ c.email }}</div>
+            </td>
+            <td style="color:#9a9ab0;">{{ c.city || '-' }}</td>
+            <td style="color:#7a7a9a; font-size:11px;">{{ c.phone || '-' }}</td>
+            <td style="font-weight:500; color:#f0f0f5;">{{ c.totalOrders }}</td>
+            <td style="color:#1d9e75; font-weight:500;">{{ formatCurrency(c.totalSpent) }}</td>
+            <td style="color:#7a7a9a; font-size:11px;">{{ c.lastOrderDate ? (c.lastOrderDate | slice:0:10) : '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:#7a7a9a;" *ngIf="totalPages > 1">
+        <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>
+          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()">Sonraki →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

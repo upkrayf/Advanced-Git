@@ -1,0 +1,57 @@
+<div class="page-layout">
+  <app-sidebar />
+  <div class="main-content" style="padding:1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Profilim</h1>
+        <p class="page-sub">Hesap bilgilerinizi yönetin</p>
+      </div>
+      <div class="topbar-actions">
+        <button *ngIf="!editMode" class="btn-outline" (click)="editMode = true">✏️ Düzenle</button>
+      </div>
+    </div>
+
+    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:3rem;">Yükleniyor…</div>
+
+    <div *ngIf="success" style="background:#1a2e1a; border:0.5px solid #1d9e75; border-radius:8px; padding:12px 16px; color:#1d9e75; font-size:13px; margin-bottom:1rem;">
+      ✓ {{ success }}
+    </div>
+    <div *ngIf="error" style="background:#2e1515; border:0.5px solid #e24b4a; border-radius:8px; padding:12px 16px; color:#e24b4a; font-size:13px; margin-bottom:1rem;">
+      ✗ {{ error }}
+    </div>
+
+    <div *ngIf="user" class="card" style="max-width: 500px;">
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:1.5rem;">
+        <div style="width:64px; height:64px; background:linear-gradient(135deg,#6c63ff,#1d9e75); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; color:white; font-weight:700;">
+          {{ user.name.charAt(0).toUpperCase() }}
+        </div>
+        <div>
+          <div style="font-size:18px; font-weight:600; color:#f0f0f5;">{{ user.name }}</div>
+          <div style="font-size:12px; color:#7a7a9a;">{{ user.roleType }}</div>
+        </div>
+      </div>
+
+      <div *ngIf="!editMode" style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
+        <div style="display:flex; justify-content:space-between;"><span style="color:#7a7a9a;">E-posta</span><span style="color:#f0f0f5;">{{ user.email }}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span style="color:#7a7a9a;">Telefon</span><span style="color:#f0f0f5;">{{ user.phone || '-' }}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span style="color:#7a7a9a;">Şehir</span><span style="color:#f0f0f5;">{{ user.city || '-' }}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span style="color:#7a7a9a;">Kayıt Tarihi</span><span style="color:#f0f0f5;">{{ user.createdAt ? (user.createdAt | slice:0:10) : '-' }}</span></div>
+      </div>
+
+      <div *ngIf="editMode" style="display:flex; flex-direction:column; gap:12px;">
+        <input type="text" [(ngModel)]="form.name" placeholder="Ad Soyad"
+          style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
+        <input type="text" [(ngModel)]="form.phone" placeholder="Telefon"
+          style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
+        <input type="text" [(ngModel)]="form.city" placeholder="Şehir"
+          style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
+        <div style="display:flex; gap:8px;">
+          <button class="btn-outline" (click)="editMode = false">İptal</button>
+          <button class="btn-primary" (click)="save()">Kaydet</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

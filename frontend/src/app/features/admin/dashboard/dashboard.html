@@ -1,0 +1,137 @@
+<div class="page-layout">
+  <app-sidebar />
+
+  <div class="main-content" style="padding: 1.5rem;">
+
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Platform Dashboard</h1>
+        <p class="page-sub">Tüm platforma genel bakış</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" routerLink="/admin/platform-analytics">📊 Analitik</button>
+        <button class="btn-primary" routerLink="/admin/user-management">+ Kullanıcı Ekle</button>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" *ngIf="kpis">
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Kullanıcı</div>
+        <div class="kpi-value">{{ kpis.totalUsers | number }}</div>
+        <span class="kpi-badge badge-green">+{{ kpis.newUsersThisMonth }} bu ay</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Aktif Mağaza</div>
+        <div class="kpi-value">{{ kpis.activeStores }}</div>
+        <span class="kpi-badge badge-green">/ {{ kpis.totalStores }} toplam</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Platform Geliri</div>
+        <div class="kpi-value">{{ formatCurrency(kpis.totalRevenue) }}</div>
+        <span class="kpi-badge badge-green">Tüm zamanlar</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Askıya Alınan</div>
+        <div class="kpi-value">{{ kpis.suspendedAccounts }}</div>
+        <span class="kpi-badge badge-red">Hesap</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam Sipariş</div>
+        <div class="kpi-value">{{ kpis.totalOrders | number }}</div>
+        <span class="kpi-badge badge-green">+{{ kpis.newOrdersToday }} bugün</span>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Aylık Gelir Trendi</div>
+        <div style="display:flex; align-items: flex-end; gap: 8px; height: 140px; padding: 8px 0;">
+          <ng-container *ngFor="let bar of revenueData">
+            <div style="display:flex; flex-direction: column; align-items: center; flex:1; height:100%;">
+              <div style="font-size:10px; color:#7a7a9a; margin-bottom:4px;">{{ formatCurrency(bar.value) }}</div>
+              <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: #6c63ff; width:100%;"></div>
+              <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.label }}</div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Sipariş Durumları</div>
+        <div *ngFor="let s of orderStatus" class="activity-item">
+          <span class="status-pill" [class]="getStatusClass(s.status)">{{ getStatusLabel(s.status) }}</span>
+          <span class="activity-text">{{ s.count | number }} sipariş</span>
+          <span class="activity-time">{{ s.count }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Products + Users Row -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          En Çok Satan Ürünler
+          <a routerLink="/admin/platform-analytics" style="font-size:11px; color:#6c63ff; text-decoration:none;">Tümü →</a>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ürün</th>
+              <th>Satış</th>
+              <th>Gelir</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of topProducts">
+              <td>{{ p.productName }}</td>
+              <td>{{ p.totalSold | number }}</td>
+              <td>{{ formatCurrency(p.revenue) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          Son Kullanıcılar
+          <a routerLink="/admin/user-management" style="font-size:11px; color:#6c63ff; text-decoration:none;">Tümü →</a>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ad</th>
+              <th>Rol</th>
+              <th>Durum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of recentUsers">
+              <td>
+                <div>{{ u.name }}</div>
+                <div style="font-size:10px; color:#4a4a6a;">{{ u.email }}</div>
+              </td>
+              <td>
+                <span class="status-pill" style="background:#2e2e48; color:#9a9ab0;" *ngIf="u.roleType === 'ADMIN'">
+                  {{ u.roleType }}
+                </span>
+                <span class="status-pill pill-amber" *ngIf="u.roleType === 'CORPORATE'">Corporate</span>
+                <span class="status-pill pill-green" *ngIf="u.roleType === 'INDIVIDUAL'">Individual</span>
+              </td>
+              <td>
+                <span class="status-pill" [class.pill-green]="u.isActive" [class.pill-red]="!u.isActive">
+                  {{ u.isActive ? 'Aktif' : 'Askıda' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding: 2rem;">Yükleniyor…</div>
+
+  </div>
+</div>
