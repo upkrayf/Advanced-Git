@@ -33,49 +33,27 @@ export class PlatformAnalytics implements OnInit {
 
     this.analytics.getPlatformKpis().subscribe({
       next: (d) => { this.kpis = d; this.loading = false; },
-      error: () => {
-        this.kpis = { totalUsers: 12430, totalStores: 342, totalOrders: 58920, totalRevenue: 984000, newUsersThisMonth: 1240, newOrdersToday: 183, suspendedAccounts: 23, activeStores: 328 };
-        this.loading = false;
-      }
+      error: () => { this.kpis = null; this.loading = false; }
     });
 
     this.analytics.getRevenue(this.period).subscribe({
       next: (d) => this.revenueData = d,
-      error: () => this.revenueData = [
-        { label: 'Eki', value: 62000 }, { label: 'Kas', value: 75000 },
-        { label: 'Ara', value: 88000 }, { label: 'Oca', value: 71000 },
-        { label: 'Şub', value: 94000 }, { label: 'Mar', value: 112000 },
-      ]
+      error: () => this.revenueData = []
     });
 
     this.analytics.getOrderStatus().subscribe({
       next: (d) => this.orderStatus = d,
-      error: () => this.orderStatus = [
-        { status: 'DELIVERED', count: 41200 }, { status: 'SHIPPED', count: 8700 },
-        { status: 'PENDING', count: 5100 }, { status: 'CANCELLED', count: 3920 },
-      ]
+      error: () => this.orderStatus = []
     });
 
     this.analytics.getTopProducts(10).subscribe({
       next: (d) => this.topProducts = d,
-      error: () => this.topProducts = [
-        { productId: 1, productName: 'iPhone 15 Pro', totalSold: 1240, revenue: 1487960 },
-        { productId: 2, productName: 'Samsung 4K TV', totalSold: 840, revenue: 756000 },
-        { productId: 3, productName: 'Nike Air Max', totalSold: 2100, revenue: 378000 },
-        { productId: 4, productName: 'MacBook Air', totalSold: 620, revenue: 806000 },
-        { productId: 5, productName: 'Sony WH-1000XM5', totalSold: 980, revenue: 352800 },
-      ]
+      error: () => this.topProducts = []
     });
 
     this.analytics.getSalesByCategory().subscribe({
       next: (d) => this.categorySales = d,
-      error: () => this.categorySales = [
-        { categoryName: 'Elektronik', totalRevenue: 412000, percentage: 41.8 },
-        { categoryName: 'Giyim', totalRevenue: 198000, percentage: 20.1 },
-        { categoryName: 'Ev & Yaşam', totalRevenue: 146000, percentage: 14.8 },
-        { categoryName: 'Kitap', totalRevenue: 89000, percentage: 9.0 },
-        { categoryName: 'Spor', totalRevenue: 139000, percentage: 14.1 },
-      ]
+      error: () => this.categorySales = []
     });
   }
 

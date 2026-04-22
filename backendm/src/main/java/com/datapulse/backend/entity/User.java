@@ -33,7 +33,8 @@ public class User {
     private CustomerProfile profile;
 
     @OneToMany(mappedBy = "owner")
-    private List<Store> stores; 
+    @JsonIgnore
+    private List<Store> stores;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnore

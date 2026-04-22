@@ -26,26 +26,17 @@ export class SpendingAnalytics implements OnInit {
   loadAll(): void {
     this.analytics.getMyStats().subscribe({
       next: (d) => this.stats = d,
-      error: () => this.stats = { totalSpent: 3240, activeOrders: 2, totalOrders: 18, pendingReviews: 3, savedAmount: 185 }
+      error: () => this.stats = null
     });
 
     this.analytics.getMySpendingByCategory().subscribe({
       next: (d) => this.spendingByCategory = d,
-      error: () => this.spendingByCategory = [
-        { categoryName: 'Elektronik', amount: 1890 },
-        { categoryName: 'Giyim', amount: 640 },
-        { categoryName: 'Ev & Yaşam', amount: 480 },
-        { categoryName: 'Kitap', amount: 230 },
-      ]
+      error: () => this.spendingByCategory = []
     });
 
     this.analytics.getMySpendingTrend(this.period).subscribe({
       next: (d) => this.spendingTrend = d,
-      error: () => this.spendingTrend = [
-        { label: 'Eki', value: 120 }, { label: 'Kas', value: 380 },
-        { label: 'Ara', value: 920 }, { label: 'Oca', value: 220 },
-        { label: 'Şub', value: 540 }, { label: 'Mar', value: 480 },
-      ]
+      error: () => this.spendingTrend = []
     });
   }
 

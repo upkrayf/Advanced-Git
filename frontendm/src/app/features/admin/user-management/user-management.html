@@ -43,9 +43,9 @@
         </thead>
         <tbody>
           <tr *ngFor="let user of users">
-            <td style="color:#4a4a6a;">{{ user.id }}</td>
+            <td>{{ user.id }}</td>
             <td>
-              <div style="font-weight:500; color:#f0f0f5;">{{ user.name }}</div>
+              <div style="font-weight:500; color:#f0f0f5;">{{ user.fullName || user.email }}</div>
               <div style="font-size:11px; color:#4a4a6a;">{{ user.email }}</div>
             </td>
             <td>
@@ -55,30 +55,24 @@
                 {{ user.roleType }}
               </span>
             </td>
-            <td style="color:#9a9ab0;">{{ user.phone || '-' }}</td>
-            <td style="color:#7a7a9a; font-size:11px;">{{ user.createdAt | slice:0:10 }}</td>
+            <td>{{ user.gender || '-' }}</td>
+            <td style="color:#7a7a9a; font-size:11px;">{{ user.id }}</td>
             <td>
-              <span class="status-pill" [class.pill-green]="user.isActive" [class.pill-red]="!user.isActive">
-                {{ user.isActive ? 'Aktif' : 'Askıda' }}
-              </span>
+              <span class="status-pill pill-green">Aktif</span>
             </td>
-            <td>
-              <button class="btn-outline" (click)="toggleStatus(user)" style="font-size:11px;">
-                {{ user.isActive ? 'Askıya Al' : 'Aktifleştir' }}
-              </button>
+            <td style="display: flex; gap: 8px;">
+                <button class="btn-outline" (click)="deleteUser(user.id)" style="font-size:11px; color: #e24b4a;">Sil</button>
             </td>
           </tr>
         </tbody>
       </table>
 
       <!-- Pagination -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:#7a7a9a;" *ngIf="totalPages > 1">
-        <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
-        <div style="display:flex; gap:8px;">
-          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>
-          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()">Sonraki →</button>
-        </div>
-      </div>
+      <app-pagination 
+        [page]="page" 
+        [totalPages]="totalPages" 
+        (pageChange)="onPageChange($event)">
+      </app-pagination>
     </div>
 
     <!-- Create Modal -->
@@ -86,7 +80,7 @@
       <div class="card" style="width:420px; max-width:95vw;">
         <div class="card-title">Yeni Kullanıcı Oluştur</div>
         <div style="display:flex; flex-direction:column; gap:12px;">
-          <input type="text" [(ngModel)]="newUser.name" placeholder="Ad Soyad *"
+          <input type="text" [(ngModel)]="newUser.fullName" placeholder="Ad Soyad *"
             style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
           <input type="email" [(ngModel)]="newUser.email" placeholder="E-posta *"
             style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
@@ -98,6 +92,13 @@
             <option value="CORPORATE">Corporate</option>
             <option value="ADMIN">Admin</option>
           </select>
+          <select [(ngModel)]="newUser.gender"
+            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#9a9ab0; font-size:13px; cursor:pointer;">
+            <option value="Male">Erkek</option>
+            <option value="Female">Kadın</option>
+          </select>
+          <input type="number" [(ngModel)]="newUser.age" placeholder="Yaş"
+            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
           <div *ngIf="createError" style="color:#e24b4a; font-size:12px;">{{ createError }}</div>
           <div style="display:flex; gap:8px; justify-content:flex-end;">
             <button class="btn-outline" (click)="showCreateModal = false">İptal</button>

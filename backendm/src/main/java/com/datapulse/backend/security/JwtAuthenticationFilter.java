@@ -1,7 +1,6 @@
 package com.datapulse.backend.security;
 
 import com.datapulse.backend.config.JwtUtil;
-import com.datapulse.backend.entity.User;
 import com.datapulse.backend.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -46,11 +45,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String email = jwtUtil.extractEmail(token);
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            User user = userRepository.findByEmail(email).orElse(null);
-            if (user != null) {
+            boolean userExists = userRepository.findByEmail(email).isPresent();
+            if (userExists) {
                 String role = jwtUtil.extractRole(token);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        user,
+                        email,
                         null,
                         List.of(new SimpleGrantedAuthority(role))
                 );

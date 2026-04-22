@@ -6,8 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -18,8 +16,12 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAll() {
-        return ResponseEntity.ok(productService.getAll());
+    public ResponseEntity<?> getAll(
+            @RequestParam(required = false) String searchTerm,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(productService.getAll(searchTerm, categoryId, org.springframework.data.domain.PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")

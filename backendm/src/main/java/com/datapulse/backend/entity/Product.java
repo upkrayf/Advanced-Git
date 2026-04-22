@@ -1,12 +1,18 @@
 package com.datapulse.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
-@Table(name = "products")
+@Table(name = "products", indexes = {
+    @Index(name = "idx_product_sku", columnList = "sku"),
+    @Index(name = "idx_product_name", columnList = "name"),
+    @Index(name = "idx_product_category", columnList = "category_id"),
+    @Index(name = "idx_product_store", columnList = "store_id")
+})
 public class Product {
 
     @Id
@@ -66,5 +72,22 @@ public class Product {
     public void setStore(Store store) {this.store = store;}
     public List<Review> getReviews() { return reviews; }
     public void setReviews(List<Review> reviews) { this.reviews = reviews; }
-    
+
+    // Frontend uyumu için alias getter'lar
+    @JsonProperty("price")
+    public BigDecimal getPrice() { return unitPrice; }
+
+    @JsonProperty("stock")
+    public Integer getStock() { return stockQuantity; }
+
+    @JsonProperty("categoryName")
+    public String getCategoryName() { return category != null ? category.getName() : null; }
+
+    @JsonProperty("imageUrl")
+    public String getImageUrl() {
+        return icon != null && !icon.isBlank() ? icon : "https://via.placeholder.com/300x300.png?text=Ütün+Görseli";
+    }
+
+    @JsonProperty("storeName")
+    public String getStoreName() { return store != null ? store.getName() : null; }
 }

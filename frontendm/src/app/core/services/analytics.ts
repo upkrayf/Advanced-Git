@@ -18,18 +18,26 @@ export class Analytics {
     return this.http.get<PlatformKpis>(`${this.apiUrl}/platform/kpis`);
   }
 
+  getRevenueTrend(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/revenue/trend`);
+  }
+
   getRevenue(period: 'daily' | 'monthly' | 'yearly' = 'monthly'): Observable<RevenuePoint[]> {
     const p = new HttpParams().set('period', period);
-    return this.http.get<RevenuePoint[]>(`${this.apiUrl}/revenue`, { params: p });
+    return this.http.get<RevenuePoint[]>(`${this.apiUrl}/revenue/trend`, { params: p });
   }
 
   getOrderStatus(): Observable<OrderStatusCount[]> {
     return this.http.get<OrderStatusCount[]>(`${this.apiUrl}/orders/status`);
   }
 
-  getTopProducts(limit = 10): Observable<TopProduct[]> {
+  getTopProducts(limit = 10): Observable<any[]> {
     const p = new HttpParams().set('limit', limit);
-    return this.http.get<TopProduct[]>(`${this.apiUrl}/products/top`, { params: p });
+    return this.http.get<any[]>(`${this.apiUrl}/products/top`, { params: p });
+  }
+
+  getUserDemographics(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/users/demographics`);
   }
 
   getSalesByCategory(): Observable<CategorySales[]> {

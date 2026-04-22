@@ -3,6 +3,7 @@ package com.datapulse.backend.controller;
 import com.datapulse.backend.entity.Shipment;
 import com.datapulse.backend.service.ShipmentService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,11 @@ public class ShipmentController {
     @GetMapping
     public ResponseEntity<List<Shipment>> getAll() {
         return ResponseEntity.ok(shipmentService.getAll());
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<Shipment>> getMyShipments(Authentication authentication) {
+        return ResponseEntity.ok(shipmentService.getMyShipments(authentication.getName()));
     }
 
     @GetMapping("/{id}")

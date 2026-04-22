@@ -1,0 +1,10 @@
+langgraph
+langchain-openai
+langchain-google-genai
+fastapi
+uvicorn
+sqlalchemy
+pymysql
+pandas
+plotly
+python-dotenv

@@ -10,6 +10,8 @@ import { IndividualStats, SpendingByCategory } from '../../../core/models/analyt
 import { OrderModel } from '../../../core/models/order.model';
 import { ShipmentModel } from '../../../core/models/shipment.model';
 import { ShipmentService } from '../../../core/services/shipment';
+import { Auth } from '../../../core/services/auth';
+import { UserModel } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-individual-dashboard',
@@ -30,7 +32,8 @@ export class IndividualDashboard implements OnInit {
     private analytics: Analytics,
     private orderService: OrderService,
     private shipmentService: ShipmentService,
-    private userService: UserService
+    private userService: UserService,
+    private authService: Auth
   ) {}
 
   ngOnInit(): void {
@@ -43,7 +46,7 @@ export class IndividualDashboard implements OnInit {
 
   loadUser(): void {
     this.userService.getMe().subscribe({
-      next: (u) => this.userName = u.name,
+      next: (u: UserModel) => this.userName = u.fullName || 'Misafir',
       error: () => this.userName = 'Kullanıcı'
     });
   }
@@ -51,39 +54,28 @@ export class IndividualDashboard implements OnInit {
   loadStats(): void {
     this.analytics.getMyStats().subscribe({
       next: (d) => this.stats = d,
-      error: () => this.stats = { totalSpent: 3240, activeOrders: 2, totalOrders: 18, pendingReviews: 3, savedAmount: 185 }
+      error: () => this.stats = { totalSpent: 0, activeOrders: 0, totalOrders: 0, pendingReviews: 0, savedAmount: 0 }
     });
   }
 
   loadOrders(): void {
     this.orderService.getMyOrders(0, 4).subscribe({
-      next: (d) => this.recentOrders = d.content,
-      error: () => this.recentOrders = [
-        { id: 1024, storeName: 'TechStore', totalAmount: 499, status: 'SHIPPED', createdAt: '2026-04-10' },
-        { id: 1019, storeName: 'Ev Dünyası', totalAmount: 120, status: 'DELIVERED', createdAt: '2026-03-25' },
-      ]
+      next: (d) => this.recentOrders = d.slice(0, 4),
+      error: () => this.recentOrders = []
     });
   }
 
   loadShipments(): void {
     this.shipmentService.getMyShipments().subscribe({
       next: (d) => this.activeShipments = d.slice(0, 3),
-      error: () => this.activeShipments = [
-        { id: 1, orderId: 1024, trackingNo: 'TRK2839281', carrier: 'PTT', status: 'SHIPPED', estimatedDelivery: '2026-04-15' },
-        { id: 2, orderId: 1019, status: 'DELIVERED', actualDelivery: '2026-04-06' },
-      ]
+      error: () => this.activeShipments = []
     });
   }
 
   loadSpending(): void {
     this.analytics.getMySpendingByCategory().subscribe({
       next: (d) => this.spendingByCategory = d,
-      error: () => this.spendingByCategory = [
-        { categoryName: 'Elektronik', amount: 1890 },
-        { categoryName: 'Giyim', amount: 640 },
-        { categoryName: 'Ev & Yaşam', amount: 480 },
-        { categoryName: 'Kitap', amount: 230 },
-      ]
+      error: () => this.spendingByCategory = []
     });
   }
 

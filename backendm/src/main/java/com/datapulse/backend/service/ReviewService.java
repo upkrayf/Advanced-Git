@@ -23,6 +23,10 @@ public class ReviewService {
         return reviewRepository.findByProduct_Id(productId);
     }
 
+    public List<Review> getMyReviews(String email) {
+        return reviewRepository.findByUser_Email(email);
+    }
+
     public Review create(Review review) {
         review.setDate(LocalDate.now());
         return reviewRepository.save(review);

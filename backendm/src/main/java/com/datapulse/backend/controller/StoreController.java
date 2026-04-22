@@ -4,6 +4,7 @@ import com.datapulse.backend.entity.Store;
 import com.datapulse.backend.service.StoreService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,15 @@ public class StoreController {
     @GetMapping
     public ResponseEntity<List<Store>> getAll() {
         return ResponseEntity.ok(storeService.getAll());
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<Store> getMyStore(Authentication authentication) {
+        try {
+            return ResponseEntity.ok(storeService.getMyStore(authentication.getName()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/{id}")

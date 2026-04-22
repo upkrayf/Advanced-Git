@@ -1,107 +1,98 @@
 .sidebar {
-    width: 220px;
-    min-width: 220px;
-    height: 100vh;
-    background: #1a1a24;
-    border-right: 0.5px solid #2e2e3e;
-    display: flex;
-    flex-direction: column;
-    position: sticky;
-    top: 0;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  height: 100vh;
+  background: #121212; /* Deep Charcoal */
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 16px;
+  border-right: 1px solid #222;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 1.2rem;
-    border-bottom: 0.5px solid #2e2e3e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 0 12px;
+  margin-bottom: 48px;
+  cursor: pointer;
+  text-decoration: none;
 }
 
-.logo-icon {
-    width: 32px;
-    height: 32px;
-    background: #6c63ff;
-    border-radius: 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 500;
-    color: #fff;
+.logo-img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  filter: invert(1);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sidebar-logo:hover .logo-img {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .logo-text {
-    font-size: 16px;
-    font-weight: 500;
-    color: #f0f0f5;
-}
-
-.sidebar-section {
-    padding: 1rem 0;
-    flex: 1;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: #fff;
+  font-family: 'Playfair Display', serif; /* Falling back to serif if playfair isn't loaded */
 }
 
 .sidebar-label {
-    font-size: 10px;
-    color: #4a4a6a;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    padding: 0 1.2rem;
-    margin-bottom: 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 24px 12px 12px;
 }
 
 .sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 1.2rem;
-    font-size: 13px;
-    color: #7a7a9a;
-    cursor: pointer;
-    transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+}
+
+.sidebar-item:hover {
+  background: #1a1a1a;
+  color: #fff;
 }
 
 .sidebar-item.active {
-    background: #23233a;
-    color: #f0f0f5;
-    border-right: 2px solid #6c63ff;
-}
-
-.sidebar-item:hover:not(.active) {
-    color: #c0c0d0;
-    background: #1e1e2e;
-}
-
-.sidebar-bottom {
-    border-top: 0.5px solid #2e2e3e;
-    padding: 0.8rem 0;
+  background: #222;
+  color: #fff;
 }
 
 .s-icon {
-    width: 16px;
-    height: 16px;
-    min-width: 16px;
-    border-radius: 3px;
-    background: #2e2e3e;
+  font-size: 16px;
+  opacity: 0.8;
 }
 
-.s-icon.purple {
-    background: #6c63ff;
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #222;
 }
 
-.s-icon.green {
-    background: #1d9e75;
-}
+/* Role specific accents */
+.sidebar.corporate .sidebar-item.active { border-left: 3px solid #6c63ff; }
+.sidebar.individual .sidebar-item.active { border-left: 3px solid #1d9e75; }
 
-.s-icon.amber {
-    background: #ba7517;
-}
-
-.s-icon.red {
-    background: #e24b4a;
-}
-
-.s-icon.blue {
-    background: #378add;
+@media (max-width: 768px) {
+  .sidebar { width: 70px; }
+  .logo-text, .sidebar-label, .sidebar-item span:not(.s-icon) { display: none; }
 }

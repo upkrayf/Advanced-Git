@@ -18,6 +18,7 @@ export class Checkout implements OnInit {
   address = '';
   city = '';
   postalCode = '';
+  paymentMethod = 'credit_card';
   loading = false;
   error = '';
   success = false;
@@ -31,26 +32,29 @@ export class Checkout implements OnInit {
   formatCurrency(v: number): string { return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2 }); }
 
   placeOrder(): void {
-    if (!this.address || !this.city) { this.error = 'Adres bilgilerini doldurun.'; return; }
+    if (!this.address?.trim() || !this.city?.trim()) { this.error = 'Lütfen adres ve şehir bilgilerinizi doldurun.'; return; }
+    if (!this.paymentMethod) { this.error = 'Ödeme yöntemi seçin.'; return; }
     if (!this.items.length) { this.error = 'Sepetiniz boş.'; return; }
 
-    const storeId = this.items[0]?.product.storeId || 1;
-    const orderRequest: CreateOrderRequest = {
-      storeId,
-      items: this.items.map(i => ({ productId: i.product.id, quantity: i.quantity })),
-      shippingAddress: `${this.address}, ${this.city} ${this.postalCode}`
+    const checkoutData = {
+      paymentMethod: this.paymentMethod,
+      items: this.items.map(i => ({ 
+        productId: i.product.id, 
+        quantity: i.quantity,
+        price: i.product.unitPrice || i.product.price || 0
+      }))
     };
 
     this.loading = true;
-    this.orderService.createOrder(orderRequest).subscribe({
+    this.orderService.checkout(checkoutData).subscribe({
       next: () => {
         this.cartService.clearCart();
         this.success = true;
         this.loading = false;
-        setTimeout(() => this.router.navigate(['/individual/orders']), 2000);
+        setTimeout(() => this.router.navigate(['/individual/dashboard']), 2000);
       },
-      error: () => {
-        this.error = 'Sipariş oluşturulamadı. Tekrar deneyin.';
+      error: (err) => {
+        this.error = 'Sipariş oluşturulamadı: ' + (err.error?.message || 'Tekrar deneyin.');
         this.loading = false;
       }
     });

@@ -30,7 +30,7 @@ export class Profile implements OnInit {
     this.userService.getMe().subscribe({
       next: (u) => { this.user = u; this.form = { ...u }; this.loading = false; },
       error: () => {
-        this.user = { id: 1, name: 'Zeynep Kaya', email: 'zeynep@gmail.com', roleType: 'INDIVIDUAL', phone: '0541 200 3040', city: 'Ankara' };
+        this.user = { id: 1, fullName: 'Zeynep Kaya', email: 'zeynep@gmail.com', roleType: 'INDIVIDUAL', phone: '0541 200 3040', city: 'Ankara' };
         this.form = { ...this.user };
         this.loading = false;
       }

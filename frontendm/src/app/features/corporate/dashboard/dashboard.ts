@@ -33,46 +33,29 @@ export class CorporateDashboard implements OnInit {
 
     this.analytics.getCorporateKpis().subscribe({
       next: (d) => { this.kpis = d; this.loading = false; },
-      error: () => {
-        this.kpis = { totalRevenue: 284500, ordersToday: 47, avgOrderValue: 142.3, pendingShipments: 23, lowStockItems: 8, totalProducts: 189 };
-        this.loading = false;
-      }
+      error: () => { this.kpis = null; this.loading = false; }
     });
 
     this.analytics.getStoreRevenue('monthly').subscribe({
       next: (d) => this.revenueData = d,
-      error: () => this.revenueData = [
-        { label: 'Eki', value: 18000 }, { label: 'Kas', value: 24000 },
-        { label: 'Ara', value: 31000 }, { label: 'Oca', value: 21000 },
-        { label: 'Şub', value: 38000 }, { label: 'Mar', value: 42000 },
-      ]
+      error: () => this.revenueData = []
     });
 
     this.analytics.getStoreTopProducts(5).subscribe({
       next: (d) => this.topProducts = d,
-      error: () => this.topProducts = [
-        { productId: 1, productName: 'iPhone 15 Pro', totalSold: 142, revenue: 170358 },
-        { productId: 2, productName: 'AirPods Pro', totalSold: 89, revenue: 22161 },
-        { productId: 3, productName: 'iPad Air', totalSold: 67, revenue: 53399 },
-      ]
+      error: () => this.topProducts = []
     });
 
     this.analytics.getOrderStatus().subscribe({
       next: (d) => this.orderStatus = d,
-      error: () => this.orderStatus = [
-        { status: 'DELIVERED', count: 1240 }, { status: 'SHIPPED', count: 310 },
-        { status: 'PENDING', count: 98 }, { status: 'CANCELLED', count: 42 },
-      ]
+      error: () => this.orderStatus = []
     });
 
-    this.orderService.getOrders({ page: 0, size: 5 }).subscribe({
-      next: (d) => this.recentOrders = d.content,
-      error: () => this.recentOrders = [
-        { id: 1024, customerName: 'Zeynep Kaya', totalAmount: 499.0, status: 'SHIPPED', createdAt: '2026-04-10' },
-        { id: 1023, customerName: 'Mert Arslan', totalAmount: 129.9, status: 'DELIVERED', createdAt: '2026-04-09' },
-        { id: 1022, customerName: 'Ayşe Demir', totalAmount: 2199.0, status: 'PENDING', createdAt: '2026-04-09' },
-        { id: 1021, customerName: 'Hasan Öz', totalAmount: 79.9, status: 'DELIVERED', createdAt: '2026-04-08' },
-      ]
+    this.orderService.getOrders({ size: 5 }).subscribe({
+      next: (d) => this.recentOrders = d.slice(0, 5),
+      error: () => {
+        this.recentOrders = []
+      }
     });
   }
 

@@ -7,21 +7,40 @@ import { UserService } from '../../../core/services/user';
 import { PlatformKpis, OrderStatusCount, TopProduct } from '../../../core/models/analytics.model';
 import { UserModel } from '../../../core/models/user.model';
 
+import { BarChartModule, PieChartModule, LineChartModule } from '@swimlane/ngx-charts';
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, Sidebar, RouterModule],
+  imports: [CommonModule, Sidebar, RouterModule, BarChartModule, PieChartModule, LineChartModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
 export class AdminDashboard implements OnInit {
   kpis: PlatformKpis | null = null;
-  orderStatus: OrderStatusCount[] = [];
-  topProducts: TopProduct[] = [];
-  recentUsers: UserModel[] = [];
-  revenueData: { label: string; value: number }[] = [];
+  orderStatus: any[] = [];
+  topProducts: any[] = [];
+  recentUsers: any[] = [];
+  revenueTrend: any[] = [];
+  demographics: any[] = [];
+  
   loading = true;
   error = '';
+
+  // Chart options
+  view: [number, number] = [700, 300];
+  showXAxis = true;
+  showYAxis = true;
+  gradient = false;
+  showLegend = true;
+  showXAxisLabel = true;
+  xAxisLabel = 'Month';
+  showYAxisLabel = true;
+  yAxisLabel = 'Revenue';
+
+  colorScheme: any = {
+    domain: ['#1a1a1a', '#36454f', '#5a5a5a', '#8a8a8a']
+  };
 
   constructor(private analytics: Analytics, private userService: UserService) {}
 
@@ -31,76 +50,49 @@ export class AdminDashboard implements OnInit {
 
   loadData(): void {
     this.loading = true;
+    
+    // KPI Data (returning some mock for KPIs not in analytics yet)
     this.analytics.getPlatformKpis().subscribe({
-      next: (data) => { this.kpis = data; this.loading = false; },
-      error: () => {
-        this.kpis = {
-          totalUsers: 12430, totalStores: 342, totalOrders: 58920,
-          totalRevenue: 984000, newUsersThisMonth: 1240, newOrdersToday: 183,
-          suspendedAccounts: 23, activeStores: 328
-        };
-        this.loading = false;
-      }
+      next: (data) => { this.kpis = data; },
+      error: () => { this.kpis = null; }
     });
 
-    this.analytics.getRevenue('monthly').subscribe({
-      next: (data) => { this.revenueData = data; },
-      error: () => {
-        this.revenueData = [
-          { label: 'Eki', value: 62000 }, { label: 'Kas', value: 75000 },
-          { label: 'Ara', value: 88000 }, { label: 'Oca', value: 71000 },
-          { label: 'Şub', value: 94000 }, { label: 'Mar', value: 112000 },
-        ];
-      }
+    this.analytics.getRevenueTrend().subscribe({
+      next: (data) => { this.revenueTrend = data; },
+      error: () => {}
     });
 
     this.analytics.getOrderStatus().subscribe({
-      next: (data) => { this.orderStatus = data; },
-      error: () => {
-        this.orderStatus = [
-          { status: 'DELIVERED', count: 41200 }, { status: 'SHIPPED', count: 8700 },
-          { status: 'PENDING', count: 5100 }, { status: 'CANCELLED', count: 3920 },
-        ];
+      next: (data) => {
+        this.orderStatus = Object.entries(data).map(([name, value]) => ({ name, value }));
       }
     });
 
     this.analytics.getTopProducts(5).subscribe({
-      next: (data) => { this.topProducts = data; },
-      error: () => {
-        this.topProducts = [
-          { productId: 1, productName: 'iPhone 15 Pro', totalSold: 1240, revenue: 1487960 },
-          { productId: 2, productName: 'Samsung 4K TV', totalSold: 840, revenue: 756000 },
-          { productId: 3, productName: 'Nike Air Max', totalSold: 2100, revenue: 378000 },
-          { productId: 4, productName: 'MacBook Air', totalSold: 620, revenue: 806000 },
-          { productId: 5, productName: 'Sony WH-1000XM5', totalSold: 980, revenue: 352800 },
-        ];
+      next: (data) => { this.topProducts = data; }
+    });
+
+    this.analytics.getUserDemographics().subscribe({
+      next: (data) => {
+        this.demographics = Object.entries(data).map(([name, value]) => ({ name, value }));
       }
     });
 
     this.userService.getUsers({ page: 0, size: 5 }).subscribe({
-      next: (data) => { this.recentUsers = data.content; },
-      error: () => {
-        this.recentUsers = [
-          { id: 1, name: 'Ahmet Yılmaz', email: 'ahmet@techstore.com', roleType: 'CORPORATE', isActive: true, createdAt: '2026-03-12' },
-          { id: 2, name: 'Zeynep Kaya', email: 'zeynep@gmail.com', roleType: 'INDIVIDUAL', isActive: true, createdAt: '2026-03-28' },
-          { id: 3, name: 'Murat Demir', email: 'murat@shop.com', roleType: 'CORPORATE', isActive: false, createdAt: '2026-04-02' },
-          { id: 4, name: 'Elif Şahin', email: 'elif@hotmail.com', roleType: 'INDIVIDUAL', isActive: false, createdAt: '2026-04-05' },
-        ];
-      }
+      next: (data) => { 
+        this.recentUsers = data.content;
+        this.loading = false;
+      },
+      error: () => { this.loading = false; }
     });
-  }
-
-  getBarHeight(value: number): string {
-    if (!this.revenueData.length) return '0%';
-    const max = Math.max(...this.revenueData.map(r => r.value));
-    return max > 0 ? `${Math.round((value / max) * 100)}%` : '0%';
   }
 
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       DELIVERED: 'Teslim Edildi', SHIPPED: 'Kargoda',
-      PENDING: 'Beklemede', CONFIRMED: 'Onaylandı',
-      CANCELLED: 'İptal', RETURNED: 'İade'
+      PENDING: 'Beklemede', PLACED: 'Sipariş Alındı',
+      CANCELLED: 'İptal', RETURNED: 'İade', 
+      CONFIRMED: 'Onaylandı'
     };
     return labels[status] || status;
   }

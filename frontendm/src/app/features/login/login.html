@@ -2,14 +2,20 @@
     <div class="login-card">
 
         <div class="logo">
-            <img src="images/mes.png"  alt="cano"  class="logo-img"/>
-            <span class="logo-text">MES</span>
+            <img src="/images/crow-logo.png" alt="Crow Logo" class="logo-img" />
+            <span class="logo-text">Crow</span>
         </div>
 
-        <h1 class="login-title">Hoş geldiniz</h1>
-        <p class="login-sub">Hesabınıza giriş yapın</p>
+        <h1 class="login-title">{{ isRegister ? 'Kayıt Ol' : 'Hoş geldiniz' }}</h1>
+        <p class="login-sub">{{ isRegister ? 'Yeni bir hesap oluşturun' : 'Hesabınıza giriş yapın' }}</p>
 
-        <form (ngSubmit)="onLogin()">
+        <form (ngSubmit)="isRegister ? onRegister() : onLogin()">
+
+            <div class="field-wrap" *ngIf="isRegister">
+                <label class="field-label">Ad Soyad</label>
+                <input class="field-input" type="text" placeholder="Ad Soyad" [(ngModel)]="fullName" name="fullName"
+                    required />
+            </div>
 
             <div class="field-wrap">
                 <label class="field-label">E-posta</label>
@@ -23,15 +29,45 @@
                     required />
             </div>
 
-            <span class="forgot">Şifremi unuttum</span>
+            <div class="field-wrap" *ngIf="isRegister">
+                <label class="field-label">Cinsiyet</label>
+                <select class="field-input" [(ngModel)]="gender" name="gender">
+                    <option value="Male">Erkek</option>
+                    <option value="Female">Kadın</option>
+                    <option value="Other">Diğer</option>
+                </select>
+            </div>
+
+            <div class="field-wrap" *ngIf="isRegister">
+                <label class="field-label">Yaş</label>
+                <input class="field-input" type="number" placeholder="Yaş" [(ngModel)]="age" name="age" />
+            </div>
+
+            <div class="field-wrap" *ngIf="isRegister">
+                <label class="field-label">Hesap Türü</label>
+                <select class="field-input" [(ngModel)]="roleType" name="roleType">
+                    <option value="INDIVIDUAL">Bireysel (Individual)</option>
+                    <option value="CORPORATE">Kurumsal (Corporate)</option>
+                </select>
+            </div>
+
+            <span class="forgot" *ngIf="!isRegister">Şifremi unuttum</span>
 
             <p class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</p>
+            <p class="success-msg" *ngIf="successMessage">{{ successMessage }}</p>
 
-            <button class="btn-login" type="submit">Giriş Yap</button>
+            <button class="btn-login" type="submit">{{ isRegister ? 'Kayıt Ol' : 'Giriş Yap' }}</button>
+
+            <div class="register-toggle">
+                {{ isRegister ? 'Zaten hesabınız var mı?' : 'Henüz hesabınız yok mu?' }}
+                <button type="button" class="btn-toggle" (click)="toggleRegister()">
+                    {{ isRegister ? 'Giriş Yap' : 'Kayıt Ol' }}
+                </button>
+            </div>
 
         </form>
 
-        <div class="demo-accounts">
+        <div class="demo-accounts" *ngIf="!isRegister">
             <p class="demo-title">Demo hesaplar</p>
             <div class="demo-btns">
                 <button class="demo-btn" (click)="fillDemo('admin')">Admin</button>

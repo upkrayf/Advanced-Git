@@ -1,6 +1,6 @@
 <div class="page-layout">
   <app-sidebar />
-  <div class="main-content" style="padding:1.5rem;">
+  <div class="main-content">
 
     <div class="topbar">
       <div>
@@ -50,9 +50,9 @@
         <div class="card-title">Aylık Gelir Trendi</div>
         <div style="display:flex; align-items:flex-end; gap:8px; height:140px; padding:8px 0;">
           <div *ngFor="let bar of revenueData" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
-            <div style="font-size:10px; color:#7a7a9a; margin-bottom:4px;">${{ (bar.value / 1000).toFixed(0) }}K</div>
-            <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: linear-gradient(180deg,#1d9e75,#0f7a5a); width:100%; border-radius:3px 3px 0 0;"></div>
-            <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.label }}</div>
+            <div style="font-size:10px; color:var(--text-secondary); margin-bottom:4px;">${{ (bar.value / 1000).toFixed(0) }}K</div>
+            <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: var(--accent-primary); width:100%; border-radius:3px 3px 0 0;"></div>
+            <div style="font-size:10px; color:var(--text-primary); margin-top:4px;">{{ bar.name }}</div>
           </div>
         </div>
       </div>

@@ -5,6 +5,8 @@ import com.datapulse.backend.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class ProductService {
@@ -16,6 +18,16 @@ public class ProductService {
 
     public List<Product> getAll() {
         return productRepository.findAll();
+    }
+
+    public Page<Product> getAll(String searchTerm, Long categoryId, Pageable pageable) {
+        if (searchTerm != null && !searchTerm.isEmpty()) {
+            return productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(searchTerm, searchTerm, pageable);
+        }
+        if (categoryId != null) {
+            return productRepository.findByCategoryId(categoryId, pageable);
+        }
+        return productRepository.findAll(pageable);
     }
 
     public Product getById(Long id) {

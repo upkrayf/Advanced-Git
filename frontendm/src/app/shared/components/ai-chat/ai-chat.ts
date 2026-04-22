@@ -31,8 +31,18 @@ export class AiChat {
     this.loading = true;
 
     this.chatService.ask(questionText).subscribe({
-      next: answer => {
-        this.messages.push({ sender: 'assistant', text: answer });
+      next: response => {
+        // response artık bir ChatResponse nesnesi (reply, visualization, sqlQuery içeriyor)
+        this.messages.push({ 
+          sender: 'assistant', 
+          text: response.reply || 'Yanıt alınamadı.' 
+        });
+        
+        if (response.visualization) {
+          console.log('Grafik verisi alındı:', response.visualization);
+          // İleride grafik çizimi için burası genişletilebilir
+        }
+        
         this.loading = false;
       },
       error: () => {

@@ -31,7 +31,7 @@ export class Customers implements OnInit {
     this.userService.getUsers({ page: this.page, size: this.size, role: 'INDIVIDUAL', search: this.search || undefined }).subscribe({
       next: (data) => {
         this.customers = (data.content as any[]).map(u => ({
-          id: u.id, userId: u.id, name: u.name, email: u.email,
+          id: u.id, userId: u.id, name: u.fullName || u.email, email: u.email,
           phone: u.phone, city: u.city, totalOrders: u.totalOrders || 0,
           totalSpent: u.totalSpent || 0, createdAt: u.createdAt
         }));
@@ -40,12 +40,7 @@ export class Customers implements OnInit {
         this.loading = false;
       },
       error: () => {
-        this.customers = [
-          { id: 1, userId: 1, name: 'Zeynep Kaya', email: 'zeynep@gmail.com', phone: '0541 200 3040', city: 'Ankara', totalOrders: 12, totalSpent: 3240, lastOrderDate: '2026-04-10' },
-          { id: 2, userId: 2, name: 'Mert Arslan', email: 'mert@mail.com', phone: '0532 110 2020', city: 'İstanbul', totalOrders: 7, totalSpent: 1890, lastOrderDate: '2026-04-09' },
-          { id: 3, userId: 3, name: 'Ayşe Demir', email: 'ayse@mail.com', phone: '0555 330 4040', city: 'İzmir', totalOrders: 24, totalSpent: 8750, lastOrderDate: '2026-04-09' },
-          { id: 4, userId: 4, name: 'Hasan Öz', email: 'hasan@mail.com', phone: '0542 440 5050', city: 'Bursa', totalOrders: 4, totalSpent: 620, lastOrderDate: '2026-04-08' },
-        ];
+        this.customers = [];
         this.loading = false;
       }
     });

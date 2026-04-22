@@ -73,14 +73,29 @@
       </div>
     </div>
 
-    <!-- Load More -->
-    <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-top:1.5rem;" *ngIf="totalPages > 1">
-      <span style="font-size:12px; color:#7a7a9a;">{{ products.length }} / {{ totalElements }} ürün yüklendi</span>
-      <button class="btn-outline" (click)="loadMore()" [disabled]="loadingMore || page >= totalPages - 1" style="min-width:180px;">
-        <ng-container *ngIf="!loadingMore">Daha fazla göster</ng-container>
-        <ng-container *ngIf="loadingMore">Yükleniyor...</ng-container>
-      </button>
-    </div>
+    <!-- Sayaç -->
+    @if (totalElements > 0) {
+      <div style="text-align:center; font-size:12px; color:#7a7a9a; margin-top:1rem;">
+        {{ products.length }} / {{ totalElements }} ürün gösteriliyor
+      </div>
+    }
+
+    <!-- Infinite scroll sentinel -->
+    <div #sentinel style="height:1px; margin-top:2rem;"></div>
+
+    <!-- Daha fazla yükleniyor spinner -->
+    @if (loadingMore) {
+      <div style="text-align:center; color:#6c63ff; padding:1.5rem; font-size:13px;">
+        ⏳ Daha fazla ürün yükleniyor…
+      </div>
+    }
+
+    <!-- Tüm ürünler yüklendi -->
+    @if (!hasMore && products.length > 0 && !loading) {
+      <div style="text-align:center; color:#4a4a6a; padding:1rem; font-size:12px;">
+        ✓ Tüm ürünler yüklendi
+      </div>
+    }
 
   </div>
 </div>

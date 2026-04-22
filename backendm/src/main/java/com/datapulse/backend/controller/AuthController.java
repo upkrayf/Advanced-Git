@@ -6,6 +6,7 @@ import com.datapulse.backend.dto.RefreshTokenRequest;
 import com.datapulse.backend.dto.RegisterRequest;
 import com.datapulse.backend.entity.User;
 import com.datapulse.backend.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +20,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<User> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 

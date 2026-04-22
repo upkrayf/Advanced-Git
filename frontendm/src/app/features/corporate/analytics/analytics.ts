@@ -34,9 +34,9 @@ export class CorporateAnalytics implements OnInit {
     this.analytics.getStoreRevenue(this.period).subscribe({
       next: (d) => this.revenueData = d,
       error: () => this.revenueData = [
-        { label: 'Eki', value: 18000 }, { label: 'Kas', value: 24000 },
-        { label: 'Ara', value: 31000 }, { label: 'Oca', value: 21000 },
-        { label: 'Şub', value: 38000 }, { label: 'Mar', value: 42000 },
+        { name: 'Eki', value: 18000 }, { name: 'Kas', value: 24000 },
+        { name: 'Ara', value: 31000 }, { name: 'Oca', value: 21000 },
+        { name: 'Şub', value: 38000 }, { name: 'Mar', value: 42000 },
       ]
     });
 

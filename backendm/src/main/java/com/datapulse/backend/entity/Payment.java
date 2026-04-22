@@ -11,11 +11,12 @@ public class Payment {
     private Long id;
 
     private String paymentType; // credit_card, boleto, etc.
-    private BigDecimal paymentValue;
+    private BigDecimal amount;
     
 
     @ManyToOne
     @JoinColumn(name = "order_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Order order;
 
     public Payment() {}
@@ -25,8 +26,8 @@ public class Payment {
     public void setId(Long id) { this.id = id; }
     public String getPaymentType() { return paymentType; }
     public void setPaymentType(String paymentType) { this.paymentType = paymentType; }
-    public BigDecimal getPaymentValue() { return paymentValue; }
-    public void setPaymentValue(BigDecimal paymentValue) { this.paymentValue = paymentValue; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
     
     public Order getOrder() { return order; }
     public void setOrder(Order order) { this.order = order; }

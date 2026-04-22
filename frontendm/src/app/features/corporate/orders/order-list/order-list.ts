@@ -29,7 +29,7 @@ export class CorporateOrderList implements OnInit {
   loadOrders(): void {
     this.loading = true;
     this.orderService.getOrders({ page: this.page, size: this.size, status: this.selectedStatus || undefined }).subscribe({
-      next: (d) => { this.orders = d.content; this.totalElements = d.totalElements; this.totalPages = d.totalPages; this.loading = false; },
+      next: (d) => { this.orders = d; this.totalElements = d.length; this.totalPages = 1; this.loading = false; },
       error: () => {
         this.orders = [
           { id: 1024, customerName: 'Zeynep Kaya', customerEmail: 'zeynep@gmail.com', totalAmount: 499.0, status: 'SHIPPED', createdAt: '2026-04-10' },

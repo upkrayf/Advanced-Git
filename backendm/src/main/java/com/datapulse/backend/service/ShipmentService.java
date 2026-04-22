@@ -21,4 +21,8 @@ public class ShipmentService {
     public Shipment getById(Long id) {
         return shipmentRepository.findById(id).orElseThrow(() -> new RuntimeException("Shipment not found"));
     }
+
+    public List<Shipment> getMyShipments(String email) {
+        return shipmentRepository.findByUserEmail(email);
+    }
 }

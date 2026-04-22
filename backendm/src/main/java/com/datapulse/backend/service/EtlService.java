@@ -2,609 +2,740 @@ package com.datapulse.backend.service;
 
 import com.datapulse.backend.entity.*;
 import com.datapulse.backend.repository.*;
-import com.opencsv.CSVParser;
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.*;
+import java.util.logging.Logger;
 
 @Service
 public class EtlService {
 
+    private static final Logger log = Logger.getLogger(EtlService.class.getName());
+
     private final UserRepository userRepository;
-    private final CustomerProfileRepository customerProfileRepository;
-    private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final CustomerProfileRepository customerProfileRepository;
+    private final StoreRepository storeRepository;
+    private final ReviewRepository reviewRepository;
     private final PaymentRepository paymentRepository;
     private final ShipmentRepository shipmentRepository;
-    private final ReviewRepository reviewRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public EtlService(UserRepository userRepository,
-                      CustomerProfileRepository customerProfileRepository,
-                      CategoryRepository categoryRepository,
                       ProductRepository productRepository,
+                      CategoryRepository categoryRepository,
                       OrderRepository orderRepository,
                       OrderItemRepository orderItemRepository,
+                      CustomerProfileRepository customerProfileRepository,
+                      StoreRepository storeRepository,
+                      ReviewRepository reviewRepository,
                       PaymentRepository paymentRepository,
                       ShipmentRepository shipmentRepository,
-                      ReviewRepository reviewRepository) {
+                      RefreshTokenRepository refreshTokenRepository,
+                      PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-        this.customerProfileRepository = customerProfileRepository;
-        this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
+        this.customerProfileRepository = customerProfileRepository;
+        this.storeRepository = storeRepository;
+        this.reviewRepository = reviewRepository;
         this.paymentRepository = paymentRepository;
         this.shipmentRepository = shipmentRepository;
-        this.reviewRepository = reviewRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    @Transactional
     public void runEtl() {
-        System.out.println("ETL Process Started...");
-        try {
-            loadDs1();
-            loadDs2();
-            loadDs3();
-            loadDs4();
-            loadDs5();
-            loadDs6();
-            System.out.println("ETL Process Completed Successfully!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("ETL Process Failed: " + e.getMessage());
-        }
+        log.info("ETL başlıyor — tüm tablolar temizleniyor...");
+        clearAll();
+
+        String encodedPassword = passwordEncoder.encode("123");
+
+        log.info("Sistem kullanıcıları ve mağazalar oluşturuluyor...");
+        Map<String, Object[]> setup = createSystemSetup(encodedPassword);
+        User ukCorp      = (User) setup.get("ukCorp")[0];
+        User indiaCorp   = (User) setup.get("indiaCorp")[0];
+        User pakCorp     = (User) setup.get("pakCorp")[0];
+        Store ukStore    = (Store) setup.get("ukCorp")[1];
+        Store indiaStore = (Store) setup.get("indiaCorp")[1];
+        Store pakStore   = (Store) setup.get("pakCorp")[1];
+
+        log.info("DS1 yükleniyor (UK Retail)...");
+        loadDs1(encodedPassword, ukStore);
+
+        log.info("DS2 yükleniyor (Müşteri Demografisi)...");
+        loadDs2(encodedPassword);
+
+        log.info("DS3 yükleniyor (Kargo/Sevkiyat)...");
+        loadDs3(encodedPassword);
+
+        log.info("DS4 yükleniyor (Amazon Hindistan)...");
+        loadDs4(indiaCorp, indiaStore);
+
+        log.info("DS5 yükleniyor (Pakistan E-Ticaret)...");
+        loadDs5(encodedPassword, pakCorp, pakStore);
+
+        log.info("DS6 yükleniyor (Amazon Yorumları)...");
+        loadDs6(encodedPassword, ukStore);
+
+        log.info("ETL tamamlandı.");
     }
 
-    // -------------------------------------------------------------------------
-    // DS1: Online Retail (Invoice, StockCode, Description, Quantity, InvoiceDate,
-    //      Price, Customer ID, Country)
-    // -------------------------------------------------------------------------
-    private void loadDs1() throws Exception {
-        String file = "src/main/resources/data/ds1.csv";
-        System.out.println("Loading " + file);
-        DateTimeFormatter dt1 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        try (CSVReader reader = new CSVReader(new FileReader(file))) {
-            reader.readNext(); // skip header
-            String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 1000) {
-                if (line.length < 8) continue;
-                // col[0]=Invoice, col[1]=StockCode, col[2]=Description,
-                // col[3]=Quantity, col[4]=InvoiceDate, col[5]=Price,
-                // col[6]=Customer ID, col[7]=Country
-                String invoice      = line[0].trim();
-                String stockCode    = line[1].trim();
-                String description  = line[2].trim();
-                String quantityStr  = line[3].trim();
-                String invoiceDate  = line[4].trim();
-                String priceStr     = line[5].trim();
-                String customerId   = line[6].trim();
-                String country      = line[7].trim();
+    // ─── Temizlik ─────────────────────────────────────────────────────────────
 
-                if (customerId.isEmpty()) continue;
-                if (stockCode.isEmpty() || description.isEmpty()) continue;
-                if (priceStr.isEmpty() || quantityStr.isEmpty()) continue;
+    private void clearAll() {
+        // Deletion order respects FK constraints: child tables first, then parents
+        refreshTokenRepository.deleteAllInBatch();     // → users (must be first)
+        reviewRepository.deleteAllInBatch();           // → products, users
+        paymentRepository.deleteAllInBatch();          // → orders
+        orderItemRepository.deleteAllInBatch();        // → orders, products
+        orderRepository.deleteAllInBatch();            // → users, shipments
+        shipmentRepository.deleteAllInBatch();         // no more references
+        customerProfileRepository.deleteAllInBatch();  // → users
+        productRepository.deleteAllInBatch();          // → categories, stores
+        storeRepository.deleteAllInBatch();            // → users
+        categoryRepository.deleteAllInBatch();         // self-ref parent_id (all NULL)
+        userRepository.deleteAllInBatch();             // root table
+    }
 
-                double price;
-                try { price = Double.parseDouble(priceStr); } catch (NumberFormatException e) { continue; }
-                if (price <= 0) continue;
+    // ─── Sistem Kurulumu ──────────────────────────────────────────────────────
+
+    private Map<String, Object[]> createSystemSetup(String encodedPassword) {
+        // Admin
+        User admin = userRepository.save(new User("admin@datapulse.com", encodedPassword, "ADMIN", null, "Platform Admin"));
+
+        // Corporate users
+        User ukCorp    = userRepository.save(new User("uk@datapulse.com",       encodedPassword, "CORPORATE", null, "UK Retail Manager"));
+        User indiaCorp = userRepository.save(new User("india@datapulse.com",    encodedPassword, "CORPORATE", null, "India Amazon Manager"));
+        User pakCorp   = userRepository.save(new User("pakistan@datapulse.com", encodedPassword, "CORPORATE", null, "Pakistan E-Commerce Manager"));
+
+        // Stores
+        Store ukStore    = createStore("UK Retail Store",        "Active", ukCorp);
+        Store indiaStore = createStore("Amazon India Store",     "Active", indiaCorp);
+        Store pakStore   = createStore("Pakistan E-Commerce",    "Active", pakCorp);
+
+        Map<String, Object[]> result = new HashMap<>();
+        result.put("ukCorp",    new Object[]{ukCorp,    ukStore});
+        result.put("indiaCorp", new Object[]{indiaCorp, indiaStore});
+        result.put("pakCorp",   new Object[]{pakCorp,   pakStore});
+        return result;
+    }
+
+    private Store createStore(String name, String status, User owner) {
+        Store store = new Store();
+        store.setName(name);
+        store.setStatus(status);
+        store.setOwner(owner);
+        return storeRepository.save(store);
+    }
+
+    // ─── DS1: UK Retail (Invoice, StockCode, Description, Quantity, InvoiceDate, Price, CustomerID, Country) ──
+
+    private void loadDs1(String encodedPassword, Store ukStore) {
+        Category retailCat = getOrCreateCategory("Retail", null);
+        Map<String, Product>  productMap = new HashMap<>();
+        Map<String, User>     userMap    = new HashMap<>();
+        Map<String, Order>    orderMap   = new HashMap<>();
+        int rowLimit = 5000;
+        int count    = 0;
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new ClassPathResource("data/ds1.csv").getInputStream(), "UTF-8"))) {
+
+            String line = br.readLine(); // header
+            while ((line = br.readLine()) != null && count < rowLimit) {
+                String[] cols = splitCsv(line);
+                if (cols.length < 7) continue;
+
+                String invoice    = cols[0].trim();
+                String stockCode  = cols[1].trim();
+                String desc       = cols[2].trim();
+                String qtyStr     = cols[3].trim();
+                String dateStr    = cols[4].trim();
+                String priceStr   = cols[5].trim();
+                String customerRaw= cols[6].trim();
+
+                if (invoice.isBlank() || stockCode.isBlank() || customerRaw.isBlank()) continue;
+                String customerId = customerRaw.replace(".0", "").trim();
+                if (customerId.isBlank()) continue;
 
                 int qty;
-                try { qty = (int) Math.abs(Double.parseDouble(quantityStr)); } catch (NumberFormatException e) { continue; }
-                if (qty <= 0) continue;
+                BigDecimal price;
+                try {
+                    qty   = Integer.parseInt(qtyStr);
+                    price = new BigDecimal(priceStr);
+                } catch (NumberFormatException e) { continue; }
+                if (qty <= 0 || price.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-                // Parse InvoiceDate → orderDate
-                LocalDateTime orderDate = LocalDateTime.now();
-                try { orderDate = LocalDateTime.parse(invoiceDate, dt1); } catch (DateTimeParseException ignored) {}
+                // Product
+                Product product = productMap.computeIfAbsent(stockCode, sku -> {
+                    Product p = new Product();
+                    p.setSku(sku);
+                    p.setName(desc.isEmpty() ? sku : (desc.length() > 255 ? desc.substring(0, 255) : desc));
+                    p.setUnitPrice(price);
+                    p.setStockQuantity(100);
+                    p.setCategory(retailCat);
+                    p.setStore(ukStore);
+                    return productRepository.save(p);
+                });
 
-                // --- User ---
-                String email = "ds1_" + customerId.replace(".0", "") + "@dummy.com";
-                User user = userRepository.findByEmail(email).orElse(null);
-                if (user == null) {
-                    user = new User(email, "123", "INDIVIDUAL", null);
-                    user = userRepository.save(user);
-                }
+                // User
+                String email = "customer" + customerId + "@retail.co.uk";
+                User user = userMap.computeIfAbsent(email, e -> {
+                    User u = new User(e, encodedPassword, "INDIVIDUAL", null, "Customer " + customerId);
+                    return userRepository.save(u);
+                });
 
-                // --- Category ---
-                Category category = findOrCreateCategory("General");
+                // Order
+                Order order = orderMap.computeIfAbsent(invoice, inv -> {
+                    Order o = new Order();
+                    o.setOrderNumber(inv);
+                    o.setOrderDate(parseDateTime(dateStr));
+                    o.setStatus("DELIVERED");
+                    o.setTotalAmount(BigDecimal.ZERO);
+                    o.setUser(user);
+                    return orderRepository.save(o);
+                });
 
-                // --- Product ---
-                Product product = productRepository.findBySku(stockCode).orElse(null);
-                if (product == null) {
-                    product = new Product();
-                    product.setSku(stockCode);
-                    product.setName(description.isEmpty() ? "Product " + stockCode : description);
-                    product.setDescription("From DS1 - " + country);
-                    product.setUnitPrice(new BigDecimal(priceStr));
-                    product.setStockQuantity(100);
-                    product.setCategory(category);
-                    product = productRepository.save(product);
-                }
-
-                // --- Order ---
-                Order order = orderRepository.findByOrderNumber(invoice).orElse(null);
-                if (order == null) {
-                    order = new Order();
-                    order.setOrderNumber(invoice);
-                    order.setUser(user);
-                    order.setGrandTotal(BigDecimal.ZERO);
-                    order.setStatus("COMPLETED");
-                    order.setOrderDate(orderDate); // << Gerçek tarih
-                    order = orderRepository.save(order);
-                }
-
-                // --- OrderItem ---
+                // OrderItem
                 OrderItem item = new OrderItem();
                 item.setOrder(order);
                 item.setProduct(product);
                 item.setQuantity(qty);
-                item.setPrice(product.getUnitPrice());
+                item.setPrice(price);
                 orderItemRepository.save(item);
 
-                // --- Update Order Total ---
-                BigDecimal addTotal = product.getUnitPrice().multiply(new BigDecimal(qty));
-                order.setGrandTotal(order.getGrandTotal().add(addTotal));
+                // Update totalAmount
+                order.setTotalAmount(order.getTotalAmount().add(price.multiply(BigDecimal.valueOf(qty))));
                 orderRepository.save(order);
 
                 count++;
             }
+        } catch (Exception e) {
+            log.warning("DS1 hatası: " + e.getMessage());
         }
-        System.out.println("DS1 loaded.");
+        log.info("DS1: " + count + " satır yüklendi, " + productMap.size() + " ürün, " + userMap.size() + " kullanıcı.");
     }
 
-    // -------------------------------------------------------------------------
-    // DS2: Customer Behavior
-    // col[0]=Customer ID, col[1]=Gender, col[2]=Age, col[3]=City,
-    // col[4]=Membership Type, col[5]=Total Spend, col[6]=Items Purchased,
-    // col[7]=Average Rating, col[8]=Discount Applied, col[9]=Days Since Last Purchase,
-    // col[10]=Satisfaction Level
-    // -------------------------------------------------------------------------
-    private void loadDs2() throws Exception {
-        String file = "src/main/resources/data/ds2.csv";
-        System.out.println("Loading " + file);
-        try (CSVReader reader = new CSVReader(new FileReader(file))) {
-            reader.readNext(); // skip header
-            String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 1000) {
-                if (line.length < 11) continue;
-                String customerId   = safe(line[0]);
-                String gender       = safe(line[1]);  // Male / Female
-                String ageStr       = safe(line[2]);
-                String city         = safe(line[3]);
-                String membership   = safe(line[4]);
-                String totalSpendS  = safe(line[5]);
-                String itemsPurchS  = safe(line[6]);
-                String avgRatingS   = safe(line[7]);
-                String discountS    = safe(line[8]);  // TRUE / FALSE
-                String daysSinceS   = safe(line[9]);
-                String satisfaction = safe(line[10]);
+    // ─── DS2: Customer Demographics (CustomerID, Gender, Age, City, MembershipType, TotalSpend, ...) ──
 
-                if (customerId.isEmpty()) continue;
+    private void loadDs2(String encodedPassword) {
+        int count = 0;
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new ClassPathResource("data/ds2.csv").getInputStream(), "UTF-8"))) {
 
-                String email = "ds2_" + customerId + "@dummy.com";
-                User user = userRepository.findByEmail(email).orElse(null);
-                if (user == null) {
-                    user = new User(email, "hashed_password", "INDIVIDUAL", gender);
-                    user = userRepository.save(user);
-                } else {
-                    // Güncelle: gender boşsa doldur
-                    if ((user.getGender() == null || user.getGender().isEmpty()) && !gender.isEmpty()) {
-                        user.setGender(gender);
-                        userRepository.save(user);
-                    }
-                }
+            String line = br.readLine(); // header
+            while ((line = br.readLine()) != null) {
+                String[] cols = splitCsv(line);
+                if (cols.length < 11) continue;
 
-                if (user.getProfile() == null) {
-                    CustomerProfile profile = new CustomerProfile();
-                    profile.setUser(user);
-                    if (!ageStr.isEmpty()) {
-                        try { profile.setAge(Integer.parseInt(ageStr)); } catch (NumberFormatException ignored) {}
-                    }
-                    profile.setCity(city);
-                    profile.setMembershipType(membership);
-                    if (!totalSpendS.isEmpty()) {
-                        try { profile.setTotalSpend(Double.parseDouble(totalSpendS)); } catch (NumberFormatException ignored) {}
-                    }
-                    if (!itemsPurchS.isEmpty()) {
-                        try { profile.setItemsPurchased(Integer.parseInt(itemsPurchS)); } catch (NumberFormatException ignored) {}
-                    }
-                    if (!avgRatingS.isEmpty()) {
-                        try { profile.setAverageRating(Double.parseDouble(avgRatingS)); } catch (NumberFormatException ignored) {}
-                    }
-                    if (!discountS.isEmpty()) {
-                        profile.setDiscountApplied("TRUE".equalsIgnoreCase(discountS));
-                    }
-                    if (!daysSinceS.isEmpty()) {
-                        try { profile.setDaysSinceLastPurchase(Integer.parseInt(daysSinceS)); } catch (NumberFormatException ignored) {}
-                    }
-                    profile.setSatisfactionLevel(satisfaction);
-                    customerProfileRepository.save(profile);
-                    user.setProfile(profile);
-                    userRepository.save(user);
-                }
+                String customerId    = cols[0].trim();
+                String gender        = cols[1].trim();
+                String ageStr        = cols[2].trim();
+                String city          = cols[3].trim();
+                String membership    = cols[4].trim();
+                String totalSpendStr = cols[5].trim();
+                String itemsStr      = cols[6].trim();
+                String ratingStr     = cols[7].trim();
+                String discountStr   = cols[8].trim();
+                String daysStr       = cols[9].trim();
+                String satisfaction  = cols[10].trim();
+
+                String email = "ds2customer" + customerId + "@shop.com";
+                User user = userRepository.findByEmail(email).orElseGet(() -> {
+                    User u = new User(email, encodedPassword, "INDIVIDUAL",
+                            gender.isEmpty() ? null : gender, "Customer " + customerId);
+                    return userRepository.save(u);
+                });
+                if (!gender.isEmpty()) { user.setGender(gender); userRepository.save(user); }
+
+                CustomerProfile profile = new CustomerProfile();
+                profile.setUser(user);
+                try { profile.setAge(Integer.parseInt(ageStr)); } catch (NumberFormatException ignored) {}
+                profile.setCity(city.isEmpty() ? null : city);
+                profile.setMembershipType(membership.isEmpty() ? null : membership);
+                try { profile.setTotalSpend(Double.parseDouble(totalSpendStr)); } catch (NumberFormatException ignored) {}
+                try { profile.setItemsPurchased(Integer.parseInt(itemsStr)); } catch (NumberFormatException ignored) {}
+                try { profile.setAverageRating(Double.parseDouble(ratingStr)); } catch (NumberFormatException ignored) {}
+                profile.setDiscountApplied("TRUE".equalsIgnoreCase(discountStr));
+                try { profile.setDaysSinceLastPurchase(Integer.parseInt(daysStr)); } catch (NumberFormatException ignored) {}
+                profile.setSatisfactionLevel(satisfaction.isEmpty() ? null : satisfaction);
+                customerProfileRepository.save(profile);
                 count++;
             }
+        } catch (Exception e) {
+            log.warning("DS2 hatası: " + e.getMessage());
         }
-        System.out.println("DS2 loaded.");
+        log.info("DS2: " + count + " müşteri profili yüklendi.");
     }
 
-    // -------------------------------------------------------------------------
-    // DS3: E-Commerce Shipping
-    // col[0]=ID, col[1]=Warehouse_block, col[2]=Mode_of_Shipment,
-    // col[3]=Customer_care_calls, col[4]=Customer_rating, col[5]=Cost_of_the_Product,
-    // col[6]=Prior_purchases, col[7]=Product_importance, col[8]=Gender,
-    // col[9]=Discount_offered, col[10]=Weight_in_gms, col[11]=Reached.on.Time_Y.N
-    // -------------------------------------------------------------------------
-    private void loadDs3() throws Exception {
-        String file = "src/main/resources/data/ds3.csv";
-        System.out.println("Loading " + file);
-        try (CSVReader reader = new CSVReader(new FileReader(file))) {
-            reader.readNext(); // skip header
-            String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 1000) {
-                if (line.length < 12) continue;
-                // col[1]=Warehouse_block, col[2]=Mode_of_Shipment,
-                // col[4]=Customer_rating, col[7]=Product_importance,
-                // col[8]=Gender, col[9]=Discount_offered, col[10]=Weight_in_gms,
-                // col[11]=Reached.on.Time_Y.N
-                String warehouseBlock     = safe(line[1]);
-                String modeOfShipment     = safe(line[2]);
-                String customerRatingStr  = safe(line[4]);
-                String productImportance  = safe(line[7]); // col[7] = Product_importance (low/medium/high)
-                String genderCode         = safe(line[8]); // M / F
-                String discountStr        = safe(line[9]);
-                String weightStr          = safe(line[10]);
-                String reachedOnTimeStr   = safe(line[11]);
+    // ─── DS3: Shipment Data (ID, Warehouse_block, Mode_of_Shipment, ..., Gender, ..., Weight_in_gms, Reached.on.Time) ──
 
-                // M → Male, F → Female
-                String gender = "M".equalsIgnoreCase(genderCode) ? "Male"
-                              : "F".equalsIgnoreCase(genderCode) ? "Female" : null;
+    private void loadDs3(String encodedPassword) {
+        // Header: ID,Warehouse_block,Mode_of_Shipment,Customer_care_calls,Customer_rating,
+        //         Cost_of_the_Product,Prior_purchases,Product_importance,Gender,
+        //         Discount_offered,Weight_in_gms,Reached.on.Time_Y.N
+        Category logisticsCat = getOrCreateCategory("Logistics", null);
+        int rowLimit = 2000;
+        int count    = 0;
 
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new ClassPathResource("data/ds3.csv").getInputStream(), "UTF-8"))) {
+
+            String headerLine = br.readLine();
+            // Handle BOM
+            if (headerLine != null && headerLine.startsWith("﻿")) {
+                headerLine = headerLine.substring(1);
+            }
+
+            String line;
+            while ((line = br.readLine()) != null && count < rowLimit) {
+                String[] cols = splitCsv(line);
+                if (cols.length < 12) continue;
+
+                String id            = cols[0].trim();
+                String warehouse     = cols[1].trim();
+                String shipMode      = cols[2].trim();
+                String ratingStr     = cols[4].trim();
+                String costStr       = cols[5].trim();
+                String importance    = cols[7].trim();
+                String gender        = cols[8].trim();
+                String discountStr   = cols[9].trim();
+                String weightStr     = cols[10].trim();
+                String onTimeStr     = cols[11].trim();
+
+                String email = "ds3user" + id + "@logistics.com";
+                User user = userRepository.findByEmail(email).orElseGet(() -> {
+                    String g = gender.equals("F") ? "Female" : gender.equals("M") ? "Male" : null;
+                    User u = new User(email, encodedPassword, "INDIVIDUAL", g, "Logistics Customer " + id);
+                    return userRepository.save(u);
+                });
+
+                // Create a synthetic product from shipment cost
+                BigDecimal cost = parseBigDecimal(costStr, BigDecimal.valueOf(50));
+                Product product = new Product();
+                product.setSku("DS3-PROD-" + id);
+                product.setName("Product #" + id);
+                product.setUnitPrice(cost);
+                product.setStockQuantity(50);
+                product.setCategory(logisticsCat);
+                product = productRepository.save(product);
+
+                // Shipment
                 Shipment shipment = new Shipment();
-                shipment.setWarehouseBlock(warehouseBlock);
-                shipment.setModeOfShipment(modeOfShipment);
-                shipment.setProductImportance(productImportance);
-                if (!reachedOnTimeStr.isEmpty()) {
-                    try { shipment.setReachingOnTime(Integer.parseInt(reachedOnTimeStr)); } catch (NumberFormatException ignored) {}
-                }
-                if (!discountStr.isEmpty()) {
-                    try { shipment.setDiscountOffered(Integer.parseInt(discountStr)); } catch (NumberFormatException ignored) {}
-                }
-                if (!weightStr.isEmpty()) {
-                    try { shipment.setWeightInGms(Integer.parseInt(weightStr)); } catch (NumberFormatException ignored) {}
-                }
-                if (!customerRatingStr.isEmpty()) {
-                    try { shipment.setCustomerRating(Integer.parseInt(customerRatingStr)); } catch (NumberFormatException ignored) {}
-                }
+                shipment.setWarehouseBlock(warehouse.isEmpty() ? null : warehouse);
+                shipment.setModeOfShipment(shipMode.isEmpty() ? null : shipMode);
+                try { shipment.setCustomerRating(Integer.parseInt(ratingStr)); } catch (NumberFormatException ignored) {}
+                try { shipment.setDiscountOffered(Integer.parseInt(discountStr)); } catch (NumberFormatException ignored) {}
+                try { shipment.setWeightInGms(Integer.parseInt(weightStr)); } catch (NumberFormatException ignored) {}
+                try { shipment.setReachingOnTime(Integer.parseInt(onTimeStr)); } catch (NumberFormatException ignored) {}
+                shipment.setProductImportance(importance.isEmpty() ? null : importance);
                 shipment = shipmentRepository.save(shipment);
 
-                // Create a DS3 dummy user with gender info
-                String ds3Email = "ds3_user_" + count + "@dummy.com";
-                User user = new User(ds3Email, "hashed_password", "INDIVIDUAL", gender);
-                user = userRepository.save(user);
-
-                // Attach to a dummy order
+                // Order linked to shipment
                 Order order = new Order();
-                order.setOrderNumber("DS3_" + count);
-                order.setGrandTotal(BigDecimal.ZERO);
-                order.setStatus("SHIPPED");
-                order.setOrderDate(LocalDateTime.now());
-                order.setShipment(shipment);
+                order.setOrderNumber("DS3-ORD-" + id);
+                order.setOrderDate(LocalDateTime.now().minusDays((long)(Math.random() * 365)));
+                order.setStatus(shipment.getReachingOnTime() != null && shipment.getReachingOnTime() == 1 ? "DELIVERED" : "SHIPPED");
+                order.setTotalAmount(cost);
                 order.setUser(user);
-                orderRepository.save(order);
+                order.setShipment(shipment);
+                order = orderRepository.save(order);
 
-                count++;
-            }
-        }
-        System.out.println("DS3 loaded.");
-    }
-
-    // -------------------------------------------------------------------------
-    // DS4: Amazon Sales India
-    // col[0]=index, col[1]=Order ID, col[2]=Date, col[3]=Status,
-    // col[4]=Fulfilment, col[5]=Sales Channel, col[6]=ship-service-level,
-    // col[7]=Style, col[8]=SKU, col[9]=Category, col[10]=Size,
-    // col[11]=ASIN, col[12]=Courier Status, col[13]=Qty, col[14]=currency,
-    // col[15]=Amount, col[16]=ship-city, col[17]=ship-state, col[18]=ship-postal-code,
-    // col[19]=ship-country, col[20]=promotion-ids, col[21]=B2B, col[22]=fulfilled-by
-    // -------------------------------------------------------------------------
-    private void loadDs4() throws Exception {
-        String file = "src/main/resources/data/ds4.csv";
-        System.out.println("Loading " + file);
-        DateTimeFormatter dt4 = DateTimeFormatter.ofPattern("MM-dd-yy");
-        try (CSVReader reader = new CSVReader(new FileReader(file))) {
-            reader.readNext(); // skip header
-            String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 1000) {
-                if (line.length < 16) continue;
-                String orderId    = safe(line[1]);  // Order ID
-                String dateStr    = safe(line[2]);  // Date (MM-dd-yy)
-                String status     = safe(line[3]);  // Status
-                String sku        = safe(line[8]);  // SKU
-                String categoryStr= safe(line[9]);  // Category
-                String qtyStr     = safe(line[13]); // Qty
-                String amountStr  = safe(line[15]); // Amount
-
-                if (sku.isEmpty() || orderId.isEmpty()) continue;
-
-                // Parse date
-                LocalDateTime orderDate = LocalDateTime.now();
-                if (!dateStr.isEmpty()) {
-                    try { orderDate = LocalDate.parse(dateStr, dt4).atStartOfDay(); }
-                    catch (DateTimeParseException ignored) {}
-                }
-
-                Category category = findOrCreateCategory(categoryStr.isEmpty() ? "Uncategorized" : categoryStr);
-
-                Product product = productRepository.findBySku(sku).orElse(null);
-                if (product == null) {
-                    product = new Product();
-                    product.setSku(sku);
-                    product.setName("Amazon Product " + sku);
-                    double amount = amountStr.isEmpty() ? 0.0 : parseDouble(amountStr);
-                    int qty = qtyStr.isEmpty() ? 1 : parseInt(qtyStr, 1);
-                    double unitPrice = qty > 0 ? amount / qty : amount;
-                    product.setUnitPrice(new BigDecimal(String.valueOf(unitPrice)));
-                    product.setStockQuantity(100);
-                    product.setCategory(category);
-                    product = productRepository.save(product);
-                }
-
-                Order order = orderRepository.findByOrderNumber(orderId).orElse(null);
-                if (order == null) {
-                    order = new Order();
-                    order.setOrderNumber(orderId);
-                    order.setGrandTotal(BigDecimal.ZERO);
-                    order.setStatus(status.isEmpty() ? "UNKNOWN" : status);
-                    order.setOrderDate(orderDate); // << Gerçek tarih
-                    order = orderRepository.save(order);
-                }
-
-                int qty = qtyStr.isEmpty() ? 1 : parseInt(qtyStr, 1);
+                // OrderItem
                 OrderItem item = new OrderItem();
                 item.setOrder(order);
                 item.setProduct(product);
-                item.setQuantity(qty);
-                item.setPrice(product.getUnitPrice());
+                item.setQuantity(1);
+                item.setPrice(cost);
                 orderItemRepository.save(item);
-
-                BigDecimal addTotal = product.getUnitPrice().multiply(new BigDecimal(qty));
-                order.setGrandTotal(order.getGrandTotal().add(addTotal));
-                orderRepository.save(order);
 
                 count++;
             }
+        } catch (Exception e) {
+            log.warning("DS3 hatası: " + e.getMessage());
         }
-        System.out.println("DS4 loaded.");
+        log.info("DS3: " + count + " sevkiyat yüklendi.");
     }
 
-    // -------------------------------------------------------------------------
-    // DS5: Pakistani E-Commerce
-    // col[0]=item_id, col[1]=status, col[2]=created_at, col[3]=sku,
-    // col[4]=price, col[5]=qty_ordered, col[6]=grand_total,
-    // col[7]=increment_id (order_id), col[8]=category_name_1,
-    // col[9]=sales_commission_code, col[10]=discount_amount,
-    // col[11]=payment_method, col[12]=Working_Date, col[13]=BI_Status,
-    // col[14]=MV, col[15]=Year, col[16]=Month, col[17]=Customer_Since,
-    // col[18]=M-Y, col[19]=FY, col[20]=Customer_ID
-    // -------------------------------------------------------------------------
-    private void loadDs5() throws Exception {
-        String file = "src/main/resources/data/ds5.csv";
-        System.out.println("Loading " + file);
-        DateTimeFormatter dt5 = DateTimeFormatter.ofPattern("M/d/yyyy");
-        try (CSVReader reader = new CSVReader(new FileReader(file))) {
-            reader.readNext(); // skip header
-            String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 1000) {
-                if (line.length < 12) continue;
-                String status         = safe(line[1]);
-                String createdAt      = safe(line[2]);  // created_at date
-                String sku            = safe(line[3]);
-                String priceStr       = safe(line[4]);
-                String qtyStr         = safe(line[5]);
-                String grandTotalStr  = safe(line[6]);
-                String incrementId    = safe(line[7]);  // Order ID
-                String categoryStr    = safe(line[8]);
-                String paymentMethod  = safe(line[11]);
-                String customerId     = line.length > 20 ? safe(line[20]) : ""; // Customer ID
+    // ─── DS4: Amazon India (rowIdx, OrderNumber, Date, Status, ..., SKU, Category, ..., Qty, currency, Amount, city, state, ...) ──
 
-                if (sku.isEmpty() || incrementId.isEmpty()) continue;
+    private void loadDs4(User indiaCorp, Store indiaStore) {
+        // DS4 header sütun sıralaması (header adları ile gerçek içerik uyuşmuyor, sıra ile kullanıyoruz):
+        // [0]=rowIdx [1]=orderNumber [2]=date(mm-dd-yy) [3]=status [4]=merchant [5]=channel
+        // [6]=serviceLevel [7]=style [8]=sku [9]=category [10]=size [11]=asin
+        // [12]=shipStatus [13]=qty [14]=currency [15]=amount [16]=city [17]=state
+        int rowLimit = 3000;
+        int count    = 0;
+        Map<String, Product> productMap = new HashMap<>();
 
-                // Parse created_at date
-                LocalDateTime orderDate = LocalDateTime.now();
-                if (!createdAt.isEmpty()) {
-                    try { orderDate = LocalDate.parse(createdAt, dt5).atStartOfDay(); }
-                    catch (DateTimeParseException ignored) {}
-                }
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new ClassPathResource("data/ds4.csv").getInputStream(), "UTF-8"))) {
 
-                // Customer user
-                User user = null;
-                if (!customerId.isEmpty() && !customerId.equals("\\N")) {
-                    String email = "ds5_" + customerId + "@dummy.com";
-                    user = userRepository.findByEmail(email).orElse(null);
-                    if (user == null) {
-                        user = new User(email, "hashed_password", "INDIVIDUAL", null);
-                        user = userRepository.save(user);
+            br.readLine(); // header
+
+            String line;
+            while ((line = br.readLine()) != null && count < rowLimit) {
+                String[] cols = splitCsv(line);
+                if (cols.length < 16) continue;
+
+                String orderNum   = cols[1].trim();
+                String dateStr    = cols[2].trim();
+                String statusRaw  = cols[3].trim();
+                String sku        = cols[8].trim();
+                String categoryRaw= cols[9].trim();
+                String qtyStr     = cols[13].trim();
+                String amountStr  = cols[15].trim();
+
+                if (orderNum.isBlank() || sku.isBlank()) continue;
+
+                int qty = 1;
+                try { qty = Integer.parseInt(qtyStr); } catch (NumberFormatException ignored) {}
+                if (qty <= 0) qty = 1;
+
+                BigDecimal rawAmount = parseBigDecimal(amountStr, BigDecimal.valueOf(500));
+                final BigDecimal amount = (rawAmount.compareTo(BigDecimal.ZERO) <= 0) ? BigDecimal.valueOf(500) : rawAmount;
+
+                String categoryName = categoryRaw.isEmpty() ? "Fashion" : capitalize(categoryRaw);
+                Category category = getOrCreateCategory(categoryName, null);
+
+                Product product = productMap.computeIfAbsent(sku, s -> {
+                    Product p = new Product();
+                    p.setSku(s);
+                    p.setName(s.length() > 255 ? s.substring(0, 255) : s);
+                    p.setUnitPrice(amount);
+                    p.setStockQuantity(50);
+                    p.setCategory(category);
+                    p.setStore(indiaStore);
+                    return productRepository.save(p);
+                });
+
+                String status = mapDs4Status(statusRaw);
+                LocalDateTime orderDate = parseDs4Date(dateStr);
+
+                // Avoid duplicate orders
+                if (orderRepository.existsByOrderNumber(orderNum)) {
+                    // Add item to existing order
+                    Optional<Order> existingOpt = orderRepository.findByOrderNumber(orderNum);
+                    if (existingOpt.isPresent()) {
+                        Order existing = existingOpt.get();
+                        OrderItem item = new OrderItem();
+                        item.setOrder(existing);
+                        item.setProduct(product);
+                        item.setQuantity(qty);
+                        item.setPrice(amount);
+                        orderItemRepository.save(item);
+                        existing.setTotalAmount(existing.getTotalAmount().add(amount.multiply(BigDecimal.valueOf(qty))));
+                        orderRepository.save(existing);
                     }
-                }
-
-                Category category = findOrCreateCategory(categoryStr.isEmpty() ? "Uncategorized" : categoryStr);
-
-                Product product = productRepository.findBySku(sku).orElse(null);
-                if (product == null) {
-                    product = new Product();
-                    product.setSku(sku);
-                    product.setName("Pakistani Product " + sku);
-                    double price = priceStr.isEmpty() ? 0.0 : parseDouble(priceStr);
-                    product.setUnitPrice(new BigDecimal(String.valueOf(price)));
-                    product.setStockQuantity(100);
-                    product.setCategory(category);
-                    product = productRepository.save(product);
-                }
-
-                Order order = orderRepository.findByOrderNumber(incrementId).orElse(null);
-                if (order == null) {
-                    order = new Order();
-                    order.setOrderNumber(incrementId);
-                    double grandTotal = grandTotalStr.isEmpty() ? 0.0 : parseDouble(grandTotalStr);
-                    order.setGrandTotal(new BigDecimal(String.valueOf(grandTotal)));
-                    order.setStatus(status.isEmpty() ? "UNKNOWN" : status);
-                    order.setOrderDate(orderDate); // << Gerçek tarih
-                    if (user != null) order.setUser(user);
+                } else {
+                    Order order = new Order();
+                    order.setOrderNumber(orderNum);
+                    order.setOrderDate(orderDate);
+                    order.setStatus(status);
+                    order.setTotalAmount(amount.multiply(BigDecimal.valueOf(qty)));
+                    order.setUser(indiaCorp);
                     order = orderRepository.save(order);
 
-                    // Payment
-                    if (!paymentMethod.isEmpty() && !paymentMethod.equals("\\N")) {
+                    OrderItem item = new OrderItem();
+                    item.setOrder(order);
+                    item.setProduct(product);
+                    item.setQuantity(qty);
+                    item.setPrice(amount);
+                    orderItemRepository.save(item);
+                }
+                count++;
+            }
+        } catch (Exception e) {
+            log.warning("DS4 hatası: " + e.getMessage());
+        }
+        log.info("DS4: " + count + " satır yüklendi, " + productMap.size() + " ürün.");
+    }
+
+    // ─── DS5: Pakistan E-Commerce (item_id, status, created_at, sku, price, qty_ordered, grand_total, increment_id, category_name_1, ..., payment_method, ..., Customer ID) ──
+
+    private void loadDs5(String encodedPassword, User pakCorp, Store pakStore) {
+        int rowLimit = 3000;
+        int count    = 0;
+        Map<String, Product> productMap = new HashMap<>();
+        Map<String, User>    userMap    = new HashMap<>();
+        Map<String, Order>   orderMap   = new HashMap<>();
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new ClassPathResource("data/ds5.csv").getInputStream(), "UTF-8"))) {
+
+            br.readLine(); // header
+
+            String line;
+            while ((line = br.readLine()) != null && count < rowLimit) {
+                String[] cols = splitCsv(line);
+                if (cols.length < 12) continue;
+
+                String statusRaw    = cols[1].trim();
+                String sku          = cols[3].trim();
+                String priceStr     = cols[4].trim();
+                String qtyStr       = cols[5].trim();
+                String totalAmountStr= cols[6].trim();
+                String orderNum     = cols[7].trim();
+                String categoryName = cols[8].trim();
+                String paymentMethod= cols[11].trim();
+                String customerId   = cols.length > 20 ? cols[20].trim() : "";
+
+                if (sku.isBlank() || orderNum.isBlank()) continue;
+
+                BigDecimal price      = parseBigDecimal(priceStr, BigDecimal.valueOf(100));
+                BigDecimal totalAmountVal = parseBigDecimal(totalAmountStr, price);
+                int qty = 1;
+                try { qty = (int) Double.parseDouble(qtyStr); } catch (NumberFormatException ignored) {}
+                if (qty <= 0) qty = 1;
+
+                String catName = categoryName.isEmpty() ? "General" : capitalize(categoryName);
+                Category category = getOrCreateCategory(catName, null);
+
+                Product product = productMap.computeIfAbsent(sku, s -> {
+                    Product p = new Product();
+                    p.setSku(s);
+                    p.setName(s.length() > 255 ? s.substring(0, 255) : s);
+                    p.setUnitPrice(price);
+                    p.setStockQuantity(100);
+                    p.setCategory(category);
+                    p.setStore(pakStore);
+                    return productRepository.save(p);
+                });
+
+                User user;
+                if (!customerId.isBlank()) {
+                    String email = "ds5customer" + customerId + "@ecommerce.pk";
+                    user = userMap.computeIfAbsent(email, e -> {
+                        User u = new User(e, encodedPassword, "INDIVIDUAL", null, "Customer " + customerId);
+                        return userRepository.save(u);
+                    });
+                } else {
+                    user = pakCorp;
+                }
+
+                Order order = orderMap.computeIfAbsent(orderNum, inv -> {
+                    Order o = new Order();
+                    o.setOrderNumber(inv);
+                    o.setOrderDate(LocalDateTime.now().minusDays((long)(Math.random() * 730)));
+                    o.setStatus(mapDs5Status(statusRaw));
+                    o.setTotalAmount(totalAmountVal);
+                    o.setUser(user);
+                    Order saved = orderRepository.save(o);
+
+                    if (!paymentMethod.isBlank()) {
                         Payment payment = new Payment();
-                        payment.setPaymentValue(order.getGrandTotal());
+                        payment.setOrder(saved);
                         payment.setPaymentType(paymentMethod);
-                        payment.setOrder(order);
+                        payment.setAmount(totalAmountVal);
                         paymentRepository.save(payment);
                     }
-                }
+                    return saved;
+                });
 
-                int qty = qtyStr.isEmpty() ? 1 : (int) Math.round(parseDouble(qtyStr));
-                if (qty <= 0) qty = 1;
                 OrderItem item = new OrderItem();
                 item.setOrder(order);
                 item.setProduct(product);
                 item.setQuantity(qty);
-                item.setPrice(product.getUnitPrice());
+                item.setPrice(price);
                 orderItemRepository.save(item);
 
                 count++;
             }
+        } catch (Exception e) {
+            log.warning("DS5 hatası: " + e.getMessage());
         }
-        System.out.println("DS5 loaded.");
+        log.info("DS5: " + count + " satır yüklendi, " + productMap.size() + " ürün.");
     }
 
-    // -------------------------------------------------------------------------
-    // DS6: Amazon Product Reviews (TSV)
-    // col[0]=marketplace, col[1]=customer_id, col[2]=review_id,
-    // col[3]=product_id, col[4]=product_parent, col[5]=product_title,
-    // col[6]=product_category, col[7]=star_rating, col[8]=helpful_votes,
-    // col[9]=total_votes, col[10]=vine, col[11]=verified_purchase,
-    // col[12]=review_headline, col[13]=review_body, col[14]=review_date
-    // -------------------------------------------------------------------------
-    private void loadDs6() throws Exception {
-        String file = "src/main/resources/data/ds6.tsv";
-        System.out.println("Loading " + file);
-        CSVParser parser = new CSVParserBuilder().withSeparator('\t').build();
-        DateTimeFormatter dt6 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        try (CSVReader reader = new CSVReaderBuilder(new FileReader(file)).withCSVParser(parser).build()) {
-            reader.readNext(); // skip header
-            String[] line;
-            int count = 0;
-            while ((line = reader.readNext()) != null && count < 1000) {
-                if (line.length < 15) continue;
-                String customerId    = safe(line[1]);
-                String productId     = safe(line[3]);
-                String productTitle  = safe(line[5]);
-                String categoryStr   = safe(line[6]);
-                String starRating    = safe(line[7]);
-                String reviewHeadline= safe(line[12]); // review_headline (başlık)
-                String reviewBody    = safe(line[13]);
-                String reviewDateStr = safe(line[14]);
+    // ─── DS6: Amazon Reviews (marketplace, customer_id, review_id, product_id, product_parent, product_title, product_category, star_rating, ..., review_headline, review_body, review_date) ──
 
-                if (customerId.isEmpty() || productId.isEmpty()) continue;
-                if (starRating.isEmpty()) continue;
+    private void loadDs6(String encodedPassword, Store ukStore) {
+        int rowLimit = 3000;
+        int count    = 0;
+        Map<String, Product> productMap = new HashMap<>();
+        Map<String, User>    userMap    = new HashMap<>();
 
-                // --- User (with full_name from review_headline as proxy) ---
-                String email = "ds6_" + customerId + "@dummy.com";
-                User user = userRepository.findByEmail(email).orElse(null);
-                if (user == null) {
-                    user = new User(email, "hashed_password", "INDIVIDUAL", null);
-                    // Store review_headline as a hint in fullName if it looks like a name
-                    user = userRepository.save(user);
-                }
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new ClassPathResource("data/ds6.tsv").getInputStream(), "UTF-8"))) {
 
-                Category category = findOrCreateCategory(categoryStr.isEmpty() ? "General" : categoryStr);
+            br.readLine(); // header
 
-                Product product = productRepository.findBySku(productId).orElse(null);
-                if (product == null) {
-                    product = new Product();
-                    product.setSku(productId);
-                    product.setName(productTitle.isEmpty() ? "Product " + productId : productTitle);
-                    product.setUnitPrice(new BigDecimal("10.0")); // Dummy price
-                    product.setStockQuantity(100);
-                    product.setCategory(category);
-                    product = productRepository.save(product);
-                }
+            String line;
+            while ((line = br.readLine()) != null && count < rowLimit) {
+                String[] cols = line.split("\t", -1);
+                if (cols.length < 15) continue;
 
-                int rating;
-                try { rating = Integer.parseInt(starRating); }
-                catch (NumberFormatException e) { continue; }
+                String customerId   = cols[1].trim();
+                String productId    = cols[3].trim();
+                String productTitle = cols[5].trim();
+                String productCat   = cols[6].trim();
+                String starStr      = cols[7].trim();
+                String headline     = cols[12].trim();
+                String body         = cols[13].trim();
+                String dateStr      = cols[14].trim();
 
-                // Truncate review body if too long
-                if (reviewBody.length() > 999) reviewBody = reviewBody.substring(0, 999);
-                // Truncate review headline if too long
-                if (reviewHeadline.length() > 255) reviewHeadline = reviewHeadline.substring(0, 255);
+                if (productId.isBlank()) continue;
 
-                // Parse review date
-                LocalDate reviewDate = LocalDate.now();
-                if (!reviewDateStr.isEmpty()) {
-                    try { reviewDate = LocalDate.parse(reviewDateStr, dt6); }
-                    catch (DateTimeParseException ignored) {}
-                }
+                String catName = productCat.isEmpty() ? "General" : capitalize(productCat);
+                Category category = getOrCreateCategory(catName, null);
 
-                // Determine sentiment
-                String sentiment = rating >= 4 ? "Positive" : rating == 3 ? "Neutral" : "Negative";
+                String sku = "DS6-" + productId;
+                Product product = productMap.computeIfAbsent(sku, s -> {
+                    String name = productTitle.isEmpty() ? productId : productTitle;
+                    if (name.length() > 255) name = name.substring(0, 255);
+                    Product p = new Product();
+                    p.setSku(s);
+                    p.setName(name);
+                    p.setUnitPrice(BigDecimal.valueOf(29.99));
+                    p.setStockQuantity(50);
+                    p.setCategory(category);
+                    p.setStore(ukStore);
+                    return productRepository.save(p);
+                });
+
+                String email = "ds6customer" + customerId + "@amazon.us";
+                User user = userMap.computeIfAbsent(email, e -> {
+                    User u = new User(e, encodedPassword, "INDIVIDUAL", null, "Amazon Customer " + customerId);
+                    return userRepository.save(u);
+                });
 
                 Review review = new Review();
-                review.setRating(rating);
-                review.setComment(reviewBody);
-                review.setReviewHeadline(reviewHeadline); // << Yorum başlığı
-                review.setSentiment(sentiment);
-                review.setDate(reviewDate);              // << Gerçek tarih
                 review.setProduct(product);
-                review.setUser(user);                    // << Review sahibi user
+                review.setUser(user);
+                try { review.setRating(Integer.parseInt(starStr)); } catch (NumberFormatException ignored) {}
+                review.setReviewHeadline(headline.length() > 255 ? headline.substring(0, 255) : headline);
+                review.setComment(body.length() > 1000 ? body.substring(0, 1000) : body);
+                review.setSentiment(toSentiment(review.getRating()));
+                review.setDate(parseLocalDate(dateStr));
                 reviewRepository.save(review);
 
                 count++;
             }
+        } catch (Exception e) {
+            log.warning("DS6 hatası: " + e.getMessage());
         }
-        System.out.println("DS6 loaded.");
+        log.info("DS6: " + count + " yorum yüklendi, " + productMap.size() + " ürün.");
     }
 
-    // -------------------------------------------------------------------------
-    // Yardımcı metodlar
-    // -------------------------------------------------------------------------
-    private Category findOrCreateCategory(String name) {
-        Category category = categoryRepository.findByName(name).orElse(null);
-        if (category == null) {
-            category = new Category();
-            category.setName(name);
-            category = categoryRepository.save(category);
+    // ─── Yardımcı Metodlar ────────────────────────────────────────────────────
+
+    private Category getOrCreateCategory(String name, Category parent) {
+        return categoryRepository.findByName(name).orElseGet(() -> {
+            Category c = new Category(name);
+            c.setParent(parent);
+            return categoryRepository.save(c);
+        });
+    }
+
+    private String[] splitCsv(String line) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                tokens.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
         }
-        return category;
+        tokens.add(current.toString());
+        return tokens.toArray(new String[0]);
     }
 
-    private String safe(String s) {
-        return s == null ? "" : s.trim();
+    private LocalDateTime parseDateTime(String s) {
+        if (s == null || s.isBlank()) return LocalDateTime.now();
+        try {
+            // "2009-12-01 07:45:00"
+            return LocalDateTime.parse(s.trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (DateTimeParseException e1) {
+            try {
+                return LocalDate.parse(s.trim()).atStartOfDay();
+            } catch (DateTimeParseException e2) {
+                return LocalDateTime.now();
+            }
+        }
     }
 
-    private double parseDouble(String s) {
-        try { return Double.parseDouble(s.replace(",", "").replace(" ", "")); }
-        catch (NumberFormatException e) { return 0.0; }
+    private LocalDateTime parseDs4Date(String s) {
+        if (s == null || s.isBlank()) return LocalDateTime.now();
+        try {
+            // "04-30-22" → MM-dd-yy
+            return LocalDate.parse(s.trim(), DateTimeFormatter.ofPattern("MM-dd-yy")).atStartOfDay();
+        } catch (DateTimeParseException e) {
+            return LocalDateTime.now();
+        }
     }
 
-    private int parseInt(String s, int defaultVal) {
-        try { return (int) Math.round(Double.parseDouble(s)); }
-        catch (NumberFormatException e) { return defaultVal; }
+    private LocalDate parseLocalDate(String s) {
+        if (s == null || s.isBlank()) return LocalDate.now();
+        try {
+            return LocalDate.parse(s.trim());
+        } catch (DateTimeParseException e) {
+            return LocalDate.now();
+        }
+    }
+
+    private BigDecimal parseBigDecimal(String s, BigDecimal defaultVal) {
+        if (s == null || s.isBlank()) return defaultVal;
+        try {
+            // Remove currency symbols, spaces, commas inside numbers
+            String clean = s.trim().replaceAll("[^0-9.]", "");
+            if (clean.isEmpty()) return defaultVal;
+            return new BigDecimal(clean);
+        } catch (NumberFormatException e) {
+            return defaultVal;
+        }
+    }
+
+    private String mapDs4Status(String raw) {
+        if (raw == null) return "PENDING";
+        String lower = raw.toLowerCase();
+        if (lower.contains("delivered")) return "DELIVERED";
+        if (lower.contains("shipped"))   return "SHIPPED";
+        if (lower.contains("cancel"))    return "CANCELLED";
+        if (lower.contains("pending"))   return "PENDING";
+        return "PENDING";
+    }
+
+    private String mapDs5Status(String raw) {
+        if (raw == null) return "PENDING";
+        String lower = raw.toLowerCase();
+        if (lower.contains("complete"))  return "DELIVERED";
+        if (lower.contains("cancel"))    return "CANCELLED";
+        if (lower.contains("process"))   return "SHIPPED";
+        if (lower.contains("closed"))    return "DELIVERED";
+        return "PENDING";
+    }
+
+    private String toSentiment(Integer rating) {
+        if (rating == null) return "Neutral";
+        if (rating >= 4)    return "Positive";
+        if (rating <= 2)    return "Negative";
+        return "Neutral";
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.isBlank()) return s;
+        return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
     }
 }

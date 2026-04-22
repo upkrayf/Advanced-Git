@@ -44,8 +44,8 @@
               <div style="font-weight:500; color:#f0f0f5;">{{ p.name }}</div>
               <div style="font-size:10px; color:#4a4a6a; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ p.description }}</div>
             </td>
-            <td style="color:#7a7a9a;">{{ p.categoryName || '-' }}</td>
-            <td style="color:#1d9e75; font-weight:500;">{{ formatCurrency(p.price) }}</td>
+            <td style="color:#7a7a9a;">{{ p.category?.name || '-' }}</td>
+            <td style="color:#1d9e75; font-weight:500;">{{ formatCurrency(p.unitPrice || p.price || 0) }}</td>
             <td>
               <span class="status-pill" [class]="getStockClass(p.stock || 0)">
                 {{ p.stock || 0 }} — {{ getStockLabel(p.stock || 0) }}
@@ -67,13 +67,12 @@
         </tbody>
       </table>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:#7a7a9a;" *ngIf="totalPages > 1">
-        <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
-        <div style="display:flex; gap:8px;">
-          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>
-          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()">Sonraki →</button>
-        </div>
-      </div>
+      <!-- Pagination -->
+      <app-pagination 
+        [page]="page" 
+        [totalPages]="totalPages" 
+        (pageChange)="onPageChange($event)">
+      </app-pagination>
     </div>
 
   </div>

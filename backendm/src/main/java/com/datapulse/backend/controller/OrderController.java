@@ -33,15 +33,20 @@ public class OrderController {
         }
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<Order>> getMyOrders(Authentication authentication) {
+        return ResponseEntity.ok(orderService.getMyOrders(authentication.getName()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Order> getById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getById(id));
     }
 
-    @PostMapping
+    @PostMapping("/checkout")
     @PreAuthorize("hasAuthority('INDIVIDUAL')")
-    public ResponseEntity<Order> create(@RequestBody Order order) {
-        // Implementation for creating order mock returning the same.
-        return ResponseEntity.ok(order);
+    public ResponseEntity<Order> checkout(Authentication authentication, @RequestBody com.datapulse.backend.dto.CheckoutRequest request) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(orderService.checkout(email, request));
     }
 }

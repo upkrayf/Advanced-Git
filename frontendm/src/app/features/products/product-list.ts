@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../core/services/product';
+import { PaginationComponent } from '../../shared/components/pagination/pagination';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
   template: `
     <div class="product-page">
       <div class="header">
@@ -16,27 +17,32 @@ import { ProductService } from '../../core/services/product';
           <input 
             type="text" 
             [(ngModel)]="searchTerm" 
-            (input)="filterProducts()"
+            (input)="onSearch()"
             placeholder="Search products..." 
             class="search-input"
           />
         </div>
       </div>
 
-      <div class="product-grid" *ngIf="filteredProducts.length > 0; else noData">
-        <div class="product-card" *ngFor="let product of filteredProducts" [routerLink]="['/products', product.id]">
+      <div class="product-grid" *ngIf="products.length > 0; else noData">
+        <div class="product-card" *ngFor="let product of products" [routerLink]="['/products', product.id]">
           <div class="product-image-placeholder">
-            <!-- Simulated image space -->
             <span class="icon">📦</span>
           </div>
           <div class="product-info">
-            <div class="product-category">{{ product.category || 'General' }}</div>
-            <h3 class="product-title">{{ product.description || product.name || 'Unknown Product' }}</h3>
-            <div class="product-price">\${{ product.unitPrice || product.price || '0.00' }}</div>
+            <div class="product-category">{{ product.category?.name || 'General' }}</div>
+            <h3 class="product-title">{{ product.name || product.description || 'Unknown Product' }}</h3>
+            <div class="product-price">\${{ product.unitPrice || '0.00' }}</div>
           </div>
         </div>
       </div>
       
+      <app-pagination 
+        [page]="currentPage" 
+        [totalPages]="totalPages" 
+        (pageChange)="onPageChange($event)">
+      </app-pagination>
+
       <ng-template #noData>
         <div class="empty-state">
           No products found matching your search.
@@ -149,32 +155,39 @@ import { ProductService } from '../../core/services/product';
 })
 export class ProductList implements OnInit {
   products: any[] = [];
-  filteredProducts: any[] = [];
   searchTerm: string = '';
+  currentPage: number = 0;
+  pageSize: number = 10;
+  totalPages: number = 0;
 
   constructor(private productService: ProductService) {}
 
   ngOnInit() {
-    this.productService.getProducts({ size: 50 }).subscribe({
+    this.loadProducts();
+  }
+
+  loadProducts() {
+    this.productService.getProducts({ 
+      page: this.currentPage, 
+      size: this.pageSize,
+      search: this.searchTerm 
+    }).subscribe({
       next: (data: any) => {
-        const items = data?.content || data || [];
-        this.products = items;
-        this.filteredProducts = items;
+        this.products = data.content || [];
+        this.totalPages = data.totalPages || 0;
       },
       error: (err) => console.error('Error fetching products', err)
     });
   }
 
-  filterProducts() {
-    if (!this.searchTerm.trim()) {
-      this.filteredProducts = this.products;
-      return;
-    }
-    const lowerTerm = this.searchTerm.toLowerCase();
-    this.filteredProducts = this.products.filter(p => 
-      (p.description && p.description.toLowerCase().includes(lowerTerm)) ||
-      (p.name && p.name.toLowerCase().includes(lowerTerm)) ||
-      (p.category && p.category.toLowerCase().includes(lowerTerm))
-    );
+  onPageChange(page: number) {
+    this.currentPage = page;
+    this.loadProducts();
+  }
+
+  onSearch() {
+    // Basic search - ideally server side too
+    this.currentPage = 0;
+    this.loadProducts();
   }
 }

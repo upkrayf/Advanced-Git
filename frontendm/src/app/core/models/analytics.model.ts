@@ -1,5 +1,5 @@
 export interface RevenuePoint {
-  label: string;
+  name: string;
   value: number;
 }
 

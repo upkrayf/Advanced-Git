@@ -1,8 +1,8 @@
 <div class="sidebar" [class.corporate]="role === 'CORPORATE'" [class.individual]="role === 'INDIVIDUAL'">
 
-  <div class="sidebar-logo">
-    <div class="logo-icon">D</div>
-    <span class="logo-text">DataPulse</span>
+  <div class="sidebar-logo" routerLink="/">
+    <img src="/images/crow-logo.png" alt="Crow Logo" class="logo-img">
+    <span class="logo-text">Crow</span>
   </div>
 
   <!-- ADMIN MENÜ -->
@@ -17,10 +17,12 @@
     <div class="sidebar-item" [class.active]="isActive('/admin/store-management')" routerLink="/admin/store-management">
       <span class="s-icon">🏪</span> Mağazalar
     </div>
-    <div class="sidebar-item" [class.active]="isActive('/admin/category-management')" routerLink="/admin/category-management">
+    <div class="sidebar-item" [class.active]="isActive('/admin/category-management')"
+      routerLink="/admin/category-management">
       <span class="s-icon">🏷️</span> Kategoriler
     </div>
-    <div class="sidebar-item" [class.active]="isActive('/admin/platform-analytics')" routerLink="/admin/platform-analytics">
+    <div class="sidebar-item" [class.active]="isActive('/admin/platform-analytics')"
+      routerLink="/admin/platform-analytics">
       <span class="s-icon">📈</span> Platform Analitik
     </div>
     <div class="sidebar-item" [class.active]="isActive('/admin/audit-logs')" routerLink="/admin/audit-logs">
@@ -68,7 +70,9 @@
     </div>
     <div class="sidebar-item" [class.active]="isActive('/individual/cart')" routerLink="/individual/cart">
       <span class="s-icon">🛒</span> Sepet
-      <span *ngIf="cartCount > 0" style="background:#6c63ff; color:white; border-radius:10px; font-size:10px; padding:1px 6px; margin-left:auto;">{{ cartCount }}</span>
+      <span *ngIf="cartCount > 0"
+        style="background:#6c63ff; color:white; border-radius:10px; font-size:10px; padding:1px 6px; margin-left:auto;">{{
+        cartCount }}</span>
     </div>
     <div class="sidebar-item" [class.active]="isActive('/individual/checkout')" routerLink="/individual/checkout">
       <span class="s-icon">💳</span> Ödeme
@@ -76,19 +80,22 @@
     <div class="sidebar-item" [class.active]="isActive('/individual/orders')" routerLink="/individual/orders">
       <span class="s-icon">📦</span> Siparişlerim
     </div>
-    <div class="sidebar-item" [class.active]="isActive('/individual/shipment-tracking')" routerLink="/individual/shipment-tracking">
+    <div class="sidebar-item" [class.active]="isActive('/individual/shipment-tracking')"
+      routerLink="/individual/shipment-tracking">
       <span class="s-icon">🚚</span> Kargo Takibi
     </div>
     <div class="sidebar-item" [class.active]="isActive('/individual/reviews')" routerLink="/individual/reviews">
       <span class="s-icon">⭐</span> Yorumlarım
     </div>
-    <div class="sidebar-item" [class.active]="isActive('/individual/spending-analytics')" routerLink="/individual/spending-analytics">
+    <div class="sidebar-item" [class.active]="isActive('/individual/spending-analytics')"
+      routerLink="/individual/spending-analytics">
       <span class="s-icon">📊</span> Harcama Analitik
     </div>
   </div>
 
   <div class="sidebar-bottom">
-    <div class="sidebar-item" *ngIf="role === 'INDIVIDUAL'" routerLink="/individual/profile" [class.active]="isActive('/individual/profile')">
+    <div class="sidebar-item" *ngIf="role === 'INDIVIDUAL'" routerLink="/individual/profile"
+      [class.active]="isActive('/individual/profile')">
       <span class="s-icon">👤</span> Profilim
     </div>
     <div class="sidebar-item" (click)="logout()" style="cursor:pointer;">

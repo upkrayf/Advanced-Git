@@ -4,6 +4,7 @@ import com.datapulse.backend.entity.Review;
 import com.datapulse.backend.service.ReviewService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,11 @@ public class ReviewController {
     @GetMapping
     public ResponseEntity<List<Review>> getAll() {
         return ResponseEntity.ok(reviewService.getAll());
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<Review>> getMyReviews(Authentication authentication) {
+        return ResponseEntity.ok(reviewService.getMyReviews(authentication.getName()));
     }
 
     @GetMapping("/product/{productId}")

@@ -1,7 +1,7 @@
 <div class="page-layout">
   <app-sidebar />
 
-  <div class="main-content" style="padding: 1.5rem;">
+  <div class="main-content">
 
     <div class="topbar">
       <div>
@@ -47,23 +47,35 @@
     <div class="grid-2">
       <div class="card">
         <div class="card-title">Aylık Gelir Trendi</div>
-        <div style="display:flex; align-items: flex-end; gap: 8px; height: 140px; padding: 8px 0;">
-          <ng-container *ngFor="let bar of revenueData">
-            <div style="display:flex; flex-direction: column; align-items: center; flex:1; height:100%;">
-              <div style="font-size:10px; color:#7a7a9a; margin-bottom:4px;">{{ formatCurrency(bar.value) }}</div>
-              <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: #6c63ff; width:100%;"></div>
-              <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.label }}</div>
-            </div>
-          </ng-container>
+        <div style="height: 300px;">
+          <ngx-charts-bar-vertical
+            [view]="[500, 250]"
+            [scheme]="colorScheme"
+            [results]="revenueTrend"
+            [gradient]="gradient"
+            [xAxis]="showXAxis"
+            [yAxis]="showYAxis"
+            [legend]="false"
+            [showXAxisLabel]="showXAxisLabel"
+            [showYAxisLabel]="showYAxisLabel"
+            [xAxisLabel]="'Ay'"
+            [yAxisLabel]="'Gelir ($)'">
+          </ngx-charts-bar-vertical>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">Sipariş Durumları</div>
-        <div *ngFor="let s of orderStatus" class="activity-item">
-          <span class="status-pill" [class]="getStatusClass(s.status)">{{ getStatusLabel(s.status) }}</span>
-          <span class="activity-text">{{ s.count | number }} sipariş</span>
-          <span class="activity-time">{{ s.count }}</span>
+        <div class="card-title">Kullanıcı Demografisi</div>
+        <div style="height: 300px;">
+          <ngx-charts-pie-chart
+            [view]="[500, 250]"
+            [scheme]="colorScheme"
+            [results]="demographics"
+            [gradient]="gradient"
+            [legend]="true"
+            [labels]="true"
+            [doughnut]="true">
+          </ngx-charts-pie-chart>
         </div>
       </div>
     </div>
@@ -109,7 +121,7 @@
           <tbody>
             <tr *ngFor="let u of recentUsers">
               <td>
-                <div>{{ u.name }}</div>
+                <div>{{ u.fullName || u.email }}</div>
                 <div style="font-size:10px; color:#4a4a6a;">{{ u.email }}</div>
               </td>
               <td>

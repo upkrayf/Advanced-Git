@@ -35,6 +35,17 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRoleType(request.getRoleType() != null ? request.getRoleType() : "INDIVIDUAL");
+        user.setGender(request.getGender());
+        user.setFullName(request.getFullName());
+        
+        // Link CustomerProfile for age
+        if (request.getAge() != null) {
+            com.datapulse.backend.entity.CustomerProfile profile = new com.datapulse.backend.entity.CustomerProfile();
+            profile.setAge(request.getAge());
+            profile.setUser(user);
+            user.setProfile(profile);
+        }
+        
         return userRepository.save(user);
     }
 

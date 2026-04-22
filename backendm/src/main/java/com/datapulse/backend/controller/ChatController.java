@@ -1,6 +1,7 @@
 package com.datapulse.backend.controller;
 
 import com.datapulse.backend.dto.ChatRequest;
+import com.datapulse.backend.dto.ChatResponse;
 import com.datapulse.backend.service.AiService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,7 @@ public class ChatController {
     }
 
     @PostMapping("/ask")
-    public ResponseEntity<String> ask(@RequestBody ChatRequest request) {
+    public ResponseEntity<ChatResponse> ask(@RequestBody ChatRequest request) {
         return ResponseEntity.ok(aiService.ask(request.getQuestion(), request.getRole()));
     }
 }

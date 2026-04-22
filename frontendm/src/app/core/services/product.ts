@@ -18,7 +18,7 @@ export class ProductService {
     if (params?.size !== undefined) p = p.set('size', params.size);
     if (params?.categoryId) p = p.set('categoryId', params.categoryId);
     if (params?.storeId) p = p.set('storeId', params.storeId);
-    if (params?.search) p = p.set('search', params.search);
+    if (params?.search) p = p.set('searchTerm', params.search);
     if (params?.minPrice !== undefined) p = p.set('minPrice', params.minPrice);
     if (params?.maxPrice !== undefined) p = p.set('maxPrice', params.maxPrice);
     return this.http.get<ProductPageResponse>(this.apiUrl, { params: p });

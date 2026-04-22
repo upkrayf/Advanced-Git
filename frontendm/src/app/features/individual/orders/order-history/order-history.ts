@@ -26,7 +26,7 @@ export class OrderHistory implements OnInit {
   load(): void {
     this.loading = true;
     this.orderService.getMyOrders(this.page, this.size).subscribe({
-      next: (d) => { this.orders = d.content; this.totalPages = d.totalPages; this.loading = false; },
+      next: (d) => { this.orders = d; this.totalPages = 1; this.loading = false; },
       error: () => {
         this.orders = [
           { id: 1024, storeName: 'TechStore', totalAmount: 499, status: 'SHIPPED', createdAt: '2026-04-10' },

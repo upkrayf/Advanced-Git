@@ -63,4 +63,29 @@ public class Review {
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+
+    // --- Frontend DTO uyumluluğu için JSON Property eşleştirmeleri ---
+
+    @com.fasterxml.jackson.annotation.JsonProperty("userId")
+    public Long getUserId() {
+        return user != null ? user.getId() : null;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("userName")
+    public String getUserName() {
+        if (user != null) {
+            return user.getFullName() != null && !user.getFullName().isEmpty() ? user.getFullName() : "Kullanıcı (" + user.getEmail() + ")";
+        }
+        return "İsimsiz Kullanıcı";
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("productId")
+    public Long getProductId() {
+        return product != null ? product.getId() : null;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("createdAt")
+    public LocalDate getCreatedAt() {
+        return date;
+    }
 }

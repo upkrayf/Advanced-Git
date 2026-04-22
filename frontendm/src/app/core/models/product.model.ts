@@ -3,10 +3,13 @@ export interface ProductModel {
   name: string;
   description: string;
   price: number;
+  unitPrice?: number;
   stock: number;
+  stockQuantity?: number;
   imageUrl?: string;
   categoryId?: number;
   categoryName?: string;
+  category?: { id: number; name: string };
   storeId?: number;
   storeName?: string;
   rating?: number;

@@ -1,6 +1,6 @@
 export interface UserModel {
   id: number;
-  name: string;
+  fullName: string;
   email: string;
   password?: string;
   roleType: 'ADMIN' | 'CORPORATE' | 'INDIVIDUAL';
@@ -9,6 +9,7 @@ export interface UserModel {
   isActive?: boolean;
   createdAt?: string;
   profileImage?: string;
+  gender?: string;
 }
 
 export interface UserPageResponse {
@@ -20,7 +21,7 @@ export interface UserPageResponse {
 }
 
 export interface CreateUserRequest {
-  name: string;
+  fullName: string;
   email: string;
   password: string;
   roleType: string;

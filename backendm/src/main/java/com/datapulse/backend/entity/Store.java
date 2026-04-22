@@ -1,6 +1,7 @@
 package com.datapulse.backend.entity;
 import java.util.List;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "stores")
@@ -20,8 +21,13 @@ public class Store {
     private User owner; // Mağaza sahibi olan "Corporate" kullanıcı
 
     @OneToMany(mappedBy = "store")
+    @JsonIgnore
     private List<Product> products;
+
     public Store() {}
+
+    public List<Product> getProducts() { return products; }
+    public void setProducts(List<Product> products) { this.products = products; }
 
     // Getter ve Setterlar
     public Long getId() { return id; }

@@ -8,21 +8,23 @@ import { CategoryService } from '../../../../core/services/category';
 import { ProductModel } from '../../../../core/models/product.model';
 import { CategoryModel } from '../../../../core/models/category.model';
 
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination';
+
 @Component({
   selector: 'app-corporate-product-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, Sidebar, RouterModule],
+  imports: [CommonModule, FormsModule, Sidebar, RouterModule, PaginationComponent],
   templateUrl: './product-list.html',
   styleUrl: './product-list.css'
 })
 export class CorporateProductList implements OnInit {
-  products: ProductModel[] = [];
+  products: any[] = [];
   categories: CategoryModel[] = [];
   loading = false;
   search = '';
   selectedCategory = 0;
   page = 0;
-  size = 20;
+  size = 10;
   totalElements = 0;
   totalPages = 0;
 
@@ -36,17 +38,13 @@ export class CorporateProductList implements OnInit {
   loadCategories(): void {
     this.categoryService.getCategories().subscribe({
       next: (d) => this.categories = d,
-      error: () => this.categories = [
-        { id: 1, name: 'Elektronik', productCount: 315 },
-        { id: 2, name: 'Giyim', productCount: 210 },
-        { id: 3, name: 'Ev & Yaşam', productCount: 178 },
-      ]
+      error: () => this.categories = []
     });
   }
 
   loadProducts(): void {
     this.loading = true;
-    this.productService.getProducts({ page: this.page, size: this.size, search: this.search || undefined, categoryId: this.selectedCategory || undefined }).subscribe({
+    this.productService.getProducts({ page: this.page, size: this.size }).subscribe({
       next: (d) => {
         this.products = d.content;
         this.totalElements = d.totalElements;
@@ -54,22 +52,20 @@ export class CorporateProductList implements OnInit {
         this.loading = false;
       },
       error: () => {
-        this.products = [
-          { id: 1, name: 'iPhone 15 Pro', description: 'Apple iPhone 15 Pro 256GB', price: 1199, stock: 24, categoryName: 'Elektronik', rating: 4.8, isActive: true },
-          { id: 2, name: 'AirPods Pro', description: 'Apple AirPods Pro 2. Nesil', price: 249, stock: 8, categoryName: 'Elektronik', rating: 4.7, isActive: true },
-          { id: 3, name: 'iPad Air', description: 'Apple iPad Air M2 64GB', price: 799, stock: 3, categoryName: 'Elektronik', rating: 4.6, isActive: true },
-          { id: 4, name: 'MacBook Air', description: 'Apple MacBook Air M3 13"', price: 1299, stock: 15, categoryName: 'Elektronik', rating: 4.9, isActive: false },
-        ];
-        this.totalElements = 4;
         this.loading = false;
       }
     });
   }
 
+  onPageChange(page: number): void {
+    this.page = page;
+    this.loadProducts();
+  }
+
   deleteProduct(id: number): void {
     if (!confirm('Bu ürünü silmek istediğinizden emin misiniz?')) return;
     this.productService.deleteProduct(id).subscribe({
-      next: () => { this.products = this.products.filter(p => p.id !== id); },
+      next: () => { this.loadProducts(); },
       error: () => alert('Ürün silinemedi.')
     });
   }
