@@ -189,8 +189,11 @@ public class EtlService {
 
     private List<Product> loadProducts(Store ukStore, Store indiaStore, Store pakStore) {
         List<Product> products = new ArrayList<>();
-        Category retailCat = getOrCreateCategory("Retail", null);
+        List<String> realCategories = extractRealCategories();
+        if (realCategories.isEmpty()) realCategories = Arrays.asList("General");
+        
         Store[] stores = {ukStore, indiaStore, pakStore};
+        Set<String> seenSkus = new HashSet<>();
         int count = 0;
         int rowLimit = 500;
 
@@ -205,7 +208,7 @@ public class EtlService {
                 String desc       = cols[2].trim();
                 String priceStr   = cols[5].trim();
 
-                if (stockCode.isBlank() || desc.isBlank()) continue;
+                if (stockCode.isBlank() || desc.isBlank() || !seenSkus.add(stockCode)) continue;
                 if (desc.trim().toLowerCase().startsWith("amazon")) continue; 
 
                 BigDecimal price;
@@ -225,7 +228,8 @@ public class EtlService {
                 p.setUnitPrice(price);
                 p.setCost(price.multiply(BigDecimal.valueOf(0.6))); // Sentetik Cost
                 p.setStockQuantity(100 + random.nextInt(900));
-                p.setCategory(retailCat);
+                String pCatName = realCategories.get(count % realCategories.size());
+                p.setCategory(getOrCreateCategory(pCatName, null));
                 p.setStore(stores[count % stores.length]);
                 products.add(productRepository.save(p));
 
@@ -244,6 +248,9 @@ public class EtlService {
 
         if (users.isEmpty() || products.isEmpty()) return orders;
 
+        Set<String> seenOrders = new HashSet<>();
+        String[] fallbackPayments = {"Credit Card", "PayPal", "Bank Transfer", "Cash on Delivery"};
+
         try (BufferedReader br = new BufferedReader(new InputStreamReader(
                 new ClassPathResource("data/ds5.csv").getInputStream(), "UTF-8"))) {
             br.readLine();
@@ -258,7 +265,7 @@ public class EtlService {
                 String orderNum     = cols[7].trim();
                 String paymentMethod= cols[11].trim();
 
-                if (orderNum.isBlank()) continue;
+                if (orderNum.isBlank() || !seenOrders.add(orderNum)) continue;
 
                 int qty = 1;
                 try { qty = (int) Double.parseDouble(qtyStr); } catch (NumberFormatException ignored) {}
@@ -277,20 +284,24 @@ public class EtlService {
                 o.setUser(user);
                 Order saved = orderRepository.save(o);
 
-                if (!paymentMethod.isBlank()) {
-                    Payment payment = new Payment();
-                    payment.setOrder(saved);
-                    payment.setPaymentType(paymentMethod);
-                    payment.setAmount(totalAmountVal);
-                    paymentRepository.save(payment);
-                }
+                if (paymentMethod.isBlank()) paymentMethod = fallbackPayments[count % fallbackPayments.length];
+                
+                Payment payment = new Payment();
+                payment.setOrder(saved);
+                payment.setPaymentType(paymentMethod);
+                payment.setAmount(totalAmountVal);
+                paymentRepository.save(payment);
 
                 OrderItem item = new OrderItem();
                 item.setOrder(saved);
                 item.setProduct(product);
                 item.setQuantity(qty);
                 item.setPrice(product.getUnitPrice());
-                orderItemRepository.save(item);
+                item = orderItemRepository.save(item);
+
+                saved.setPayments(new ArrayList<>(List.of(payment)));
+                saved.setItems(new ArrayList<>(List.of(item)));
+                saved = orderRepository.save(saved);
 
                 orders.add(saved);
                 count++;
@@ -391,6 +402,44 @@ public class EtlService {
         } catch (Exception e) {
             log.warning("DS6 Yorum hatası: " + e.getMessage());
         }
+    }
+
+    private List<String> extractRealCategories() {
+        Set<String> uniqueCats = new HashSet<>();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new ClassPathResource("data/ds5.csv").getInputStream(), "UTF-8"))) {
+            br.readLine();
+            for (int i=0; i<3000; i++) {
+                String line = br.readLine();
+                if (line == null) break;
+                String[] cols = splitCsv(line);
+                if (cols.length >= 9) {
+                    String cat = cols[8].trim();
+                    if (!cat.isBlank() && !cat.equalsIgnoreCase("None")) uniqueCats.add(capitalize(cat));
+                }
+            }
+        } catch (Exception e) {}
+        
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new ClassPathResource("data/ds6.tsv").getInputStream(), "UTF-8"))) {
+            br.readLine();
+            for (int i=0; i<3000; i++) {
+                String line = br.readLine();
+                if (line == null) break;
+                String[] cols = line.split("\t", -1);
+                if (cols.length >= 7) {
+                    String cat = cols[6].trim();
+                    if (!cat.isBlank() && !cat.equalsIgnoreCase("None")) uniqueCats.add(capitalize(cat));
+                }
+            }
+        } catch (Exception e) {}
+        
+        return new ArrayList<>(uniqueCats);
+    }
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) return str;
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
     }
 
     private Category getOrCreateCategory(String name, Category parent) {
