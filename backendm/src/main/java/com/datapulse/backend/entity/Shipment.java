@@ -11,6 +11,10 @@ public class Shipment {
 
     private String warehouseBlock;    // DS3: Warehouse_block (A, B, C, D, F)
     private String modeOfShipment;    // DS3: Mode_of_Shipment (Flight, Ship, Road)
+    
+    @Column(name = "service_level")
+    private String serviceLevel;      // DS4: Service Level (Expedited, Standard)
+    
     private Integer reachingOnTime;   // DS3: Reached_on_Time (0 veya 1)
     private String productImportance; // DS3: Product_importance (low, medium, high)
 
@@ -32,6 +36,8 @@ public class Shipment {
     public void setWarehouseBlock(String warehouseBlock) { this.warehouseBlock = warehouseBlock; }
     public String getModeOfShipment() { return modeOfShipment; }
     public void setModeOfShipment(String modeOfShipment) { this.modeOfShipment = modeOfShipment; }
+    public String getServiceLevel() { return serviceLevel; }
+    public void setServiceLevel(String serviceLevel) { this.serviceLevel = serviceLevel; }
     public Integer getReachingOnTime() { return reachingOnTime; }
     public void setReachingOnTime(Integer reachingOnTime) { this.reachingOnTime = reachingOnTime; }
     public String getProductImportance() { return productImportance; }

@@ -10,10 +10,16 @@ import java.util.List;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
+    List<Order> findByUser(User user);
+
     List<Order> findByUserOrderByOrderDateDesc(User user);
+
     Optional<Order> findByOrderNumber(String orderNumber);
+
     boolean existsByOrderNumber(String orderNumber);
+
     List<Order> findAllByOrderNumber(String orderNumber);
+
     List<Order> findByStatus(String status);
 
     @Query("SELECT SUM(o.totalAmount) FROM Order o")
@@ -39,7 +45,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT COUNT(p) FROM Product p WHERE p.store.owner.email = :email")
     long countProductsByOwner(@Param("email") String email);
-    
+
     @Query("SELECT COUNT(p) FROM Product p WHERE p.store.owner.email = :email AND p.stockQuantity < 10")
     long countLowStockProductsByOwner(@Param("email") String email);
 

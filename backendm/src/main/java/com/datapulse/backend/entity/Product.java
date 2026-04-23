@@ -31,6 +31,9 @@ public class Product {
     @Column(name = "unit_price", nullable = false)
     private BigDecimal unitPrice;
 
+    @Column(name = "cost")
+    private BigDecimal cost; // DS3 cost of the product
+
     @Column(name = "stock_quantity")
     private Integer stockQuantity;
 
@@ -62,6 +65,8 @@ public class Product {
     public void setDescription(String description) { this.description = description; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+    public BigDecimal getCost() { return cost; }
+    public void setCost(BigDecimal cost) { this.cost = cost; }
     public Integer getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
     public Category getCategory() { return category; }
