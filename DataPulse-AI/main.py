@@ -1,7 +1,9 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from pydantic import BaseModel
-from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from langgraph.graph import StateGraph, END
 
@@ -15,8 +17,6 @@ from agents import (
     analysis_node, 
     visualization_node
 )
-
-load_dotenv()
 
 app = FastAPI()
 
@@ -86,10 +86,12 @@ app_graph = workflow.compile()
 
 # --- API Endpoints ---
 
+from typing import Optional
+
 class ChatRequest(BaseModel):
     question: str
-    user_id: int | None = None
-    role_type: str | None = None
+    user_id: Optional[int] = None
+    role_type: Optional[str] = None
 
 @app.post("/ask")
 async def ask_ai(request: ChatRequest):

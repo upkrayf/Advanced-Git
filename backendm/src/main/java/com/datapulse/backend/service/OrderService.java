@@ -15,16 +15,19 @@ public class OrderService {
     private final com.datapulse.backend.repository.OrderItemRepository orderItemRepository;
     private final com.datapulse.backend.repository.PaymentRepository paymentRepository;
     private final com.datapulse.backend.repository.ProductRepository productRepository;
+    private final ShipmentService shipmentService;
 
     public OrderService(OrderRepository orderRepository, UserRepository userRepository,
                         com.datapulse.backend.repository.OrderItemRepository orderItemRepository,
                         com.datapulse.backend.repository.PaymentRepository paymentRepository,
-                        com.datapulse.backend.repository.ProductRepository productRepository) {
+                        com.datapulse.backend.repository.ProductRepository productRepository,
+                        ShipmentService shipmentService) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.orderItemRepository = orderItemRepository;
         this.paymentRepository = paymentRepository;
         this.productRepository = productRepository;
+        this.shipmentService = shipmentService;
     }
 
     public List<Order> getAll() {
@@ -59,8 +62,8 @@ public class OrderService {
             totalValue = totalValue.add(itemDto.getPrice().multiply(java.math.BigDecimal.valueOf(itemDto.getQuantity())));
         }
         order.setTotalAmount(totalValue);
-        order = orderRepository.save(order);
-
+        
+        java.util.List<com.datapulse.backend.entity.OrderItem> items = new java.util.ArrayList<>();
         for (com.datapulse.backend.dto.CheckoutRequest.OrderItemDto itemDto : request.getItems()) {
             com.datapulse.backend.entity.Product product = productRepository.findById(itemDto.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found: " + itemDto.getProductId()));
@@ -74,20 +77,29 @@ public class OrderService {
             item.setProduct(product);
             item.setQuantity(itemDto.getQuantity());
             item.setPrice(itemDto.getPrice());
-            orderItemRepository.save(item);
+            items.add(item);
 
             if (product.getStockQuantity() != null) {
                 product.setStockQuantity(product.getStockQuantity() - itemDto.getQuantity());
                 productRepository.save(product);
             }
         }
+        order.setItems(items);
 
         com.datapulse.backend.entity.Payment payment = new com.datapulse.backend.entity.Payment();
         payment.setOrder(order);
         payment.setPaymentType(request.getPaymentMethod());
         payment.setAmount(totalValue);
-        paymentRepository.save(payment);
+        order.setPayments(new java.util.ArrayList<>(java.util.List.of(payment)));
 
-        return order;
+        // Create and SAVE shipment through ShipmentService
+        com.datapulse.backend.entity.Shipment savedShipment = shipmentService.createDefaultShipment();
+        order.setShipment(savedShipment);
+
+        // Final save for the order
+        Order finalOrder = orderRepository.save(order);
+        
+        // Final link for items and payments just to be 100% sure in memory
+        return finalOrder;
     }
 }

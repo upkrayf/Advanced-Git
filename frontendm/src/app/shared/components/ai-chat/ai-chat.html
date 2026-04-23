@@ -1,13 +1,26 @@
-<div class="ai-chat-container">
+<button class="ai-toggle-btn" (click)="toggleChat()">
+  <span>🤖</span>
+</button>
+
+<div class="ai-sidebar" [class.open]="isOpen">
+  <div class="ai-header">
+    <h3>DataPulse AI Asistanı</h3>
+    <button class="close-btn" (click)="toggleChat()">×</button>
+  </div>
+
   <div class="ai-chat-messages">
-    <div *ngFor="let message of messages" [ngClass]="{ 'message-user': message.sender === 'user', 'message-assistant': message.sender === 'assistant' }">
-      <span class="sender">{{ message.sender === 'user' ? 'Siz' : 'Asistan' }}:</span>
-      <span class="text">{{ message.text }}</span>
+    <div *ngFor="let message of messages" 
+         class="message" 
+         [ngClass]="{ 'message-user': message.sender === 'user', 'message-assistant': message.sender === 'assistant' }">
+      {{ message.text }}
+    </div>
+    <div *ngIf="loading" class="message message-assistant">
+      <span class="loading-dots">Düşünüyorum...</span>
     </div>
   </div>
 
   <form class="ai-chat-form" (ngSubmit)="sendQuestion()">
-    <input name="question" [(ngModel)]="question" placeholder="Sorunuzu yazın..." />
-    <button type="submit" [disabled]="loading">Gönder</button>
+    <input name="question" [(ngModel)]="question" placeholder="E-ticaret verilerinle ilgili soru sor..." autocomplete="off" />
+    <button type="submit" [disabled]="loading || !question.trim()">Gönder</button>
   </form>
 </div>

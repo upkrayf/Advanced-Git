@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Chat } from '../../../core/services/chat';
+import { Auth } from '../../../core/services/auth';
 import { ChatMessage } from '../../../core/models/chat-message.model';
 
 @Component({
@@ -13,12 +14,21 @@ import { ChatMessage } from '../../../core/models/chat-message.model';
 })
 export class AiChat {
   question = '';
-  messages: ChatMessage[] = [
-    { sender: 'assistant', text: 'Merhaba! E-ticaret analiz asistanınıza hoş geldiniz. Sorunuzu yazabilirsiniz.' }
-  ];
+  isOpen = false;
+  messages: ChatMessage[] = [];
   loading = false;
 
-  constructor(private chatService: Chat) {}
+  constructor(private chatService: Chat, private authService: Auth) {
+    const role = this.authService.getRole();
+    this.messages.push({ 
+      sender: 'assistant', 
+      text: `Merhaba! Ben DataPulse AI. ${role === 'ADMIN' ? 'Platform geneli' : 'Mağazanızla ilgili'} analizler yapabilirim. Size nasıl yardımcı olabilirim?` 
+    });
+  }
+
+  toggleChat(): void {
+    this.isOpen = !this.isOpen;
+  }
 
   sendQuestion(): void {
     const questionText = this.question?.trim();

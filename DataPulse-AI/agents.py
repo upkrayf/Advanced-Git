@@ -4,10 +4,13 @@ from typing import Dict, Any
 from state import AgentState
 from langchain_google_genai import ChatGoogleGenerativeAI
 from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Initialize LLM
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash", 
+    model=os.getenv("SELECTED_MODEL", "gemini-2.0-flash"), 
     google_api_key=os.getenv("GOOGLE_API_KEY")
 )
 

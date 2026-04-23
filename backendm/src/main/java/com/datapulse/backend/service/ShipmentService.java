@@ -25,4 +25,16 @@ public class ShipmentService {
     public List<Shipment> getMyShipments(String email) {
         return shipmentRepository.findByUserEmail(email);
     }
+
+    public Shipment createDefaultShipment() {
+        Shipment shipment = new Shipment();
+        shipment.setModeOfShipment("Road");
+        shipment.setServiceLevel("Standard");
+        shipment.setWarehouseBlock("A");
+        shipment.setProductImportance("medium");
+        shipment.setReachingOnTime(0);
+        shipment.setCustomerRating(5);
+        shipment.setWeightInGms(500);
+        return shipmentRepository.save(shipment);
+    }
 }
