@@ -2,67 +2,213 @@
   <app-sidebar />
   <div class="main-content" style="padding:1.5rem;">
 
+    <!-- Header -->
     <div class="topbar">
       <div>
         <h1 class="page-title">Mağaza Yönetimi</h1>
-        <p class="page-sub">{{ totalElements }} mağaza kayıtlı</p>
+        <p class="page-sub">{{ totalElements || stores.length }} mağaza kayıtlı</p>
       </div>
     </div>
 
-    <!-- Search -->
-    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px;">
-      <input type="text" [(ngModel)]="search" placeholder="Mağaza adı ara..." (keyup.enter)="onSearch()"
-        style="flex:1; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
-      <button class="btn-outline" (click)="onSearch()">🔍 Ara</button>
+    <!-- Tab Switcher -->
+    <div style="display:flex; gap:4px; background:var(--bg-secondary); border-radius:10px; padding:4px;
+                width:fit-content; margin-bottom:1.5rem; border:1px solid var(--border-color);">
+      <button (click)="activeTab='stores'"
+              [style.background]="activeTab === 'stores' ? 'var(--accent-primary)' : 'transparent'"
+              [style.color]="activeTab === 'stores' ? '#fff' : 'var(--text-secondary)'"
+              style="border:none; padding:7px 20px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s;">
+        🏪 Mağazalar
+      </button>
+      <button (click)="activeTab='settings'"
+              [style.background]="activeTab === 'settings' ? 'var(--accent-primary)' : 'transparent'"
+              [style.color]="activeTab === 'settings' ? '#fff' : 'var(--text-secondary)'"
+              style="border:none; padding:7px 20px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s;">
+        ⚙️ Platform Ayarları
+      </button>
     </div>
 
-    <div class="card">
-      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
-      <table class="data-table" *ngIf="!loading">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Mağaza</th>
-            <th>Sahip</th>
-            <th>Şehir</th>
-            <th>Ürünler</th>
-            <th>Siparişler</th>
-            <th>Gelir</th>
-            <th>Durum</th>
-            <th>İşlem</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let store of stores">
-            <td style="color:#4a4a6a;">{{ store.id }}</td>
-            <td style="font-weight:500; color:#f0f0f5;">{{ store.name }}</td>
-            <td style="color:#9a9ab0;">{{ store.ownerName || '-' }}</td>
-            <td style="color:#7a7a9a;">{{ store.city || '-' }}</td>
-            <td>{{ store.productCount || 0 }}</td>
-            <td>{{ store.totalOrders || 0 | number }}</td>
-            <td>{{ formatCurrency(store.totalRevenue || 0) }}</td>
-            <td>
-              <span class="status-pill" [class.pill-green]="store.isActive" [class.pill-red]="!store.isActive">
-                {{ store.isActive ? 'Aktif' : 'Pasif' }}
-              </span>
-            </td>
-            <td>
-              <button class="btn-outline" (click)="toggleActive(store)" style="font-size:11px;">
-                {{ store.isActive ? 'Deaktif Et' : 'Aktifleştir' }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- ===== STORES TAB ===== -->
+    <ng-container *ngIf="activeTab === 'stores'">
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:#7a7a9a;" *ngIf="totalPages > 1">
-        <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
-        <div style="display:flex; gap:8px;">
-          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>
-          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()">Sonraki →</button>
+      <!-- Mini KPIs -->
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:1.5rem;">
+        <div class="kpi-card" style="border-left:3px solid #6c63ff; padding:12px 16px;">
+          <div class="kpi-label">Toplam Mağaza</div>
+          <div class="kpi-value" style="font-size:28px;">{{ stores.length }}</div>
+        </div>
+        <div class="kpi-card" style="border-left:3px solid #00875a; padding:12px 16px;">
+          <div class="kpi-label">Aktif</div>
+          <div class="kpi-value" style="font-size:28px; color:#00875a;">{{ activeCount }}</div>
+        </div>
+        <div class="kpi-card" style="border-left:3px solid #de350b; padding:12px 16px;">
+          <div class="kpi-label">Pasif</div>
+          <div class="kpi-value" style="font-size:28px; color:#de350b;">{{ inactiveCount }}</div>
         </div>
       </div>
-    </div>
+
+      <!-- Search -->
+      <div class="card" style="margin-bottom:1rem; display:flex; gap:12px;">
+        <input type="text" [(ngModel)]="search" placeholder="Mağaza adı ara…" (keyup.enter)="onSearch()"
+               class="filter-input" style="flex:1;" />
+        <button class="btn-outline" (click)="onSearch()">Ara</button>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:2rem;">Yükleniyor…</div>
+
+        <div *ngIf="!loading && !stores.length"
+             style="text-align:center; color:var(--text-secondary); padding:3rem;">
+          <div style="font-size:32px; margin-bottom:12px;">🏪</div>
+          <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Mağaza bulunamadı</div>
+          <div style="font-size:13px;">Arama kriterini değiştirin veya henüz kayıtlı mağaza yok.</div>
+        </div>
+
+        <table class="data-table" *ngIf="!loading && stores.length">
+          <thead>
+            <tr>
+              <th>#</th><th>Mağaza</th><th>Sahip</th><th>Şehir</th>
+              <th>Ürünler</th><th>Siparişler</th><th>Gelir</th><th>Durum</th><th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let store of stores">
+              <td style="color:var(--text-secondary); font-size:12px;">{{ store.id }}</td>
+              <td style="font-weight:700; color:var(--text-primary);">{{ store.name }}</td>
+              <td style="color:var(--text-primary); font-weight:500;">{{ store.ownerName || '-' }}</td>
+              <td style="color:var(--text-secondary);">{{ store.city || '-' }}</td>
+              <td style="color:var(--text-secondary);">{{ store.productCount || 0 }}</td>
+              <td style="color:var(--text-secondary);">{{ store.totalOrders || 0 | number }}</td>
+              <td style="color:#00875a; font-weight:700;">{{ formatCurrency(store.totalRevenue || 0) }}</td>
+              <td>
+                <span class="status-pill" [class.pill-green]="store.isActive" [class.pill-red]="!store.isActive">
+                  {{ store.isActive ? 'Aktif' : 'Pasif' }}
+                </span>
+              </td>
+              <td>
+                <button class="btn-outline" (click)="toggleActive(store)"
+                        style="font-size:11px; padding:5px 10px;"
+                        [style.color]="store.isActive ? '#de350b' : '#00875a'">
+                  {{ store.isActive ? 'Deaktif Et' : 'Aktifleştir' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="totalPages > 1"
+             style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;
+                    padding-top:1rem; border-top:1px solid var(--border-color); font-size:12px; color:var(--text-secondary);">
+          <span>Sayfa <strong style="color:var(--text-primary);">{{ page + 1 }}</strong> / {{ totalPages }}</span>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()" style="padding:6px 14px; font-size:12px;">← Önceki</button>
+            <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()" style="padding:6px 14px; font-size:12px;">Sonraki →</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ===== SETTINGS TAB ===== -->
+    <ng-container *ngIf="activeTab === 'settings'">
+
+      <!-- Toast -->
+      <div *ngIf="settingsToast"
+           style="background:rgba(0,135,90,0.12); border:1px solid rgba(0,135,90,0.3); color:#00875a;
+                  border-radius:8px; padding:10px 16px; font-size:13px; margin-bottom:1rem; font-weight:600;">
+        ✓ {{ settingsToast }}
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+
+        <!-- General Settings -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:1.2rem;">🌐 Genel Bilgiler</div>
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div>
+              <label style="font-size:12px; color:var(--text-secondary); font-weight:600; display:block; margin-bottom:4px;">Platform Adı</label>
+              <input type="text" [(ngModel)]="settings.platformName" class="filter-input" style="width:100%;" />
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--text-secondary); font-weight:600; display:block; margin-bottom:4px;">Destek E-posta</label>
+              <input type="email" [(ngModel)]="settings.supportEmail" class="filter-input" style="width:100%;" />
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--text-secondary); font-weight:600; display:block; margin-bottom:4px;">Destek Telefon</label>
+              <input type="text" [(ngModel)]="settings.supportPhone" class="filter-input" style="width:100%;" />
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--text-secondary); font-weight:600; display:block; margin-bottom:4px;">Para Birimi</label>
+              <select [(ngModel)]="settings.currency" class="filter-select" style="width:100%;">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="TRY">TRY (₺)</option>
+                <option value="GBP">GBP (£)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Commerce Settings -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:1.2rem;">💼 Ticaret Ayarları</div>
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div>
+              <label style="font-size:12px; color:var(--text-secondary); font-weight:600; display:block; margin-bottom:4px;">
+                Komisyon Oranı (%)
+              </label>
+              <input type="number" [(ngModel)]="settings.commissionRate" min="0" max="50" step="0.5"
+                     class="filter-input" style="width:100%;" />
+              <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">
+                Her satıştan alınan platform komisyonu
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px; color:var(--text-secondary); font-weight:600; display:block; margin-bottom:4px;">
+                Mağaza Başına Maks. Ürün
+              </label>
+              <input type="number" [(ngModel)]="settings.maxProductsPerStore" min="1" max="10000"
+                     class="filter-input" style="width:100%;" />
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--border-color);">
+              <div>
+                <div style="font-size:13px; color:var(--text-primary); font-weight:600;">Misafir Ödeme</div>
+                <div style="font-size:11px; color:var(--text-secondary);">Üye olmadan alışveriş</div>
+              </div>
+              <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;">
+                <input type="checkbox" [(ngModel)]="settings.allowGuestCheckout" style="opacity:0; width:0; height:0;">
+                <span style="width:42px; height:24px; background:var(--bg-secondary); border-radius:12px; border:1px solid var(--border-color); display:block; transition:0.3s; position:relative;"
+                      [style.background]="settings.allowGuestCheckout ? '#6c63ff' : 'var(--bg-secondary)'">
+                  <span style="position:absolute; top:2px; transition:0.3s; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.2);"
+                        [style.left]="settings.allowGuestCheckout ? '20px' : '2px'"></span>
+                </span>
+              </label>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--border-color);">
+              <div>
+                <div style="font-size:13px; color:var(--text-primary); font-weight:600;">Bakım Modu</div>
+                <div style="font-size:11px; color:var(--text-secondary);">Siteyi geçici olarak kapat</div>
+              </div>
+              <label style="position:relative; display:inline-flex; align-items:center; cursor:pointer;">
+                <input type="checkbox" [(ngModel)]="settings.maintenanceMode" style="opacity:0; width:0; height:0;">
+                <span style="width:42px; height:24px; background:var(--bg-secondary); border-radius:12px; border:1px solid var(--border-color); display:block; transition:0.3s; position:relative;"
+                      [style.background]="settings.maintenanceMode ? '#de350b' : 'var(--bg-secondary)'">
+                  <span style="position:absolute; top:2px; transition:0.3s; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.2);"
+                        [style.left]="settings.maintenanceMode ? '20px' : '2px'"></span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+        <button class="btn-primary" (click)="saveSettings()" [disabled]="settingsSaving"
+                style="padding:10px 28px; font-size:14px; font-weight:700;">
+          {{ settingsSaving ? 'Kaydediliyor…' : '💾 Ayarları Kaydet' }}
+        </button>
+      </div>
+    </ng-container>
 
   </div>
 </div>

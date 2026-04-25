@@ -9,28 +9,28 @@
       </div>
     </div>
 
-    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:3rem;">Yükleniyor…</div>
+    <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:3rem;">Yükleniyor…</div>
 
     <div *ngIf="!loading">
       <div *ngFor="let r of reviews" class="card" style="margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
           <div>
-            <div style="font-weight:500; color:#f0f0f5; font-size:14px;">{{ r.productName }}</div>
-            <div style="font-size:11px; color:#7a7a9a; margin-top:2px;">{{ r.createdAt | slice:0:10 }}</div>
+            <div style="font-weight:500; color:var(--text-primary); font-size:14px;">{{ r.productName }}</div>
+            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">{{ r.createdAt | slice:0:10 }}</div>
           </div>
           <div style="color:#f0c000; font-size:18px;">
             <span *ngFor="let s of getStars(r.rating)">{{ s <= r.rating ? '★' : '☆' }}</span>
           </div>
         </div>
 
-        <div style="font-size:13px; color:#c0c0d0; margin-bottom:8px;">{{ r.comment }}</div>
+        <div style="font-size:13px; color:var(--text-primary); margin-bottom:8px;">{{ r.comment }}</div>
 
-        <div *ngIf="r.storeResponse" style="background:#1a2e1a; border-radius:6px; padding:10px 12px; font-size:12px; color:#1d9e75;">
-          <strong>Mağaza Yanıtı:</strong> {{ r.storeResponse }}
+        <div *ngIf="r.storeResponse" style="background:var(--bg-secondary); border-left:3px solid #00875a; border-radius:6px; padding:10px 12px; font-size:12px; color:var(--text-primary);">
+          <strong style="color:#00875a;">Mağaza Yanıtı:</strong> {{ r.storeResponse }}
         </div>
       </div>
 
-      <div *ngIf="!reviews.length" style="text-align:center; color:#4a4a6a; font-size:13px; padding:3rem;">
+      <div *ngIf="!reviews.length" style="text-align:center; color:var(--text-secondary); font-size:13px; padding:3rem;">
         Henüz yorum yazmadınız.
         <br/><br/>
         <button class="btn-primary" routerLink="/individual/shop">Ürünlere Git ve Yorum Yaz</button>

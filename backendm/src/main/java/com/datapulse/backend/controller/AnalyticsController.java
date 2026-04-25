@@ -88,6 +88,6 @@ public class AnalyticsController {
 
     @GetMapping("/my/spending/trend")
     public ResponseEntity<?> getMySpendingTrend(java.security.Principal principal) {
-        return ResponseEntity.ok(analyticsService.getMySpendingByCategory(principal.getName()));
+        return ResponseEntity.ok(analyticsService.getMySpendingTrend(principal.getName()));
     }
 }

@@ -19,6 +19,8 @@ export class Inventory implements OnInit {
   search = '';
   editingId: number | null = null;
   editStock = 0;
+  saveError = '';
+  saveSuccess = '';
 
   constructor(private productService: ProductService) {}
 
@@ -53,14 +55,44 @@ export class Inventory implements OnInit {
   startEdit(product: ProductModel): void {
     this.editingId = product.id;
     this.editStock = product.stock || 0;
+    this.saveError = '';
+    this.saveSuccess = '';
   }
 
   saveStock(product: ProductModel): void {
-    this.productService.updateProduct(product.id, { stock: this.editStock }).subscribe({
-      next: () => { product.stock = this.editStock; this.editingId = null; },
-      error: () => { product.stock = this.editStock; this.editingId = null; }
+    // Send only the fields the backend expects for a PUT — avoids 400 from extra/typed fields
+    const payload: any = {
+      id: product.id,
+      name: product.name,
+      description: product.description ?? '',
+      price: product.price,
+      stock: this.editStock,
+      stockQuantity: this.editStock,
+      categoryId: (product as any).categoryId ?? undefined,
+      categoryName: product.categoryName ?? undefined,
+    };
+    this.productService.updateProduct(product.id, payload).subscribe({
+      next: (p) => {
+        product.stock = (p as any).stock ?? (p as any).stockQuantity ?? this.editStock;
+        this.editingId = null;
+        this.saveSuccess = 'Stok güncellendi.';
+        setTimeout(() => this.saveSuccess = '', 2500);
+      },
+      error: (err) => {
+        if (err?.status === 400) {
+          this.saveError = 'Geçersiz değer: stok sayısını kontrol edin.';
+        } else {
+          // Optimistically reflect the change in the UI
+          product.stock = this.editStock;
+          this.saveError = `Sunucuya kaydedilemedi (${err?.status ?? 'hata'}).`;
+        }
+        this.editingId = null;
+        setTimeout(() => this.saveError = '', 3500);
+      }
     });
   }
+
+  cancelEdit(): void { this.editingId = null; }
 
   getStockStatus(stock: number): string {
     return stock === 0 ? 'Tükendi' : stock < 5 ? 'Kritik' : 'Yeterli';

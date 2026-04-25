@@ -5,59 +5,78 @@
     <div class="topbar">
       <div>
         <h1 class="page-title">Kargo Takibi</h1>
-        <p class="page-sub">Gönderilerinizin durumu</p>
+        <p class="page-sub">Siparişlerinizin güncel durumu</p>
       </div>
     </div>
 
-    <!-- Manual tracking -->
-    <div class="card" style="margin-bottom:1rem;">
-      <div class="card-title">Takip Numarasıyla Sorgula</div>
+    <!-- Tracking input -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Sipariş / Takip Numarasıyla Sorgula</div>
       <div style="display:flex; gap:8px;">
-        <input type="text" [(ngModel)]="trackingInput" placeholder="TRK... takip numarasını girin"
-          style="flex:1; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
+        <input type="text" [(ngModel)]="trackingInput" placeholder="Sipariş numarası veya ID girin..."
+          class="track-input" (keyup.enter)="trackShipment()" />
         <button class="btn-primary" (click)="trackShipment()">Sorgula</button>
       </div>
-      <div *ngIf="trackError" style="color:#e24b4a; font-size:12px; margin-top:6px;">{{ trackError }}</div>
-      <div *ngIf="trackedShipment" style="margin-top:12px; display:flex; justify-content:space-between; font-size:13px;">
-        <span style="color:#7a7a9a;">Sipariş #{{ trackedShipment.orderId }}</span>
-        <span style="color:#9a9ab0;">{{ trackedShipment.carrier }}</span>
-        <span class="status-pill" [class]="getStatusClass(trackedShipment.status)">{{ getStatusLabel(trackedShipment.status) }}</span>
+      <div *ngIf="trackError" style="color:#de350b; font-size:12px; margin-top:8px;">{{ trackError }}</div>
+      <div *ngIf="trackResult" style="color:#00875a; font-size:13px; font-weight:600; margin-top:8px; background:#e6f7f0; padding:10px 14px; border-radius:8px;">
+        ✓ {{ trackResult }}
       </div>
     </div>
 
-    <!-- Active shipments -->
+    <!-- Order list -->
     <div class="card">
-      <div class="card-title">Aktif Gönderilerim</div>
-      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
+      <div class="card-title">Siparişlerim</div>
+      <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:2rem;">Yükleniyor…</div>
 
-      <div *ngFor="let s of shipments" style="padding:16px 0; border-bottom:0.5px solid #1e1e2e;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <div *ngFor="let o of orders; let last = last"
+           [style.border-bottom]="!last ? '1px solid var(--border-color)' : 'none'"
+           style="padding:18px 0;">
+
+        <!-- Header row -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
           <div>
-            <div style="font-size:13px; color:#f0f0f5; font-weight:500;">Sipariş #{{ s.orderId }}</div>
-            <div style="font-size:11px; color:#4a4a6a;">{{ s.carrier }} — <span style="font-family:monospace;">{{ s.trackingNo }}</span></div>
+            <div style="font-size:14px; font-weight:700; color:var(--text-primary);">
+              {{ o.orderNumber || ('Sipariş #' + o.id) }}
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
+              {{ o.createdAt | slice:0:10 }} — {{ formatCurrency(o.totalAmount) }}
+            </div>
           </div>
-          <span class="status-pill" [class]="getStatusClass(s.status)">{{ getStatusLabel(s.status) }}</span>
+          <span class="status-pill" [class]="getStatusClass(o.status)">{{ getStatusLabel(o.status) }}</span>
         </div>
 
-        <!-- Mini timeline -->
-        <div style="display:flex; gap:4px; margin-top:8px;">
-          <div *ngFor="let step of getStatusSteps(); let i = index" style="display:flex; flex:1; flex-direction:column; align-items:center;">
-            <div [style.background]="i <= getStepIndex(s.status) ? '#6c63ff' : '#2e2e3e'"
-              style="width:10px; height:10px; border-radius:50%; margin-bottom:4px;"></div>
-            <div style="font-size:9px; color:#4a4a6a; text-align:center; line-height:1.2;">{{ step }}</div>
+        <!-- Status timeline (only for non-cancelled) -->
+        <div *ngIf="!isCancelled(o.status)" style="display:flex; align-items:flex-start; position:relative;">
+          <div *ngFor="let step of getStatusSteps(); let i = index; let last = last"
+               style="display:flex; flex:1; flex-direction:column; align-items:center; position:relative;">
+            <!-- Connector -->
+            <div *ngIf="!last" [style.background]="i < getStepIndex(o.status) ? '#00875a' : 'var(--border-color)'"
+                 style="position:absolute; top:7px; left:50%; width:100%; height:2px; z-index:0;"></div>
+            <!-- Dot -->
+            <div [style.background]="i <= getStepIndex(o.status) ? '#00875a' : 'var(--bg-secondary)'"
+                 [style.border]="i <= getStepIndex(o.status) ? 'none' : '1.5px solid var(--border-color)'"
+                 style="width:16px; height:16px; border-radius:50%; z-index:1; flex-shrink:0; box-shadow: 0 0 0 2px var(--card-bg);">
+            </div>
+            <div style="font-size:9px; color:var(--text-secondary); text-align:center; line-height:1.3; margin-top:6px; max-width:56px;">{{ step }}</div>
           </div>
         </div>
 
-        <div *ngIf="s.estimatedDelivery" style="font-size:11px; color:#7a7a9a; margin-top:6px;">
-          Tahmini Teslim: {{ s.estimatedDelivery | slice:0:10 }}
+        <!-- Cancelled message -->
+        <div *ngIf="isCancelled(o.status)" style="font-size:12px; color:#de350b; padding:8px 12px; background:#fff0f0; border-radius:6px;">
+          Bu sipariş {{ o.status === 'RETURNED' ? 'iade edildi' : 'iptal edildi' }}.
         </div>
-        <div *ngIf="s.actualDelivery" style="font-size:11px; color:#1d9e75; margin-top:6px;">
-          ✓ Teslim Edildi: {{ s.actualDelivery | slice:0:10 }}
+
+        <!-- Detail link -->
+        <div style="margin-top:10px;">
+          <a [routerLink]="['/individual/orders', o.id]" style="font-size:12px; color:var(--accent-primary); text-decoration:none; font-weight:500;">
+            Sipariş Detayı →
+          </a>
         </div>
+
       </div>
 
-      <div *ngIf="!shipments.length && !loading" style="text-align:center; color:#4a4a6a; font-size:13px; padding:2rem;">
-        Aktif gönderi bulunamadı.
+      <div *ngIf="!orders.length && !loading" style="text-align:center; color:var(--text-secondary); font-size:13px; padding:2.5rem;">
+        Henüz sipariş bulunmuyor.
       </div>
     </div>
 

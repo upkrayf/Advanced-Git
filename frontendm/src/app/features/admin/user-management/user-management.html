@@ -12,94 +12,96 @@
       </div>
     </div>
 
+    <!-- Toast -->
+    <div *ngIf="toast" [style.background]="toastType === 'success' ? 'rgba(0,135,90,0.12)' : 'rgba(222,53,11,0.12)'"
+         [style.border-color]="toastType === 'success' ? 'rgba(0,135,90,0.3)' : 'rgba(222,53,11,0.3)'"
+         [style.color]="toastType === 'success' ? '#00875a' : '#de350b'"
+         style="border:1px solid; border-radius:8px; padding:10px 16px; font-size:13px; margin-bottom:1rem;">
+      {{ toast }}
+    </div>
+
     <!-- Filters -->
     <div class="card" style="margin-bottom:1rem; display:flex; gap:12px; align-items:center;">
       <input type="text" [(ngModel)]="search" placeholder="Ad veya e-posta ara..." (keyup.enter)="onSearch()"
-        style="flex:1; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
-      <select [(ngModel)]="selectedRole" (change)="onRoleFilter()"
-        style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#9a9ab0; font-size:12px; cursor:pointer;">
+        class="filter-input" style="flex:1;" />
+      <select [(ngModel)]="selectedRole" (change)="onRoleFilter()" class="filter-select">
         <option value="">Tüm Roller</option>
         <option value="ADMIN">Admin</option>
         <option value="CORPORATE">Corporate</option>
         <option value="INDIVIDUAL">Individual</option>
       </select>
-      <button class="btn-outline" (click)="onSearch()">🔍 Ara</button>
+      <button class="btn-outline" (click)="onSearch()">Ara</button>
     </div>
 
     <!-- Table -->
     <div class="card">
-      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
+      <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:2rem;">Yükleniyor…</div>
       <table class="data-table" *ngIf="!loading">
         <thead>
           <tr>
             <th>#</th>
             <th>Kullanıcı</th>
             <th>Rol</th>
-            <th>Telefon</th>
-            <th>Kayıt Tarihi</th>
+            <th>Cinsiyet</th>
             <th>Durum</th>
             <th>İşlem</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let user of users">
-            <td>{{ user.id }}</td>
+            <td style="color:var(--text-secondary); font-size:12px;">{{ user.id }}</td>
             <td>
-              <div style="font-weight:500; color:#f0f0f5;">{{ user.fullName || user.email }}</div>
-              <div style="font-size:11px; color:#4a4a6a;">{{ user.email }}</div>
+              <div style="font-weight:700; color:var(--text-primary);">{{ user.fullName || user.email }}</div>
+              <div style="font-size:11px; color:var(--text-secondary);">{{ user.email }}</div>
             </td>
             <td>
               <span class="status-pill"
-                [style.background]="user.roleType === 'ADMIN' ? '#2e1d4e' : user.roleType === 'CORPORATE' ? '#1a2e3e' : '#1a2e1a'"
-                [style.color]="user.roleType === 'ADMIN' ? '#9c7be4' : user.roleType === 'CORPORATE' ? '#378add' : '#1d9e75'">
+                [style.background]="user.roleType === 'ADMIN' ? 'rgba(222,53,11,0.12)' : user.roleType === 'CORPORATE' ? 'rgba(0,135,90,0.12)' : 'rgba(108,99,255,0.12)'"
+                [style.color]="user.roleType === 'ADMIN' ? '#de350b' : user.roleType === 'CORPORATE' ? '#00875a' : '#6c63ff'">
                 {{ user.roleType }}
               </span>
             </td>
-            <td>{{ user.gender || '-' }}</td>
-            <td style="color:#7a7a9a; font-size:11px;">{{ user.id }}</td>
+            <td style="color:var(--text-secondary);">{{ user.gender || '-' }}</td>
             <td>
-              <span class="status-pill pill-green">Aktif</span>
+              <span class="status-pill" [class.pill-green]="user.isActive !== false" [class.pill-red]="user.isActive === false">
+                {{ user.isActive !== false ? 'Aktif' : 'Askıda' }}
+              </span>
             </td>
-            <td style="display: flex; gap: 8px;">
-                <button class="btn-outline" (click)="deleteUser(user.id)" style="font-size:11px; color: #e24b4a;">Sil</button>
+            <td>
+              <button class="btn-outline" (click)="deleteUser(user.id)"
+                      style="font-size:11px; padding:5px 10px; color:#de350b; border-color:rgba(222,53,11,0.3);">
+                Sil
+              </button>
             </td>
+          </tr>
+          <tr *ngIf="!users.length">
+            <td colspan="6" style="text-align:center; color:var(--text-secondary); padding:2rem;">Kullanıcı bulunamadı.</td>
           </tr>
         </tbody>
       </table>
 
-      <!-- Pagination -->
-      <app-pagination 
-        [page]="page" 
-        [totalPages]="totalPages" 
-        (pageChange)="onPageChange($event)">
-      </app-pagination>
+      <app-pagination [page]="page" [totalPages]="totalPages" (pageChange)="onPageChange($event)"></app-pagination>
     </div>
 
     <!-- Create Modal -->
-    <div *ngIf="showCreateModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:100;">
+    <div *ngIf="showCreateModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:200;">
       <div class="card" style="width:420px; max-width:95vw;">
         <div class="card-title">Yeni Kullanıcı Oluştur</div>
         <div style="display:flex; flex-direction:column; gap:12px;">
-          <input type="text" [(ngModel)]="newUser.fullName" placeholder="Ad Soyad *"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
-          <input type="email" [(ngModel)]="newUser.email" placeholder="E-posta *"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
-          <input type="password" [(ngModel)]="newUser.password" placeholder="Şifre *"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
-          <select [(ngModel)]="newUser.roleType"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#9a9ab0; font-size:13px; cursor:pointer;">
+          <input type="text" [(ngModel)]="newUser.fullName" placeholder="Ad Soyad *" class="filter-input" />
+          <input type="email" [(ngModel)]="newUser.email" placeholder="E-posta *" class="filter-input" />
+          <input type="password" [(ngModel)]="newUser.password" placeholder="Şifre *" class="filter-input" />
+          <select [(ngModel)]="newUser.roleType" class="filter-select">
             <option value="INDIVIDUAL">Individual</option>
             <option value="CORPORATE">Corporate</option>
             <option value="ADMIN">Admin</option>
           </select>
-          <select [(ngModel)]="newUser.gender"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#9a9ab0; font-size:13px; cursor:pointer;">
+          <select [(ngModel)]="newUser.gender" class="filter-select">
             <option value="Male">Erkek</option>
             <option value="Female">Kadın</option>
           </select>
-          <input type="number" [(ngModel)]="newUser.age" placeholder="Yaş"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
-          <div *ngIf="createError" style="color:#e24b4a; font-size:12px;">{{ createError }}</div>
+          <input type="number" [(ngModel)]="newUser.age" placeholder="Yaş" class="filter-input" />
+          <div *ngIf="createError" style="color:#de350b; font-size:12px;">{{ createError }}</div>
           <div style="display:flex; gap:8px; justify-content:flex-end;">
             <button class="btn-outline" (click)="showCreateModal = false">İptal</button>
             <button class="btn-primary" (click)="createUser()">Oluştur</button>

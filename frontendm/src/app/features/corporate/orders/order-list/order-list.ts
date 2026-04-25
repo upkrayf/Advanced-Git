@@ -21,6 +21,8 @@ export class CorporateOrderList implements OnInit {
   size = 20;
   totalElements = 0;
   totalPages = 0;
+  toast = '';
+  toastType: 'success' | 'error' = 'success';
 
   constructor(private orderService: OrderService) {}
 
@@ -38,9 +40,26 @@ export class CorporateOrderList implements OnInit {
           { id: 1021, customerName: 'Hasan Öz', customerEmail: 'hasan@mail.com', totalAmount: 79.9, status: 'DELIVERED', createdAt: '2026-04-08' },
           { id: 1020, customerName: 'Leyla Şen', customerEmail: 'leyla@mail.com', totalAmount: 649.0, status: 'CANCELLED', createdAt: '2026-04-07' },
         ];
+        this.totalElements = this.orders.length;
         this.loading = false;
       }
     });
+  }
+
+  quickStatus(order: OrderModel, status: string): void {
+    this.orderService.updateStatus(order.id, status).subscribe({
+      next: (d) => {
+        order.status = d.status;
+        this.showToast('Sipariş durumu güncellendi.', 'success');
+      },
+      error: () => this.showToast('Güncelleme başarısız.', 'error')
+    });
+  }
+
+  showToast(msg: string, type: 'success' | 'error'): void {
+    this.toast = msg;
+    this.toastType = type;
+    setTimeout(() => this.toast = '', 3000);
   }
 
   onStatusFilter(): void { this.page = 0; this.loadOrders(); }
@@ -48,11 +67,11 @@ export class CorporateOrderList implements OnInit {
   nextPage(): void { if (this.page < this.totalPages - 1) { this.page++; this.loadOrders(); } }
 
   getStatusClass(s: string): string {
-    const m: Record<string, string> = { DELIVERED: 'pill-green', CONFIRMED: 'pill-green', SHIPPED: 'pill-amber', PENDING: 'pill-amber', CANCELLED: 'pill-red', RETURNED: 'pill-red' };
+    const m: Record<string, string> = { DELIVERED: 'pill-green', CONFIRMED: 'pill-green', SHIPPED: 'pill-amber', PLACED: 'pill-amber', PENDING: 'pill-amber', CANCELLED: 'pill-red', RETURNED: 'pill-red' };
     return m[s] || '';
   }
   getStatusLabel(s: string): string {
-    const l: Record<string, string> = { DELIVERED: 'Teslim Edildi', SHIPPED: 'Kargoda', PENDING: 'Beklemede', CONFIRMED: 'Onaylandı', CANCELLED: 'İptal', RETURNED: 'İade' };
+    const l: Record<string, string> = { PLACED: 'Alındı', DELIVERED: 'Teslim Edildi', SHIPPED: 'Kargoda', PENDING: 'Beklemede', CONFIRMED: 'Onaylandı', CANCELLED: 'İptal', RETURNED: 'İade' };
     return l[s] || s;
   }
   formatCurrency(v: number): string { return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2 }); }

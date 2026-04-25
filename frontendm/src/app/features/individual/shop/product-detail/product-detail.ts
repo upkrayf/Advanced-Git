@@ -76,4 +76,22 @@ export class IndividualProductDetail implements OnInit {
   getStars(rating: number): number[] { return [1, 2, 3, 4, 5]; }
   avgRating(): string { if (!this.reviews.length) return '0.0'; return (this.reviews.reduce((s, r) => s + r.rating, 0) / this.reviews.length).toFixed(1); }
   formatCurrency(v: number): string { return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2 }); }
+
+  getProductImage(p: any): string {
+    if (!p) return '';
+    if (p.imageUrl && p.imageUrl.startsWith('http') && !p.imageUrl.includes('placeholder')) return p.imageUrl;
+    const sig = p.id || 0;
+    return `https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80&sig=${sig}`;
+  }
+
+  getCategoryIcon(catName: string): string {
+    const cat = (catName || '').toLowerCase();
+    if (cat.includes('elect')) return '💻';
+    if (cat.includes('cloth')) return '👕';
+    if (cat.includes('home')) return '🏠';
+    if (cat.includes('food')) return '🍕';
+    if (cat.includes('sport')) return '⚽';
+    if (cat.includes('book')) return '📚';
+    return '📦';
+  }
 }

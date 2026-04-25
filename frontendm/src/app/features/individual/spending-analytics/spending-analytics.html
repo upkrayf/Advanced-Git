@@ -14,6 +14,8 @@
       </div>
     </div>
 
+    <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:3rem;">Yükleniyor…</div>
+
     <!-- KPIs -->
     <div class="kpi-grid" *ngIf="stats">
       <div class="kpi-card">
@@ -33,30 +35,61 @@
       </div>
     </div>
 
-    <!-- Spending Trend -->
+    <!-- Spending Trend: custom vertical bar chart -->
     <div class="card" style="margin-bottom:1.5rem;">
-      <div class="card-title">Harcama Trendi</div>
-      <div style="display:flex; align-items:flex-end; gap:8px; height:140px; padding:8px 0;">
-        <div *ngFor="let bar of spendingTrend" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
-          <div style="font-size:10px; color:#7a7a9a; margin-bottom:3px;">${{ bar.value }}</div>
-          <div class="bar" [style.height]="getTrendBarHeight(bar.value)" style="background: linear-gradient(180deg,#6c63ff,#534ab7); width:100%; border-radius:3px 3px 0 0;"></div>
-          <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.name }}</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div class="card-title" style="margin:0;">Harcama Grafiği</div>
+        <div style="font-size:12px; color:var(--text-secondary);">
+          {{ period === 'daily' ? 'Günlük' : period === 'monthly' ? 'Aylık' : 'Yıllık' }}
         </div>
       </div>
+
+      <div *ngIf="spendingTrend.length; else noTrend">
+        <!-- Bar chart -->
+        <div style="height:200px; display:flex; align-items:flex-end; gap:6px; border-bottom:1px solid var(--border-color); padding-bottom:0;">
+          <div *ngFor="let p of spendingTrend"
+               style="flex:1; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;">
+            <div [style.height]="getTrendBarHeight(p.value)"
+                 style="width:100%; background:var(--accent-primary); border-radius:4px 4px 0 0; min-height:3px; transition:height 0.3s; opacity:0.85;">
+            </div>
+          </div>
+        </div>
+        <!-- Labels -->
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <div *ngFor="let p of spendingTrend"
+               style="flex:1; font-size:9px; color:var(--text-secondary); text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ p.name }}
+          </div>
+        </div>
+      </div>
+      <ng-template #noTrend>
+        <div style="text-align:center; color:var(--text-secondary); font-size:13px; padding:3rem 0;">Veri bulunamadı.</div>
+      </ng-template>
     </div>
 
-    <!-- Spending by Category -->
+    <!-- Category breakdown -->
     <div class="card">
-      <div class="card-title">Kategori Bazlı Harcama</div>
-      <div *ngFor="let cat of spendingByCategory" style="margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
-          <span style="color:#c0c0d0;">{{ cat.categoryName }}</span>
-          <span style="color:#1d9e75;">{{ formatCurrency(cat.amount) }}</span>
-        </div>
-        <div style="height:6px; background:#1a1a24; border-radius:3px; overflow:hidden;">
-          <div [style.width]="getCategoryBarWidth(cat.amount)" style="background: linear-gradient(90deg,#6c63ff,#1d9e75); height:100%; border-radius:3px; transition:width 0.5s;"></div>
+      <div class="card-title">Kategori Dağılımı</div>
+
+      <div *ngIf="spendingByCategory.length; else noCats" style="display:flex; flex-direction:column; gap:16px; margin-top:12px;">
+        <div *ngFor="let cat of spendingByCategory">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:13px; font-weight:600; color:var(--text-primary);">{{ cat.categoryName }}</span>
+            <span style="font-size:13px; font-weight:700; color:#00875a;">{{ formatCurrency(cat.amount) }}</span>
+          </div>
+          <div style="height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
+            <div [style.width]="getCategoryBarWidth(cat.amount)"
+                 style="height:100%; background:var(--accent-primary); border-radius:4px; transition:width 0.4s;">
+            </div>
+          </div>
+          <div style="font-size:10px; color:var(--text-secondary); margin-top:3px; text-align:right;">
+            {{ stats ? (cat.amount / stats.totalSpent * 100).toFixed(1) : '0' }}%
+          </div>
         </div>
       </div>
+      <ng-template #noCats>
+        <div style="text-align:center; color:var(--text-secondary); font-size:13px; padding:2rem 0;">Kategori verisi bulunamadı.</div>
+      </ng-template>
     </div>
 
   </div>

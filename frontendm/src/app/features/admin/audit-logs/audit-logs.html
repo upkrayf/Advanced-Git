@@ -2,22 +2,102 @@
   <app-sidebar />
   <div class="main-content" style="padding:1.5rem;">
 
+    <!-- Header -->
     <div class="topbar">
       <div>
-        <h1 class="page-title">Audit Logs</h1>
-        <p class="page-sub">Platform işlem kayıtları</p>
+        <h1 class="page-title">Denetim Günlükleri</h1>
+        <p class="page-sub">{{ filteredLogs.length }} kayıt gösteriliyor (toplam {{ totalElements }})</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-outline" (click)="resetFilters()" style="font-size:12px;">Filtreleri Temizle</button>
       </div>
     </div>
 
-    <!-- Search -->
-    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px;">
-      <input type="text" [(ngModel)]="search" placeholder="İşlem, kullanıcı veya detay ara..."
-        style="flex:1; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
+    <!-- Mini Stats -->
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:1.5rem;">
+      <div class="kpi-card" style="border-left:3px solid #1d9e75; padding:12px 16px;">
+        <div class="kpi-label">Oluşturma</div>
+        <div class="kpi-value" style="font-size:28px; color:#1d9e75;">{{ statCreated }}</div>
+        <span class="kpi-badge badge-green" style="font-size:10px;">CREATE / ADD</span>
+      </div>
+      <div class="kpi-card" style="border-left:3px solid #ba7517; padding:12px 16px;">
+        <div class="kpi-label">Güncelleme</div>
+        <div class="kpi-value" style="font-size:28px; color:#ba7517;">{{ statUpdated }}</div>
+        <span class="kpi-badge" style="background:rgba(186,117,23,0.12); color:#ba7517; font-size:10px;">UPDATE</span>
+      </div>
+      <div class="kpi-card" style="border-left:3px solid #e24b4a; padding:12px 16px;">
+        <div class="kpi-label">Silme / Deaktif</div>
+        <div class="kpi-value" style="font-size:28px; color:#e24b4a;">{{ statDeleted }}</div>
+        <span class="kpi-badge badge-red" style="font-size:10px;">DELETE</span>
+      </div>
+      <div class="kpi-card" style="border-left:3px solid #6c63ff; padding:12px 16px;">
+        <div class="kpi-label">Diğer</div>
+        <div class="kpi-value" style="font-size:28px; color:#6c63ff;">{{ statOther }}</div>
+        <span class="kpi-badge" style="background:rgba(108,99,255,0.12); color:#6c63ff; font-size:10px;">OTHER</span>
+      </div>
     </div>
 
+    <!-- Action mini bar chart -->
+    <div class="card" style="margin-bottom:1.5rem; padding:16px 20px;">
+      <div class="card-title" style="margin-bottom:12px;">İşlem Dağılımı</div>
+      <div style="display:flex; gap:3px; height:32px; border-radius:6px; overflow:hidden;"
+           [title]="'Oluşturma: ' + statCreated + ' | Güncelleme: ' + statUpdated + ' | Silme: ' + statDeleted + ' | Diğer: ' + statOther">
+        <div *ngIf="statCreated > 0"
+             [style.flex]="statCreated"
+             style="background:#1d9e75; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:700; transition:flex 0.4s ease;">
+          {{ statCreated }}
+        </div>
+        <div *ngIf="statUpdated > 0"
+             [style.flex]="statUpdated"
+             style="background:#ba7517; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:700; transition:flex 0.4s ease;">
+          {{ statUpdated }}
+        </div>
+        <div *ngIf="statDeleted > 0"
+             [style.flex]="statDeleted"
+             style="background:#e24b4a; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:700; transition:flex 0.4s ease;">
+          {{ statDeleted }}
+        </div>
+        <div *ngIf="statOther > 0"
+             [style.flex]="statOther"
+             style="background:#6c63ff; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:700; transition:flex 0.4s ease;">
+          {{ statOther }}
+        </div>
+      </div>
+      <div style="display:flex; gap:20px; margin-top:8px; font-size:11px;">
+        <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#1d9e75;display:inline-block;"></span>Oluşturma</span>
+        <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#ba7517;display:inline-block;"></span>Güncelleme</span>
+        <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e24b4a;display:inline-block;"></span>Silme</span>
+        <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#6c63ff;display:inline-block;"></span>Diğer</span>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:1rem; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+      <input type="text" [(ngModel)]="search" placeholder="İşlem, kullanıcı veya detay ara…"
+             class="filter-input" style="flex:1; min-width:180px;" />
+      <select [(ngModel)]="filterAction" class="filter-select" style="min-width:180px;">
+        <option value="">Tüm İşlemler</option>
+        <option *ngFor="let a of actionTypes" [value]="a">{{ a }}</option>
+      </select>
+      <select [(ngModel)]="filterEntity" class="filter-select">
+        <option value="">Tüm Varlıklar</option>
+        <option *ngFor="let e of entityTypes" [value]="e">{{ e }}</option>
+      </select>
+      <input type="date" [(ngModel)]="dateFrom" class="filter-input" style="width:140px;" title="Başlangıç tarihi" />
+      <input type="date" [(ngModel)]="dateTo"   class="filter-input" style="width:140px;" title="Bitiş tarihi" />
+    </div>
+
+    <!-- Table -->
     <div class="card">
-      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
-      <table class="data-table" *ngIf="!loading">
+      <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:2.5rem;">Yükleniyor…</div>
+
+      <div *ngIf="!loading && !filteredLogs.length"
+           style="text-align:center; color:var(--text-secondary); padding:3rem; font-size:13px;">
+        <div style="font-size:32px; margin-bottom:8px;">🔍</div>
+        Filtreyle eşleşen kayıt bulunamadı.
+      </div>
+
+      <table class="data-table" *ngIf="!loading && filteredLogs.length">
         <thead>
           <tr>
             <th>#</th>
@@ -31,26 +111,50 @@
         </thead>
         <tbody>
           <tr *ngFor="let log of filteredLogs">
-            <td style="color:#4a4a6a;">{{ log.id }}</td>
+            <td style="color:var(--text-secondary); font-size:11px;">{{ log.id }}</td>
             <td>
-              <span class="status-pill" [style.background]="getActionColor(log.action) + '22'" [style.color]="getActionColor(log.action)">
-                {{ log.action }}
+              <span style="display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:5px; font-size:11px; font-weight:700; white-space:nowrap;"
+                    [style.background]="getActionColor(log.action) + '20'"
+                    [style.color]="getActionColor(log.action)">
+                {{ getActionIcon(log.action) }} {{ log.action }}
               </span>
             </td>
-            <td style="color:#9a9ab0;">{{ log.userName || ('User#' + log.userId) }}</td>
-            <td style="color:#7a7a9a; font-size:11px;">{{ log.entityType }} #{{ log.entityId }}</td>
-            <td style="color:#c0c0d0; font-size:11px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ log.details || '-' }}</td>
-            <td style="color:#4a4a6a; font-size:11px; font-family:monospace;">{{ log.ipAddress || '-' }}</td>
-            <td style="color:#7a7a9a; font-size:11px; white-space:nowrap;">{{ formatDate(log.createdAt) }}</td>
+            <td style="color:var(--text-primary); font-weight:700; font-size:13px;">
+              {{ log.userName || ('User#' + log.userId) }}
+            </td>
+            <td>
+              <span style="font-size:11px; background:var(--bg-secondary); color:var(--text-secondary);
+                           padding:2px 7px; border-radius:4px;">
+                {{ log.entityType }} #{{ log.entityId }}
+              </span>
+            </td>
+            <td style="color:var(--text-secondary); font-size:12px; max-width:220px;
+                       overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                [title]="log.details">
+              {{ log.details || '-' }}
+            </td>
+            <td style="font-size:11px; font-family:monospace; color:var(--text-secondary);">
+              {{ log.ipAddress || '-' }}
+            </td>
+            <td style="color:var(--text-secondary); font-size:11px; white-space:nowrap;">
+              {{ formatDate(log.createdAt) }}
+            </td>
           </tr>
         </tbody>
       </table>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:#7a7a9a;" *ngIf="totalPages > 1">
-        <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1"
+           style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;
+                  padding-top:1rem; border-top:1px solid var(--border-color); font-size:12px; color:var(--text-secondary);">
+        <span>Sayfa <strong style="color:var(--text-primary);">{{ page + 1 }}</strong> / {{ totalPages }}</span>
         <div style="display:flex; gap:8px;">
-          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>
-          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()">Sonraki →</button>
+          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()" style="padding:6px 14px; font-size:12px;">
+            ← Önceki
+          </button>
+          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()" style="padding:6px 14px; font-size:12px;">
+            Sonraki →
+          </button>
         </div>
       </div>
     </div>

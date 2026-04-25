@@ -14,59 +14,112 @@
 
     <!-- Success -->
     <div *ngIf="success" class="card" style="text-align:center; padding:3rem;">
-      <div style="font-size:48px; margin-bottom:12px;">✅</div>
-      <div style="font-size:18px; color:#1d9e75; margin-bottom:8px;">Siparişiniz Alındı!</div>
-      <div style="font-size:13px; color:#7a7a9a;">Siparişlerim sayfasına yönlendiriliyorsunuz…</div>
+      <div style="font-size:56px; margin-bottom:16px;">✅</div>
+      <div style="font-size:22px; font-weight:700; color:#00875a; margin-bottom:8px;">Siparişiniz Alındı!</div>
+      <div style="font-size:14px; color:var(--text-secondary);">Siparişlerim sayfasına yönlendiriliyorsunuz…</div>
     </div>
 
     <div *ngIf="!success" class="grid-2">
-      <!-- Form -->
+
+      <!-- Delivery form -->
       <div class="card">
         <div class="card-title">Teslimat Adresi</div>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-          <input type="text" [(ngModel)]="address" placeholder="Mahalle, Cadde, Sokak, No *"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
-          <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px;">
-            <input type="text" [(ngModel)]="city" placeholder="Şehir *"
-              style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
-            <input type="text" [(ngModel)]="postalCode" placeholder="Posta Kodu"
-              style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
+        <div style="display:flex; flex-direction:column; gap:14px;">
+
+          <!-- Address -->
+          <div>
+            <label class="form-label">Mahalle, Cadde, Sokak, No *</label>
+            <input type="text" [(ngModel)]="address" placeholder="Örn: Kızılay Mah. Atatürk Cad. No:5 D:3"
+              [class.input-error]="errors['address']"
+              class="form-input" />
+            <div *ngIf="errors['address']" class="error-msg">{{ errors['address'] }}</div>
           </div>
-          <div *ngIf="error" style="color:#e24b4a; font-size:12px;">{{ error }}</div>
+
+          <!-- City with autocomplete -->
+          <div style="position:relative;">
+            <label class="form-label">Şehir *</label>
+            <input type="text" [(ngModel)]="cityQuery" (ngModelChange)="onCityInput()" (click)="$event.stopPropagation()"
+              placeholder="Şehir ara... (örn: Ank)"
+              [class.input-error]="errors['city']"
+              class="form-input" autocomplete="off" />
+            <div *ngIf="showCitySuggestions" class="city-dropdown" (click)="$event.stopPropagation()">
+              <div *ngFor="let c of citySuggestions" class="city-option" (click)="selectCity(c)">{{ c }}</div>
+            </div>
+            <div *ngIf="city && !errors['city']" style="font-size:11px; color:#00875a; margin-top:4px;">✓ {{ city }} seçildi</div>
+            <div *ngIf="errors['city']" class="error-msg">{{ errors['city'] }}</div>
+          </div>
+
+          <!-- Postal code -->
+          <div>
+            <label class="form-label">Posta Kodu</label>
+            <input type="text" [(ngModel)]="postalCode" placeholder="06100" maxlength="5"
+              [class.input-error]="errors['postalCode']"
+              class="form-input" style="max-width:140px;" />
+            <div *ngIf="errors['postalCode']" class="error-msg">{{ errors['postalCode'] }}</div>
+          </div>
+
+          <div *ngIf="error" class="error-msg" style="background:#fff0f0; padding:10px 14px; border-radius:8px; border:1px solid #f5c6cb;">{{ error }}</div>
         </div>
       </div>
 
-      <!-- Order Summary -->
-      <div class="card">
-        <div class="card-title">Sipariş Özeti</div>
-        <div *ngFor="let item of items" class="activity-item">
-          <span class="activity-text">{{ item.product.name }} x{{ item.quantity }}</span>
-          <span class="activity-time">{{ formatCurrency((item.product.unitPrice || item.product.price || 0) * item.quantity) }}</span>
-        </div>
-        
-        <div class="card-title" style="margin-top: 1rem;">Ödeme Yöntemi</div>
-        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 1rem;">
-          <label style="display:flex; gap:8px; align-items:center; cursor:pointer; color:#f0f0f5; font-size: 13px;">
-            <input type="radio" name="payment" value="credit_card" [(ngModel)]="paymentMethod">
-            Kredi Kartı
-          </label>
-          <label style="display:flex; gap:8px; align-items:center; cursor:pointer; color:#f0f0f5; font-size: 13px;">
-            <input type="radio" name="payment" value="code" [(ngModel)]="paymentMethod">
-            Kod / Kupon
-          </label>
-          <label style="display:flex; gap:8px; align-items:center; cursor:pointer; color:#f0f0f5; font-size: 13px;">
-            <input type="radio" name="payment" value="cash" [(ngModel)]="paymentMethod">
-            Nakit
-          </label>
+      <!-- Order summary + payment -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+
+        <!-- Order items -->
+        <div class="card">
+          <div class="card-title">Sepet Özeti</div>
+          <div *ngIf="!items.length" style="color:var(--text-secondary); font-size:13px;">Sepetiniz boş.</div>
+          <div *ngFor="let item of items" style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-color); font-size:13px;">
+            <div>
+              <div style="color:var(--text-primary); font-weight:500;">{{ item.product.name }}</div>
+              <div style="color:var(--text-secondary); font-size:11px;">{{ item.quantity }} adet × {{ formatCurrency(item.product.unitPrice || item.product.price || 0) }}</div>
+            </div>
+            <div style="color:#00875a; font-weight:700;">{{ formatCurrency((item.product.unitPrice || item.product.price || 0) * item.quantity) }}</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:17px; font-weight:700; padding-top:12px; margin-top:4px;">
+            <span style="color:var(--text-primary);">Toplam</span>
+            <span style="color:#00875a;">{{ formatCurrency(total) }}</span>
+          </div>
         </div>
 
-        <div style="border-top:0.5px solid #2e2e3e; padding-top:12px; margin-top:8px; display:flex; justify-content:space-between; font-size:16px; font-weight:600; color:#1d9e75;">
-          <span>Toplam</span>
-          <span>{{ formatCurrency(total) }}</span>
+        <!-- Payment method -->
+        <div class="card">
+          <div class="card-title">Ödeme Yöntemi</div>
+          <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:1rem;">
+
+            <label class="payment-option" [class.payment-option-selected]="paymentMethod === 'credit_card'">
+              <input type="radio" name="payment" value="credit_card" [(ngModel)]="paymentMethod" style="accent-color:var(--accent-primary);" />
+              <div>
+                <div style="font-weight:600; color:var(--text-primary); font-size:14px;">💳 Kredi / Banka Kartı</div>
+                <div style="font-size:12px; color:var(--text-secondary);">Visa, Mastercard, Troy</div>
+              </div>
+            </label>
+
+            <label class="payment-option" [class.payment-option-selected]="paymentMethod === 'cash'">
+              <input type="radio" name="payment" value="cash" [(ngModel)]="paymentMethod" style="accent-color:var(--accent-primary);" />
+              <div>
+                <div style="font-weight:600; color:var(--text-primary); font-size:14px;">💵 Kapıda Nakit</div>
+                <div style="font-size:12px; color:var(--text-secondary);">Teslimat anında ödeme</div>
+              </div>
+            </label>
+
+            <label class="payment-option" [class.payment-option-selected]="paymentMethod === 'code'">
+              <input type="radio" name="payment" value="code" [(ngModel)]="paymentMethod" style="accent-color:var(--accent-primary);" />
+              <div>
+                <div style="font-weight:600; color:var(--text-primary); font-size:14px;">🎟️ Kupon / Kod</div>
+                <div style="font-size:12px; color:var(--text-secondary);">Promosyon veya hediye kodu</div>
+              </div>
+            </label>
+
+          </div>
+          <div *ngIf="errors['payment']" class="error-msg">{{ errors['payment'] }}</div>
+
+          <button class="btn-primary" (click)="placeOrder()" [disabled]="loading"
+            style="width:100%; padding:13px; font-size:15px; font-weight:600; border-radius:10px;">
+            {{ loading ? 'İşleniyor…' : '✓ Siparişi Tamamla' }}
+          </button>
         </div>
-        <button class="btn-primary" (click)="placeOrder()" [disabled]="loading" style="width:100%; margin-top:16px; padding:12px; font-size:14px;">
-          {{ loading ? 'İşleniyor…' : '✓ Siparişi Tamamla' }}
-        </button>
+
       </div>
     </div>
 

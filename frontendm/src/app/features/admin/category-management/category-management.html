@@ -13,7 +13,7 @@
     </div>
 
     <div class="card">
-      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
+      <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:2rem;">Yükleniyor…</div>
       <table class="data-table" *ngIf="!loading">
         <thead>
           <tr>
@@ -27,42 +27,43 @@
         </thead>
         <tbody>
           <tr *ngFor="let cat of categories">
-            <td style="color:#4a4a6a;">{{ cat.id }}</td>
-            <td style="font-weight:500; color:#f0f0f5;">
-              <span *ngIf="cat.parentId" style="color:#4a4a6a; margin-right:6px;">└</span>
+            <td style="color:var(--text-secondary); font-size:12px;">{{ cat.id }}</td>
+            <td style="font-weight:700; color:var(--text-primary);">
+              <span *ngIf="cat.parentId" style="color:var(--text-secondary); margin-right:6px;">└</span>
               {{ cat.name }}
             </td>
-            <td style="color:#7a7a9a;">{{ getParentName(cat) }}</td>
-            <td style="color:#9a9ab0; font-size:11px;">{{ cat.description || '-' }}</td>
+            <td style="color:var(--text-primary); font-weight:500;">{{ getParentName(cat) }}</td>
+            <td style="color:var(--text-secondary); font-size:11px;">{{ cat.description || '-' }}</td>
             <td>
               <span class="kpi-badge badge-green">{{ cat.productCount || 0 }} ürün</span>
             </td>
             <td>
               <div style="display:flex; gap:6px;">
-                <button class="btn-outline" (click)="openEdit(cat)" style="font-size:11px;">✏️ Düzenle</button>
-                <button class="btn-outline" (click)="deleteCategory(cat.id)" style="font-size:11px; color:#e24b4a; border-color:#3d1515;">🗑️ Sil</button>
+                <button class="btn-outline" (click)="openEdit(cat)" style="font-size:11px; padding:5px 10px;">Düzenle</button>
+                <button class="btn-outline" (click)="deleteCategory(cat.id)"
+                        style="font-size:11px; padding:5px 10px; color:#de350b; border-color:rgba(222,53,11,0.3);">Sil</button>
               </div>
             </td>
+          </tr>
+          <tr *ngIf="!categories.length && !loading">
+            <td colspan="6" style="text-align:center; color:var(--text-secondary); padding:2rem;">Kategori bulunamadı.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Modal -->
-    <div *ngIf="showModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:100;">
-      <div class="card" style="width:400px; max-width:95vw;">
+    <div *ngIf="showModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:200;">
+      <div class="card" style="width:420px; max-width:95vw;">
         <div class="card-title">{{ editMode ? 'Kategori Düzenle' : 'Yeni Kategori' }}</div>
         <div style="display:flex; flex-direction:column; gap:12px;">
-          <input type="text" [(ngModel)]="formData.name" placeholder="Kategori Adı *"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
-          <input type="text" [(ngModel)]="formData.description" placeholder="Açıklama"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#f0f0f5; font-size:13px; outline:none;" />
-          <select [(ngModel)]="formData.parentId"
-            style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:10px 12px; color:#9a9ab0; font-size:13px; cursor:pointer;">
-            <option [value]="undefined">Üst Kategori Yok</option>
-            <option *ngFor="let c of categories" [value]="c.id" [disabled]="c.id === selectedId">{{ c.name }}</option>
+          <input type="text" [(ngModel)]="formData.name" placeholder="Kategori Adı *" class="filter-input" />
+          <input type="text" [(ngModel)]="formData.description" placeholder="Açıklama" class="filter-input" />
+          <select [(ngModel)]="formData.parentId" class="filter-select">
+            <option [ngValue]="undefined">Üst Kategori Yok</option>
+            <option *ngFor="let c of categories" [ngValue]="c.id" [disabled]="c.id === selectedId">{{ c.name }}</option>
           </select>
-          <div *ngIf="formError" style="color:#e24b4a; font-size:12px;">{{ formError }}</div>
+          <div *ngIf="formError" style="color:#de350b; font-size:12px;">{{ formError }}</div>
           <div style="display:flex; gap:8px; justify-content:flex-end;">
             <button class="btn-outline" (click)="showModal = false">İptal</button>
             <button class="btn-primary" (click)="saveCategory()">Kaydet</button>

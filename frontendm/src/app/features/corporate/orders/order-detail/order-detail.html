@@ -2,7 +2,7 @@
   <app-sidebar />
   <div class="main-content" style="padding:1.5rem;">
 
-    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:3rem;">Yükleniyor…</div>
+    <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:3rem;">Yükleniyor…</div>
 
     <div *ngIf="order && !loading">
       <div class="topbar">
@@ -15,29 +15,49 @@
         </div>
       </div>
 
-      <div class="grid-2">
+      <div *ngIf="toast" [class]="'order-toast order-toast-' + toastType" style="margin-bottom:1rem;">{{ toast }}</div>
+
+      <div class="grid-2" style="margin-bottom:1.5rem;">
         <div class="card">
           <div class="card-title">Müşteri Bilgileri</div>
-          <div style="font-size:13px; display:flex; flex-direction:column; gap:8px;">
-            <div><span style="color:#7a7a9a;">Ad:</span> <span style="color:#f0f0f5; margin-left:8px;">{{ order.customerName }}</span></div>
-            <div><span style="color:#7a7a9a;">E-posta:</span> <span style="color:#f0f0f5; margin-left:8px;">{{ order.customerEmail }}</span></div>
-            <div><span style="color:#7a7a9a;">Adres:</span> <span style="color:#f0f0f5; margin-left:8px;">{{ order.shippingAddress || 'Belirtilmemiş' }}</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+            <div style="display:flex; gap:8px;">
+              <span style="color:var(--text-secondary); min-width:60px;">Ad</span>
+              <span style="color:var(--text-primary); font-weight:500;">{{ order.customerName }}</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <span style="color:var(--text-secondary); min-width:60px;">E-posta</span>
+              <span style="color:var(--text-primary);">{{ order.customerEmail }}</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <span style="color:var(--text-secondary); min-width:60px;">Adres</span>
+              <span style="color:var(--text-primary);">{{ order.shippingAddress || 'Belirtilmemiş' }}</span>
+            </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-title">Sipariş Durumu</div>
-          <div style="margin-bottom:1rem;">
-            <span class="status-pill" [class]="getStatusClass(order.status)" style="font-size:14px; padding:4px 12px;">
+          <div style="margin-bottom:1.2rem;">
+            <span class="status-pill" [class]="getStatusClass(order.status)" style="font-size:14px; padding:6px 16px;">
               {{ getStatusLabel(order.status) }}
             </span>
           </div>
-          <div style="display:flex; flex-wrap:wrap; gap:6px;">
-            <button class="btn-outline" (click)="updateStatus('CONFIRMED')" style="font-size:11px;">Onayla</button>
-            <button class="btn-outline" (click)="updateStatus('SHIPPED')" style="font-size:11px;">Kargoya Ver</button>
-            <button class="btn-outline" (click)="updateStatus('DELIVERED')" style="font-size:11px;">Teslim Et</button>
-            <button class="btn-outline" (click)="updateStatus('CANCELLED')" style="font-size:11px; color:#e24b4a; border-color:#3d1515;">İptal Et</button>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <button class="btn-primary" style="font-size:12px; padding:7px 14px;"
+              *ngIf="canConfirm()" [disabled]="updating"
+              (click)="updateStatus('CONFIRMED')">Onayla</button>
+            <button class="btn-outline" style="font-size:12px; padding:7px 14px;"
+              *ngIf="canShip()" [disabled]="updating"
+              (click)="updateStatus('SHIPPED')">Kargoya Ver</button>
+            <button class="btn-outline" style="font-size:12px; padding:7px 14px;"
+              *ngIf="canDeliver()" [disabled]="updating"
+              (click)="updateStatus('DELIVERED')">Teslim Edildi</button>
+            <button class="btn-outline" style="font-size:12px; padding:7px 14px; color:#de350b; border-color:#de350b;"
+              *ngIf="canCancel()" [disabled]="updating"
+              (click)="updateStatus('CANCELLED')">İptal Et</button>
           </div>
+          <div *ngIf="updating" style="font-size:12px; color:var(--text-secondary); margin-top:8px;">Güncelleniyor…</div>
         </div>
       </div>
 
@@ -54,17 +74,17 @@
           </thead>
           <tbody>
             <tr *ngFor="let item of order.items">
-              <td style="color:#f0f0f5;">{{ item.productName }}</td>
-              <td>{{ formatCurrency(item.unitPrice) }}</td>
-              <td>{{ item.quantity }}</td>
-              <td style="color:#1d9e75;">{{ formatCurrency(item.subtotal) }}</td>
+              <td style="color:var(--text-primary); font-weight:500;">{{ item.productName }}</td>
+              <td style="color:var(--text-secondary);">{{ formatCurrency(item.unitPrice) }}</td>
+              <td style="color:var(--text-primary);">{{ item.quantity }}</td>
+              <td style="color:#00875a; font-weight:600;">{{ formatCurrency(item.subtotal) }}</td>
             </tr>
             <tr *ngIf="!order.items?.length">
-              <td colspan="4" style="text-align:center; color:#4a4a6a;">Kalem bilgisi yok.</td>
+              <td colspan="4" style="text-align:center; color:var(--text-secondary);">Kalem bilgisi yok.</td>
             </tr>
           </tbody>
         </table>
-        <div style="text-align:right; margin-top:12px; font-size:16px; font-weight:600; color:#1d9e75;">
+        <div style="text-align:right; margin-top:16px; font-size:18px; font-weight:700; color:#00875a; border-top:1px solid var(--border-color); padding-top:12px;">
           Toplam: {{ formatCurrency(order.totalAmount) }}
         </div>
       </div>

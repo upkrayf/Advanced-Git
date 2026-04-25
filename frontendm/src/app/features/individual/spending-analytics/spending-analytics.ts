@@ -17,32 +17,52 @@ export class SpendingAnalytics implements OnInit {
   stats: IndividualStats | null = null;
   spendingByCategory: SpendingByCategory[] = [];
   spendingTrend: RevenuePoint[] = [];
+  
   period: 'daily' | 'monthly' | 'yearly' = 'monthly';
+  loading = false; // Added loading state
 
   constructor(private analytics: Analytics) {}
 
   ngOnInit(): void { this.loadAll(); }
 
   loadAll(): void {
+    this.loading = true;
     this.analytics.getMyStats().subscribe({
-      next: (d) => this.stats = d,
-      error: () => this.stats = null
+      next: (d) => { this.stats = d; },
+      error: () => { this.stats = null; this.checkLoading(); }
     });
 
     this.analytics.getMySpendingByCategory().subscribe({
-      next: (d) => this.spendingByCategory = d,
-      error: () => this.spendingByCategory = []
+      next: (d) => {
+        this.spendingByCategory = d;
+        this.checkLoading();
+      },
+      error: () => { this.spendingByCategory = []; this.checkLoading(); }
     });
 
+    this.loadTrend();
+  }
+
+  loadTrend(): void {
     this.analytics.getMySpendingTrend(this.period).subscribe({
-      next: (d) => this.spendingTrend = d,
-      error: () => this.spendingTrend = []
+      next: (d) => {
+        this.spendingTrend = d;
+        this.checkLoading();
+      },
+      error: () => { this.spendingTrend = []; this.checkLoading(); }
     });
+  }
+
+  checkLoading(): void {
+    // Simple logic: if trend and categories are loaded, stop loading
+    if (this.spendingTrend.length >= 0 && this.spendingByCategory.length >= 0) {
+      setTimeout(() => this.loading = false, 500);
+    }
   }
 
   changePeriod(p: 'daily' | 'monthly' | 'yearly'): void {
     this.period = p;
-    this.analytics.getMySpendingTrend(p).subscribe({ next: (d) => this.spendingTrend = d, error: () => {} });
+    this.loadTrend();
   }
 
   getMaxSpending(): number { return Math.max(...this.spendingByCategory.map(s => s.amount), 1); }

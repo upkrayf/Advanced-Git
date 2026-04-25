@@ -70,19 +70,55 @@ export class CorporateAnalytics implements OnInit {
 
   changePeriod(p: 'daily' | 'monthly' | 'yearly'): void {
     this.period = p;
-    this.analytics.getStoreRevenue(p).subscribe({ next: (d) => this.revenueData = d, error: () => {} });
+    this.analytics.getStoreRevenue(p).subscribe({
+      next: (d) => this.revenueData = d,
+      error: () => {}
+    });
   }
 
-  getBarHeight(value: number): string {
-    if (!this.revenueData.length) return '0%';
-    const max = Math.max(...this.revenueData.map(r => r.value));
-    return max > 0 ? `${Math.round((value / max) * 100)}%` : '0%';
+  /** Pixel-based bar height — max 152px, guarantees bottom-up rendering */
+  getBarHeightPx(value: number): string {
+    if (!this.revenueData.length) return '2px';
+    const max = Math.max(...this.revenueData.map(r => +r.value));
+    return max > 0 ? `${Math.max(Math.round((+value / max) * 152), 2)}px` : '2px';
   }
 
-  formatCurrency(v: number): string { return '$' + v.toLocaleString('en-US'); }
+  /** Category percentage — computes from totalRevenue if API sends 0 */
+  getCategoryPercent(cat: CategorySales): string {
+    if (cat.percentage != null && cat.percentage > 0) return (+cat.percentage).toFixed(1);
+    const total = this.categorySales.reduce((s, c) => s + (+c.totalRevenue || 0), 0);
+    return total > 0 ? ((+cat.totalRevenue / total) * 100).toFixed(1) : '0.0';
+  }
+
+  getCategoryPercentNum(cat: CategorySales): number {
+    return parseFloat(this.getCategoryPercent(cat));
+  }
+
+  getCategoryColor(i: number): string {
+    const colors = ['#6c63ff','#00875a','#b76e00','#457b9d','#de350b','#6554c0'];
+    return colors[i % colors.length];
+  }
+
+  getStatusBarWidth(count: number): string {
+    const max = Math.max(...this.orderStatus.map(s => s.count), 1);
+    return `${Math.round((count / max) * 100)}%`;
+  }
+
+  getStatusLabel(s: string): string {
+    const l: Record<string, string> = {
+      DELIVERED: 'Teslim Edildi', SHIPPED: 'Kargoda', PENDING: 'Beklemede',
+      CONFIRMED: 'Onaylandı', CANCELLED: 'İptal', RETURNED: 'İade', PLACED: 'Alındı'
+    };
+    return l[s] || s;
+  }
 
   getStatusColor(s: string): string {
-    const c: Record<string, string> = { DELIVERED: '#1d9e75', SHIPPED: '#ba7517', PENDING: '#6c63ff', CANCELLED: '#e24b4a' };
-    return c[s] || '#7a7a9a';
+    const c: Record<string, string> = {
+      DELIVERED: '#00875a', SHIPPED: '#b76e00', PENDING: '#6c63ff',
+      CONFIRMED: '#457b9d', CANCELLED: '#de350b', RETURNED: '#6554c0'
+    };
+    return c[s] || '#5a5a5a';
   }
+
+  formatCurrency(v: number): string { return '$' + (+v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 }

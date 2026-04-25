@@ -1,0 +1,14 @@
+.profile-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.profile-input:focus { border-color: var(--accent-primary); }
+.profile-input::placeholder { color: var(--text-secondary); }

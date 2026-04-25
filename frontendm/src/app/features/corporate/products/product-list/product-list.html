@@ -12,15 +12,14 @@
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px;">
+    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px; align-items:center;">
       <input type="text" [(ngModel)]="search" placeholder="Ürün ara..." (keyup.enter)="onSearch()"
-        style="flex:1; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
-      <select [(ngModel)]="selectedCategory" (change)="onSearch()"
-        style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#9a9ab0; font-size:12px; cursor:pointer;">
+        class="filter-input" style="flex:1;" />
+      <select [(ngModel)]="selectedCategory" (change)="onSearch()" class="filter-select">
         <option [value]="0">Tüm Kategoriler</option>
         <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
       </select>
-      <button class="btn-outline" (click)="onSearch()">🔍 Ara</button>
+      <button class="btn-outline" (click)="onSearch()">Ara</button>
     </div>
 
     <div class="card">
@@ -39,13 +38,13 @@
         </thead>
         <tbody>
           <tr *ngFor="let p of products">
-            <td style="color:#4a4a6a;">{{ p.id }}</td>
+            <td style="color:var(--text-secondary); font-size:12px;">{{ p.id }}</td>
             <td>
-              <div style="font-weight:500; color:#f0f0f5;">{{ p.name }}</div>
-              <div style="font-size:10px; color:#4a4a6a; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ p.description }}</div>
+              <div style="font-weight:700; color:var(--text-primary);">{{ p.name }}</div>
+              <div style="font-size:11px; color:var(--text-secondary); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ p.description }}</div>
             </td>
-            <td style="color:#7a7a9a;">{{ p.category?.name || '-' }}</td>
-            <td style="color:#1d9e75; font-weight:500;">{{ formatCurrency(p.unitPrice || p.price || 0) }}</td>
+            <td style="color:var(--text-primary); font-weight:500;">{{ p.category?.name || p.categoryName || '-' }}</td>
+            <td style="color:#00875a; font-weight:700;">{{ formatCurrency(p.unitPrice || p.price || 0) }}</td>
             <td>
               <span class="status-pill" [class]="getStockClass(p.stock || 0)">
                 {{ p.stock || 0 }} — {{ getStockLabel(p.stock || 0) }}
@@ -58,9 +57,9 @@
             </td>
             <td>
               <div style="display:flex; gap:6px;">
-                <button class="btn-outline" [routerLink]="['/corporate/products', p.id]" style="font-size:11px;">👁</button>
-                <button class="btn-outline" [routerLink]="['/corporate/products', p.id, 'edit']" style="font-size:11px;">✏️</button>
-                <button class="btn-outline" (click)="deleteProduct(p.id)" style="font-size:11px; color:#e24b4a; border-color:#3d1515;">🗑️</button>
+                <button class="btn-outline" [routerLink]="['/corporate/products', p.id]" style="font-size:11px; padding:5px 10px;">Görüntüle</button>
+                <button class="btn-outline" [routerLink]="['/corporate/products', p.id, 'edit']" style="font-size:11px; padding:5px 10px;">Düzenle</button>
+                <button class="btn-outline" (click)="deleteProduct(p.id)" style="font-size:11px; padding:5px 10px; color:#de350b;">Sil</button>
               </div>
             </td>
           </tr>

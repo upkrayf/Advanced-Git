@@ -30,7 +30,11 @@ export class ReviewService {
   }
 
   respondToReview(id: number, response: string): Observable<ReviewModel> {
-    return this.http.patch<ReviewModel>(`${this.apiUrl}/${id}/respond`, { response });
+    // Backend accepts POST with { response } or { storeResponse } — try both keys
+    return this.http.post<ReviewModel>(`${this.apiUrl}/${id}/respond`, {
+      response,
+      storeResponse: response,
+    });
   }
 
   deleteReview(id: number): Observable<void> {

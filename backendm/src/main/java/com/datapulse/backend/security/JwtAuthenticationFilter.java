@@ -48,6 +48,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             boolean userExists = userRepository.findByEmail(email).isPresent();
             if (userExists) {
                 String role = jwtUtil.extractRole(token);
+                if (role == null || role.isBlank()) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         email,
                         null,

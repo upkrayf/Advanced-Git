@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -41,6 +42,12 @@ public class OrderController {
     @GetMapping("/{id}")
     public ResponseEntity<Order> getById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getById(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'CORPORATE')")
+    public ResponseEntity<Order> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(orderService.updateStatus(id, body.get("status")));
     }
 
     @PostMapping("/checkout")

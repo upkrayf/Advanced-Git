@@ -12,11 +12,13 @@ import { ShipmentModel } from '../../../core/models/shipment.model';
 import { ShipmentService } from '../../../core/services/shipment';
 import { Auth } from '../../../core/services/auth';
 import { UserModel } from '../../../core/models/user.model';
+import { PieChart } from '../../../shared/components/charts/pie-chart/pie-chart';
+import { LineChart } from '../../../shared/components/charts/line-chart/line-chart';
 
 @Component({
   selector: 'app-individual-dashboard',
   standalone: true,
-  imports: [CommonModule, Sidebar, RouterModule, AiChat],
+  imports: [CommonModule, Sidebar, RouterModule, AiChat, PieChart, LineChart],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
@@ -27,6 +29,24 @@ export class IndividualDashboard implements OnInit {
   activeShipments: ShipmentModel[] = [];
   userName = '';
   loading = false;
+
+  // Mock Trend Data
+  spendingTrend = [
+    {
+      name: 'Harcama',
+      series: [
+        { name: 'Pzt', value: 120 },
+        { name: 'Sal', value: 250 },
+        { name: 'Çar', value: 180 },
+        { name: 'Per', value: 450 },
+        { name: 'Cum', value: 320 },
+        { name: 'Cmt', value: 600 },
+        { name: 'Paz', value: 380 }
+      ]
+    }
+  ];
+
+  categoryData: any[] = [];
 
   constructor(
     private analytics: Analytics,
@@ -74,8 +94,17 @@ export class IndividualDashboard implements OnInit {
 
   loadSpending(): void {
     this.analytics.getMySpendingByCategory().subscribe({
-      next: (d) => this.spendingByCategory = d,
-      error: () => this.spendingByCategory = []
+      next: (d) => {
+        this.spendingByCategory = d;
+        this.categoryData = d.map(item => ({
+          name: item.categoryName,
+          value: item.amount
+        }));
+      },
+      error: () => {
+        this.spendingByCategory = [];
+        this.categoryData = [];
+      }
     });
   }
 

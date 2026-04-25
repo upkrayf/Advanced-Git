@@ -44,7 +44,10 @@ export class CorporateProductList implements OnInit {
 
   loadProducts(): void {
     this.loading = true;
-    this.productService.getProducts({ page: this.page, size: this.size }).subscribe({
+    const params: any = { page: this.page, size: this.size };
+    if (this.search.trim()) params['search'] = this.search.trim();
+    if (this.selectedCategory > 0) params['categoryId'] = this.selectedCategory;
+    this.productService.getProducts(params).subscribe({
       next: (d) => {
         this.products = d.content;
         this.totalElements = d.totalElements;

@@ -9,10 +9,10 @@
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px;">
-      <select [(ngModel)]="selectedStatus" (change)="onStatusFilter()"
-        style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#9a9ab0; font-size:12px; cursor:pointer;">
+    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px; align-items:center;">
+      <select [(ngModel)]="selectedStatus" (change)="onStatusFilter()" class="filter-select">
         <option value="">Tüm Durumlar</option>
+        <option value="PLACED">Alındı</option>
         <option value="PENDING">Beklemede</option>
         <option value="CONFIRMED">Onaylandı</option>
         <option value="SHIPPED">Kargoda</option>
@@ -23,7 +23,7 @@
     </div>
 
     <div class="card">
-      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
+      <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:2rem;">Yükleniyor…</div>
       <table class="data-table" *ngIf="!loading">
         <thead>
           <tr>
@@ -32,23 +32,38 @@
             <th>Tutar</th>
             <th>Tarih</th>
             <th>Durum</th>
+            <th>İşlemler</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let o of orders" style="cursor:pointer;" routerLink="/corporate/orders/{{ o.id }}">
-            <td style="color:#6c63ff; font-weight:500;">#{{ o.id }}</td>
+          <tr *ngFor="let o of orders">
+            <td style="color:var(--accent-primary); font-weight:600; cursor:pointer;" routerLink="/corporate/orders/{{ o.id }}">#{{ o.id }}</td>
             <td>
-              <div style="color:#f0f0f5;">{{ o.customerName }}</div>
-              <div style="font-size:10px; color:#4a4a6a;">{{ o.customerEmail }}</div>
+              <div style="color:var(--text-primary); font-weight:500;">{{ o.customerName }}</div>
+              <div style="font-size:11px; color:var(--text-secondary);">{{ o.customerEmail }}</div>
             </td>
-            <td style="color:#1d9e75;">{{ formatCurrency(o.totalAmount) }}</td>
-            <td style="color:#7a7a9a; font-size:11px;">{{ o.createdAt | slice:0:10 }}</td>
+            <td style="color:#00875a; font-weight:600;">{{ formatCurrency(o.totalAmount) }}</td>
+            <td style="color:var(--text-secondary); font-size:12px;">{{ o.createdAt | slice:0:10 }}</td>
             <td><span class="status-pill" [class]="getStatusClass(o.status)">{{ getStatusLabel(o.status) }}</span></td>
+            <td>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn-outline" style="font-size:11px; padding:4px 10px;"
+                  routerLink="/corporate/orders/{{ o.id }}">Detay</button>
+                <button class="btn-outline" style="font-size:11px; padding:4px 10px;"
+                  *ngIf="o.status === 'PLACED' || o.status === 'PENDING'"
+                  (click)="quickStatus(o, 'CONFIRMED'); $event.stopPropagation()">Onayla</button>
+                <button class="btn-outline" style="font-size:11px; padding:4px 10px; color:#de350b;"
+                  *ngIf="o.status !== 'DELIVERED' && o.status !== 'CANCELLED'"
+                  (click)="quickStatus(o, 'CANCELLED'); $event.stopPropagation()">İptal</button>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:#7a7a9a;" *ngIf="totalPages > 1">
+      <div *ngIf="toast" [class]="'toast toast-' + toastType">{{ toast }}</div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:var(--text-secondary);" *ngIf="totalPages > 1">
         <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
         <div style="display:flex; gap:8px;">
           <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>

@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
   PlatformKpis, CorporateKpis, IndividualStats,
   RevenuePoint, OrderStatusCount, TopProduct,
-  CategorySales, SpendingByCategory, AuditLog
+  CategorySales, SpendingByCategory
 } from '../models/analytics.model';
 
 @Injectable({ providedIn: 'root' })
@@ -28,7 +29,9 @@ export class Analytics {
   }
 
   getOrderStatus(): Observable<OrderStatusCount[]> {
-    return this.http.get<OrderStatusCount[]>(`${this.apiUrl}/orders/status`);
+    return this.http.get<Record<string, number>>(`${this.apiUrl}/orders/status`).pipe(
+      map(obj => Object.entries(obj).map(([status, count]) => ({ status, count })))
+    );
   }
 
   getTopProducts(limit = 10): Observable<any[]> {

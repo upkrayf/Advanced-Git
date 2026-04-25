@@ -1,5 +1,6 @@
 package com.datapulse.backend.controller;
 
+import com.datapulse.backend.dto.ShipmentTrackingDTO;
 import com.datapulse.backend.entity.Shipment;
 import com.datapulse.backend.service.ShipmentService;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ public class ShipmentController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<Shipment>> getMyShipments(Authentication authentication) {
+    public ResponseEntity<List<ShipmentTrackingDTO>> getMyShipments(Authentication authentication) {
         return ResponseEntity.ok(shipmentService.getMyShipments(authentication.getName()));
     }
 

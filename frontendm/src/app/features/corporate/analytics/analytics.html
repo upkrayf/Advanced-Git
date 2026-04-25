@@ -34,56 +34,103 @@
       <div class="kpi-card">
         <div class="kpi-label">Toplam Ürün</div>
         <div class="kpi-value">{{ kpis.totalProducts }}</div>
-        <span class="kpi-badge" [class.badge-red]="kpis.lowStockItems > 0" [class.badge-green]="!kpis.lowStockItems">{{ kpis.lowStockItems }} düşük stok</span>
+        <span class="kpi-badge" [class.badge-red]="kpis.lowStockItems > 0" [class.badge-green]="!kpis.lowStockItems">
+          {{ kpis.lowStockItems }} düşük stok
+        </span>
       </div>
     </div>
 
-    <!-- Revenue -->
+    <!-- Revenue Chart — Modern animated bars -->
     <div class="card" style="margin-bottom:1.5rem;">
       <div class="card-title">Gelir Trendi</div>
-      <div style="display:flex; align-items:flex-end; gap:8px; height:150px; padding:8px 0;">
-        <div *ngFor="let bar of revenueData" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
-          <div style="font-size:10px; color:#7a7a9a; margin-bottom:4px;">${{ (bar.value / 1000).toFixed(0) }}K</div>
-          <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: linear-gradient(180deg,#1d9e75,#0f7a5a); width:100%; border-radius:3px 3px 0 0;"></div>
-          <div style="font-size:10px; color:#4a4a6a; margin-top:4px;">{{ bar.name }}</div>
-        </div>
+      <div *ngIf="!revenueData.length" style="height:160px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:13px;">
+        Veri bulunamadı.
       </div>
+      <ng-container *ngIf="revenueData.length">
+        <!-- Bars: direct flex children, bottom-up via align-items:flex-end -->
+        <div style="height:160px; display:flex; align-items:flex-end; gap:6px;
+                    border-bottom:1px solid var(--border-color); padding:0 2px; margin-top:12px;">
+          <div *ngFor="let bar of revenueData"
+               [style.height]="getBarHeightPx(bar.value)"
+               [title]="bar.name + ': ' + formatCurrency(bar.value)"
+               style="flex:1; border-radius:5px 5px 0 0; min-height:3px; cursor:help;
+                      background:linear-gradient(180deg,#7c73f8,#4e46e5);
+                      transition:height 0.55s cubic-bezier(0.34,1.2,0.64,1);
+                      box-shadow:0 -2px 8px rgba(108,99,255,0.2);">
+          </div>
+        </div>
+        <!-- Labels -->
+        <div style="display:flex; gap:6px; margin-top:6px; padding:0 2px;">
+          <div *ngFor="let bar of revenueData"
+               style="flex:1; text-align:center; font-size:10px; color:var(--text-secondary);
+                      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            {{ bar.name }}
+          </div>
+        </div>
+      </ng-container>
     </div>
 
     <div class="grid-2">
+
       <!-- Top Products -->
       <div class="card">
         <div class="card-title">En Çok Satan Ürünler</div>
-        <table class="data-table">
-          <thead><tr><th>#</th><th>Ürün</th><th>Satış</th><th>Gelir</th></tr></thead>
+        <div *ngIf="!topProducts.length" style="color:var(--text-secondary); font-size:13px; padding:1rem 0;">Veri yok.</div>
+        <table class="data-table" *ngIf="topProducts.length">
+          <thead>
+            <tr><th>#</th><th>Ürün</th><th>Satış</th><th>Gelir</th></tr>
+          </thead>
           <tbody>
             <tr *ngFor="let p of topProducts; let i = index">
-              <td style="color:#6c63ff;">{{ i + 1 }}</td>
-              <td style="color:#f0f0f5;">{{ p.productName }}</td>
-              <td>{{ p.totalSold }}</td>
-              <td style="color:#1d9e75;">{{ formatCurrency(p.revenue) }}</td>
+              <td style="color:var(--accent-primary); font-weight:700;">{{ i + 1 }}</td>
+              <td style="color:var(--text-primary); font-weight:700;">{{ p.productName }}</td>
+              <td style="color:var(--text-primary); font-weight:500;">{{ p.totalSold }}</td>
+              <td style="color:#00875a; font-weight:700;">{{ formatCurrency(p.revenue) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Category + Order Status -->
-      <div class="card">
-        <div class="card-title">Sipariş Durumları</div>
-        <div *ngFor="let s of orderStatus" style="margin-bottom:10px;">
-          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-            <span style="color:#c0c0d0;">{{ s.status }}</span>
-            <span style="color:#7a7a9a;">{{ s.count | number }}</span>
-          </div>
-          <div style="height:5px; background:#1a1a24; border-radius:3px; overflow:hidden;">
-            <div [style.width]="'60%'" [style.background]="getStatusColor(s.status)" style="height:100%; border-radius:3px;"></div>
+      <!-- Right column -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- Order statuses -->
+        <div class="card">
+          <div class="card-title">Sipariş Durumları</div>
+          <div *ngIf="!orderStatus.length" style="color:var(--text-secondary); font-size:13px;">Veri yok.</div>
+          <div *ngFor="let s of orderStatus" style="margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
+              <span style="color:var(--text-primary); font-weight:600;">{{ getStatusLabel(s.status) }}</span>
+              <span style="color:var(--text-secondary); font-weight:700;">{{ s.count | number }}</span>
+            </div>
+            <div style="height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
+              <div [style.width]="getStatusBarWidth(s.count)"
+                   [style.background]="getStatusColor(s.status)"
+                   style="height:100%; border-radius:4px; transition:width 0.5s ease;"></div>
+            </div>
           </div>
         </div>
-        <div class="card-title" style="margin-top:1rem;">Kategori Dağılımı</div>
-        <div *ngFor="let cat of categorySales" class="activity-item">
-          <span class="activity-text">{{ cat.categoryName }}</span>
-          <span style="color:#6c63ff;">{{ cat.percentage.toFixed(1) }}%</span>
+
+        <!-- Category breakdown — renders each item as structured HTML, NOT raw text -->
+        <div class="card">
+          <div class="card-title">Kategori Dağılımı</div>
+          <div *ngIf="!categorySales.length" style="color:var(--text-secondary); font-size:13px;">Veri yok.</div>
+          <div *ngFor="let cat of categorySales; let i = index" style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:6px;">
+              <span style="color:var(--text-primary); font-weight:700;">{{ cat.categoryName }}</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="color:var(--text-secondary); font-size:11px;">{{ formatCurrency(cat.totalRevenue) }}</span>
+                <span style="font-weight:700; font-size:13px;" [style.color]="getCategoryColor(i)">{{ getCategoryPercent(cat) }}%</span>
+              </div>
+            </div>
+            <div style="height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
+              <div [style.width]="getCategoryPercentNum(cat) + '%'"
+                   [style.background]="getCategoryColor(i)"
+                   style="height:100%; border-radius:4px; transition:width 0.55s ease; opacity:0.85;"></div>
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
 

@@ -27,12 +27,12 @@
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Ort. Sipariş Değeri</div>
-        <div class="kpi-value">{{ formatCurrency(kpis.avgOrderValue) }}</div>
-        <span class="kpi-badge badge-green">Avg</span>
+        <div class="kpi-value">{{ formatCurrency(getAvgOrderValue()) }}</div>
+        <span class="kpi-badge badge-green">AOV</span>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Bekleyen Kargo</div>
-        <div class="kpi-value">{{ kpis.pendingShipments }}</div>
+        <div class="kpi-value">{{ getPendingCount() }}</div>
         <span class="kpi-badge badge-red">Beklemede</span>
       </div>
       <div class="kpi-card">
@@ -46,26 +46,47 @@
 
     <!-- Charts -->
     <div class="grid-2">
+
+      <!-- Revenue Bar Chart — Modern -->
       <div class="card">
-        <div class="card-title">Aylık Gelir Trendi</div>
-        <div style="display:flex; align-items:flex-end; gap:8px; height:140px; padding:8px 0;">
-          <div *ngFor="let bar of revenueData" style="display:flex; flex-direction:column; align-items:center; flex:1; height:100%;">
-            <div style="font-size:10px; color:var(--text-secondary); margin-bottom:4px;">${{ (bar.value / 1000).toFixed(0) }}K</div>
-            <div class="bar" [style.height]="getBarHeight(bar.value)" style="background: var(--accent-primary); width:100%; border-radius:3px 3px 0 0;"></div>
-            <div style="font-size:10px; color:var(--text-primary); margin-top:4px;">{{ bar.name }}</div>
-          </div>
+        <div class="card-title" style="margin-bottom:16px;">Aylık Gelir Trendi</div>
+        <div *ngIf="!revenueData.length" style="height:168px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:13px;">
+          Veri yükleniyor…
         </div>
+        <ng-container *ngIf="revenueData.length">
+          <!-- Bar Chart: bars are DIRECT flex children — align-items:flex-end ensures bottom-up growth -->
+          <div style="height:160px; display:flex; align-items:flex-end; gap:6px; border-bottom:1px solid var(--border-color); padding:0 2px; position:relative;">
+            <div *ngFor="let bar of revenueData; let i = index"
+                 [style.height]="getBarHeightPx(bar.value)"
+                 [title]="bar.name + ': ' + formatCurrency(bar.value)"
+                 style="flex:1; border-radius:5px 5px 0 0; background:linear-gradient(180deg,#7c73f8,#5248e8); min-height:3px;
+                        cursor:help; transition:height 0.5s cubic-bezier(0.34,1.2,0.64,1);
+                        box-shadow:0 -2px 8px rgba(108,99,255,0.25);">
+            </div>
+          </div>
+          <!-- Labels -->
+          <div style="display:flex; gap:6px; margin-top:6px; padding:0 2px;">
+            <div *ngFor="let bar of revenueData"
+                 style="flex:1; text-align:center; font-size:10px; color:var(--text-secondary);
+                        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              {{ bar.name }}
+            </div>
+          </div>
+        </ng-container>
       </div>
 
+      <!-- Order Status -->
       <div class="card">
         <div class="card-title">Sipariş Durumları</div>
-        <div *ngFor="let s of orderStatus" style="margin-bottom:10px;">
-          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-            <span style="color:#c0c0d0;">{{ getStatusLabel(s.status) }}</span>
-            <span style="color:#7a7a9a;">{{ s.count | number }}</span>
+        <div *ngFor="let s of orderStatus" style="margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+            <span style="color:var(--text-primary); font-weight:600;">{{ getStatusLabel(s.status) }}</span>
+            <span style="color:var(--text-secondary); font-weight:700;">{{ s.count | number }}</span>
           </div>
-          <div style="height:5px; background:#1a1a24; border-radius:3px; overflow:hidden;">
-            <div [style.width]="'65%'" [style.background]="getStatusColor(s.status)" style="height:100%; border-radius:3px;"></div>
+          <div style="height:7px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
+            <div [style.width]="getStatusBarWidth(s.count)"
+                 [style.background]="getStatusColor(s.status)"
+                 style="height:100%; border-radius:4px; transition:width 0.5s ease;"></div>
           </div>
         </div>
       </div>
@@ -76,16 +97,19 @@
       <div class="card">
         <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
           Son Siparişler
-          <a routerLink="/corporate/orders" style="font-size:11px; color:#6c63ff; text-decoration:none;">Tümü →</a>
+          <a routerLink="/corporate/orders" style="font-size:11px; color:var(--accent-primary); text-decoration:none; font-weight:600;">Tümü →</a>
         </div>
         <table class="data-table">
           <thead><tr><th>Sipariş</th><th>Müşteri</th><th>Tutar</th><th>Durum</th></tr></thead>
           <tbody>
-            <tr *ngFor="let o of recentOrders" style="cursor:pointer;" routerLink="/corporate/orders/{{ o.id }}">
-              <td style="color:#6c63ff;">#{{ o.id }}</td>
-              <td>{{ o.customerName }}</td>
-              <td>{{ formatCurrency(o.totalAmount) }}</td>
+            <tr *ngFor="let o of recentOrders" style="cursor:pointer;" [routerLink]="['/corporate/orders', o.id]">
+              <td style="color:var(--accent-primary); font-weight:600;">#{{ o.id }}</td>
+              <td style="color:var(--text-primary); font-weight:600;">{{ o.customerName }}</td>
+              <td style="color:#00875a; font-weight:700;">{{ formatCurrency(o.totalAmount) }}</td>
               <td><span class="status-pill" [class]="getStatusClass(o.status)">{{ getStatusLabel(o.status) }}</span></td>
+            </tr>
+            <tr *ngIf="!recentOrders.length && !loading">
+              <td colspan="4" style="text-align:center; color:var(--text-secondary); padding:1.5rem;">Sipariş bulunmuyor.</td>
             </tr>
           </tbody>
         </table>
@@ -94,22 +118,26 @@
       <div class="card">
         <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
           En Çok Satan Ürünler
-          <a routerLink="/corporate/products" style="font-size:11px; color:#6c63ff; text-decoration:none;">Tümü →</a>
+          <a routerLink="/corporate/products" style="font-size:11px; color:var(--accent-primary); text-decoration:none; font-weight:600;">Tümü →</a>
         </div>
         <table class="data-table">
-          <thead><tr><th>Ürün</th><th>Satış</th><th>Gelir</th></tr></thead>
+          <thead><tr><th>#</th><th>Ürün</th><th>Satış</th><th>Gelir</th></tr></thead>
           <tbody>
-            <tr *ngFor="let p of topProducts">
-              <td style="color:#f0f0f5;">{{ p.productName }}</td>
-              <td>{{ p.totalSold }}</td>
-              <td>{{ formatCurrency(p.revenue) }}</td>
+            <tr *ngFor="let p of topProducts; let i = index">
+              <td style="color:var(--accent-primary); font-weight:700; font-size:13px;">{{ i + 1 }}</td>
+              <td style="color:var(--text-primary); font-weight:700;">{{ p.productName }}</td>
+              <td style="color:var(--text-primary); font-weight:500;">{{ p.totalSold }}</td>
+              <td style="color:#00875a; font-weight:700;">{{ formatCurrency(p.revenue) }}</td>
+            </tr>
+            <tr *ngIf="!topProducts.length && !loading">
+              <td colspan="4" style="text-align:center; color:var(--text-secondary); padding:1.5rem;">Veri bulunamadı.</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:1.5rem;">Yükleniyor…</div>
+    <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:1.5rem;">Yükleniyor…</div>
 
   </div>
 </div>

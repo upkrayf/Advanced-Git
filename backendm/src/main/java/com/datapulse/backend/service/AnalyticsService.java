@@ -1,27 +1,34 @@
 package com.datapulse.backend.service;
 
 import com.datapulse.backend.entity.Order;
+import com.datapulse.backend.entity.OrderItem;
+import com.datapulse.backend.entity.User;
 import com.datapulse.backend.repository.OrderRepository;
+import com.datapulse.backend.repository.OrderItemRepository;
+import com.datapulse.backend.repository.UserRepository;
+import com.datapulse.backend.repository.StoreRepository;
+import com.datapulse.backend.repository.ShipmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AnalyticsService {
-    private final com.datapulse.backend.repository.OrderItemRepository orderItemRepository;
-    private final com.datapulse.backend.repository.UserRepository userRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final UserRepository userRepository;
     private final OrderRepository orderRepository;
-    private final com.datapulse.backend.repository.StoreRepository storeRepository;
-    private final com.datapulse.backend.repository.ShipmentRepository shipmentRepository;
+    private final StoreRepository storeRepository;
+    private final ShipmentRepository shipmentRepository;
 
     public AnalyticsService(OrderRepository orderRepository,
-                            com.datapulse.backend.repository.OrderItemRepository orderItemRepository,
-                            com.datapulse.backend.repository.UserRepository userRepository,
-                            com.datapulse.backend.repository.StoreRepository storeRepository,
-                            com.datapulse.backend.repository.ShipmentRepository shipmentRepository) {
+                            OrderItemRepository orderItemRepository,
+                            UserRepository userRepository,
+                            StoreRepository storeRepository,
+                            ShipmentRepository shipmentRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.userRepository = userRepository;
@@ -36,7 +43,7 @@ public class AnalyticsService {
 
     public Map<String, Long> getOrderCountByStatus() {
         List<Object[]> results = orderRepository.getOrderCountByStatus();
-        Map<String, Long> counts = new java.util.HashMap<>();
+        Map<String, Long> counts = new HashMap<>();
         for (Object[] row : results) {
             counts.put(row[0] != null ? row[0].toString() : "UNKNOWN", (Long) row[1]);
         }
@@ -47,7 +54,7 @@ public class AnalyticsService {
         List<Object[]> results = orderRepository.getRevenueTrend();
         return results.stream()
                 .map(row -> Map.of("name", row[0].toString(), "value", (Object) row[1]))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> getTopProducts() {
@@ -59,21 +66,19 @@ public class AnalyticsService {
                     "totalSold", row[1],
                     "revenue", row[2]
                 ))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public Map<String, Long> getUserDemographics() {
-        // This is still fine for now as user count is typically manageable, 
-        // but could also be moved to repo if needed.
         return userRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.groupingBy(
+                .collect(Collectors.groupingBy(
                     u -> u.getGender() != null ? u.getGender() : "Unknown", 
-                    java.util.stream.Collectors.counting()
+                    Collectors.counting()
                 ));
     }
 
     public Map<String, Object> getPlatformKpis() {
-        Map<String, Object> kpis = new java.util.HashMap<>();
+        Map<String, Object> kpis = new HashMap<>();
         kpis.put("totalUsers", (int)userRepository.count());
         kpis.put("totalOrders", (int)orderRepository.count());
         kpis.put("totalRevenue", getTotalRevenue());
@@ -102,17 +107,18 @@ public class AnalyticsService {
                         "percentage", percentage
                     );
                 })
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public Map<String, Object> getShipmentStats() {
-        // Optimized to only count at DB level if necessary, but keep it simple for now
         long total = shipmentRepository.count();
         return Map.of("total", total);
     }
 
+    // --- USER ANALYTICS (RESORED ORIGINAL LOGIC) ---
+
     public Map<String, Object> getMyStats(String email) {
-        com.datapulse.backend.entity.User user = userRepository.findByEmail(email).orElseThrow();
+        User user = userRepository.findByEmail(email).orElseThrow();
         List<Order> myOrders = orderRepository.findByUser(user);
         
         BigDecimal totalSpent = myOrders.stream()
@@ -120,28 +126,26 @@ public class AnalyticsService {
                 .filter(t -> t != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        long pendingReviews = myOrders.size(); 
-        
         return Map.of(
             "totalSpent", totalSpent,
             "totalOrders", myOrders.size(),
             "activeOrders", myOrders.stream().filter(o -> !"DELIVERED".equals(o.getStatus())).count(),
-            "pendingReviews", pendingReviews,
+            "pendingReviews", myOrders.size(),
             "savedAmount", totalSpent.multiply(new BigDecimal("0.05"))
         );
     }
 
     public List<Map<String, Object>> getMySpendingByCategory(String email) {
-        com.datapulse.backend.entity.User user = userRepository.findByEmail(email).orElseThrow();
+        User user = userRepository.findByEmail(email).orElseThrow();
         List<Order> myOrders = orderRepository.findByUser(user);
         
         Map<String, BigDecimal> spending = new HashMap<>();
         for (Order order : myOrders) {
             if (order.getItems() != null) {
-                for (com.datapulse.backend.entity.OrderItem item : order.getItems()) {
+                for (OrderItem item : order.getItems()) {
                     String catName = (item.getProduct() != null && item.getProduct().getCategory() != null) 
                                     ? item.getProduct().getCategory().getName() : "Diğer";
-                    BigDecimal itemTotal = item.getPrice().multiply(new BigDecimal(item.getQuantity()));
+                    BigDecimal itemTotal = (item.getPrice() != null) ? item.getPrice().multiply(new BigDecimal(item.getQuantity())) : BigDecimal.ZERO;
                     spending.put(catName, spending.getOrDefault(catName, BigDecimal.ZERO).add(itemTotal));
                 }
             }
@@ -149,8 +153,20 @@ public class AnalyticsService {
         
         return spending.entrySet().stream()
                 .map(e -> Map.<String, Object>of("categoryName", e.getKey(), "amount", e.getValue()))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
+
+    public List<Map<String, Object>> getMySpendingTrend(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow();
+        // Sadece trend sorgusu veritabanından hızlandırılmış olarak kalıyor
+        List<Object[]> results = orderRepository.getSpendingTrendByUser(user.getId());
+        
+        return results.stream()
+                .map(row -> Map.of("name", row[0].toString(), "value", (Object) row[1]))
+                .collect(Collectors.toList());
+    }
+
+    // --- CORPORATE ANALYTICS ---
 
     public Map<String, Object> getCorporateKpis(String email) {
         BigDecimal revenue = orderRepository.getTotalRevenueByOwner(email);
@@ -161,7 +177,7 @@ public class AnalyticsService {
 
         double avgOrderValue = 0.0;
         if (ordersToday > 0) {
-            avgOrderValue = revenue.divide(java.math.BigDecimal.valueOf(ordersToday), 2, java.math.RoundingMode.HALF_UP).doubleValue();
+            avgOrderValue = revenue.divide(BigDecimal.valueOf(ordersToday), 2, java.math.RoundingMode.HALF_UP).doubleValue();
         }
 
         return Map.of(
@@ -178,7 +194,7 @@ public class AnalyticsService {
         List<Object[]> results = orderRepository.getRevenueTrendByOwner(email);
         return results.stream()
                 .map(row -> Map.of("name", row[0].toString(), "value", (Object) row[1]))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> getStoreTopProducts(String email) {
@@ -190,6 +206,6 @@ public class AnalyticsService {
                     "totalSold", row[1],
                     "revenue", row[2]
                 ))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 }

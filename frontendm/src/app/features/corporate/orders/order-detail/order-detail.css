@@ -1,0 +1,9 @@
+.order-toast {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.order-toast-success { background: #e6f7f0; color: #00875a; }
+.order-toast-error   { background: #fff0f0; color: #de350b; }

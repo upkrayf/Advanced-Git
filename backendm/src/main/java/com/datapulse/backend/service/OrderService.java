@@ -48,6 +48,13 @@ public class OrderService {
     }
 
     @jakarta.transaction.Transactional
+    public Order updateStatus(Long id, String status) {
+        Order order = orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+        order.setStatus(status);
+        return orderRepository.save(order);
+    }
+
+    @jakarta.transaction.Transactional
     public Order checkout(String email, com.datapulse.backend.dto.CheckoutRequest request) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
 

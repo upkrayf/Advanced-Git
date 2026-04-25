@@ -78,7 +78,7 @@ export class Login {
     const accounts = {
       admin: { email: 'admin@datapulse.com', password: '123' },
       corporate: { email: 'uk@datapulse.com', password: '123' },
-      individual: { email: 'ds3user310@logistics.com', password: '123' }
+      individual: { email: 'user_101@datapulse.com', password: '123' }
     };
     this.email = accounts[role].email;
     this.password = accounts[role].password;

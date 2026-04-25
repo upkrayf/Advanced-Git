@@ -2,16 +2,43 @@
   <app-sidebar />
   <div class="main-content" style="padding:1.5rem;">
 
+    <!-- Header -->
     <div class="topbar">
       <div>
         <h1 class="page-title">Gönderiler</h1>
-        <p class="page-sub">Kargo ve teslimat takibi</p>
+        <p class="page-sub">Kargo ve teslimat takibi — {{ totalElements || shipments.length }} kayıt</p>
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:1rem;">
-      <select [(ngModel)]="selectedStatus" (change)="onStatusFilter()"
-        style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#9a9ab0; font-size:12px; cursor:pointer;">
+    <!-- KPI Summary Cards -->
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:1.5rem;">
+      <div class="kpi-card" style="border-left:3px solid #6c63ff;">
+        <div class="kpi-label">Toplam Gönderi</div>
+        <div class="kpi-value">{{ totalCount }}</div>
+        <span class="kpi-badge badge-green">Tümü</span>
+      </div>
+      <div class="kpi-card" style="border-left:3px solid #b76e00;">
+        <div class="kpi-label">Yolda</div>
+        <div class="kpi-value" style="color:#b76e00;">{{ inTransitCount }}</div>
+        <span class="kpi-badge badge-amber" style="background:rgba(183,110,0,0.12); color:#b76e00;">Aktif Kargo</span>
+      </div>
+      <div class="kpi-card" style="border-left:3px solid #00875a;">
+        <div class="kpi-label">Teslim Edildi</div>
+        <div class="kpi-value" style="color:#00875a;">{{ deliveredCount }}</div>
+        <span class="kpi-badge badge-green">Tamamlandı</span>
+      </div>
+      <div class="kpi-card" style="border-left:3px solid #de350b;">
+        <div class="kpi-label">İade</div>
+        <div class="kpi-value" style="color:#de350b;">{{ returnedCount }}</div>
+        <span class="kpi-badge badge-red">Geri Dönen</span>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <input type="text" [(ngModel)]="search" placeholder="Takip no, müşteri veya kargo firması ara..."
+             class="filter-input" style="flex:1; min-width:220px;" />
+      <select [(ngModel)]="selectedStatus" (change)="onStatusFilter()" class="filter-select">
         <option value="">Tüm Durumlar</option>
         <option value="PENDING">Beklemede</option>
         <option value="PROCESSING">Hazırlanıyor</option>
@@ -22,38 +49,80 @@
       </select>
     </div>
 
+    <!-- Table -->
     <div class="card">
-      <div *ngIf="loading" style="text-align:center; color:#6c63ff; padding:2rem;">Yükleniyor…</div>
-      <table class="data-table" *ngIf="!loading">
+      <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:2.5rem;">
+        Yükleniyor…
+      </div>
+
+      <div *ngIf="!loading && !filtered.length"
+           style="text-align:center; color:var(--text-secondary); padding:3.5rem 1rem;">
+        <div style="font-size:40px; margin-bottom:12px;">📭</div>
+        <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Gönderi bulunamadı</div>
+        <div style="font-size:13px;">Filtre kriterlerini değiştirin veya henüz gönderi oluşturulmamış.</div>
+      </div>
+
+      <table class="data-table" *ngIf="!loading && filtered.length">
         <thead>
           <tr>
-            <th>Gönderi No</th>
+            <th>Gönderi #</th>
             <th>Sipariş</th>
             <th>Müşteri</th>
             <th>Kargo Firması</th>
             <th>Takip No</th>
             <th>Durum</th>
-            <th>Tahmini Teslim</th>
+            <th>Teslim Tarihi</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let s of shipments">
-            <td style="color:#6c63ff;">#{{ s.id }}</td>
-            <td style="color:#9a9ab0;">#{{ s.orderId }}</td>
-            <td style="color:#f0f0f5;">{{ s.customerName || '-' }}</td>
-            <td style="color:#9a9ab0;">{{ s.carrier || '-' }}</td>
-            <td style="font-family:monospace; font-size:11px; color:#7a7a9a;">{{ s.trackingNo || '-' }}</td>
-            <td><span class="status-pill" [class]="getStatusClass(s.status)">{{ getStatusLabel(s.status) }}</span></td>
-            <td style="color:#7a7a9a; font-size:11px;">{{ s.estimatedDelivery ? (s.estimatedDelivery | slice:0:10) : (s.actualDelivery ? (s.actualDelivery | slice:0:10) : '-') }}</td>
+          <tr *ngFor="let s of filtered">
+            <td style="color:var(--accent-primary); font-weight:700;">#{{ s.id }}</td>
+            <td>
+              <a [routerLink]="['/corporate/orders', s.orderId]"
+                 style="color:var(--accent-primary); text-decoration:none; font-weight:600;">
+                #{{ s.orderId }}
+              </a>
+            </td>
+            <td style="color:var(--text-primary); font-weight:700;">{{ s.customerName || '-' }}</td>
+            <td style="color:var(--text-primary); font-weight:500;">{{ s.carrier || '-' }}</td>
+            <td>
+              <code style="font-size:11px; color:var(--text-secondary); background:var(--bg-secondary);
+                           padding:2px 6px; border-radius:4px; letter-spacing:0.5px;">
+                {{ s.trackingNo || '-' }}
+              </code>
+            </td>
+            <td>
+              <span class="status-pill" [class]="getStatusClass(s.status)">
+                {{ getStatusIcon(s.status) }} {{ getStatusLabel(s.status) }}
+              </span>
+            </td>
+            <td style="color:var(--text-secondary); font-size:12px;">
+              <ng-container *ngIf="s.status === 'DELIVERED' && s.actualDelivery">
+                <span style="color:#00875a; font-weight:600;">{{ s.actualDelivery | slice:0:10 }}</span>
+              </ng-container>
+              <ng-container *ngIf="s.status !== 'DELIVERED' && s.estimatedDelivery">
+                <span style="color:var(--text-secondary);">~{{ s.estimatedDelivery | slice:0:10 }}</span>
+              </ng-container>
+              <ng-container *ngIf="!s.estimatedDelivery && !s.actualDelivery">-</ng-container>
+            </td>
           </tr>
         </tbody>
       </table>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:12px; color:#7a7a9a;" *ngIf="totalPages > 1">
-        <span>Sayfa {{ page + 1 }} / {{ totalPages }}</span>
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1"
+           style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;
+                  padding-top:1rem; border-top:1px solid var(--border-color); font-size:12px; color:var(--text-secondary);">
+        <span>Sayfa <strong style="color:var(--text-primary);">{{ page + 1 }}</strong> / {{ totalPages }}</span>
         <div style="display:flex; gap:8px;">
-          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()">← Önceki</button>
-          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()">Sonraki →</button>
+          <button class="btn-outline" [disabled]="page === 0" (click)="prevPage()"
+                  style="display:flex; align-items:center; gap:4px; padding:6px 14px; font-size:12px;">
+            ← Önceki
+          </button>
+          <button class="btn-outline" [disabled]="page >= totalPages - 1" (click)="nextPage()"
+                  style="display:flex; align-items:center; gap:4px; padding:6px 14px; font-size:12px;">
+            Sonraki →
+          </button>
         </div>
       </div>
     </div>

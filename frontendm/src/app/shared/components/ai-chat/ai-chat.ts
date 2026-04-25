@@ -20,9 +20,9 @@ export class AiChat {
 
   constructor(private chatService: Chat, private authService: Auth) {
     const role = this.authService.getRole();
-    this.messages.push({ 
-      sender: 'assistant', 
-      text: `Merhaba! Ben DataPulse AI. ${role === 'ADMIN' ? 'Platform geneli' : 'Mağazanızla ilgili'} analizler yapabilirim. Size nasıl yardımcı olabilirim?` 
+    this.messages.push({
+      sender: 'assistant',
+      text: `Merhaba! Ben DataPulse AI. ${role === 'ADMIN' ? 'Platform geneli' : 'Mağazanızla ilgili'} analizler yapabilirim. Size nasıl yardımcı olabilirim?`
     });
   }
 
@@ -43,16 +43,16 @@ export class AiChat {
     this.chatService.ask(questionText).subscribe({
       next: response => {
         // response artık bir ChatResponse nesnesi (reply, visualization, sqlQuery içeriyor)
-        this.messages.push({ 
-          sender: 'assistant', 
-          text: response.reply || 'Yanıt alınamadı.' 
+        this.messages.push({
+          sender: 'assistant',
+          text: response.reply || 'Yanıt alınamadı.'
         });
-        
+
         if (response.visualization) {
           console.log('Grafik verisi alındı:', response.visualization);
           // İleride grafik çizimi için burası genişletilebilir
         }
-        
+
         this.loading = false;
       },
       error: () => {

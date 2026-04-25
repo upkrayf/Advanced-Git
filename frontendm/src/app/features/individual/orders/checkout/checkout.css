@@ -1,0 +1,75 @@
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus { border-color: var(--accent-primary); }
+.form-input::placeholder { color: var(--text-secondary); }
+.form-input.input-error { border-color: #de350b; }
+
+.error-msg {
+  font-size: 12px;
+  color: #de350b;
+  margin-top: 4px;
+}
+
+/* City autocomplete */
+.city-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.city-option {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.city-option:hover { background: var(--bg-secondary); }
+
+/* Payment option cards */
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.payment-option:hover { background: var(--bg-secondary); }
+
+.payment-option-selected {
+  border-color: var(--accent-primary);
+  background: var(--bg-secondary);
+}

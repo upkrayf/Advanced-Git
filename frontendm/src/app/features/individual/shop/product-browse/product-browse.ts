@@ -81,6 +81,8 @@ export class ProductBrowse implements OnInit, AfterViewInit, OnDestroy {
     if (!append) {
       this.page = 0;
       this.products = [];
+      this.totalPages = 0;
+      this.totalElements = 0;
     }
     this.loading = !append;
     this.loadingMore = append;
@@ -88,8 +90,8 @@ export class ProductBrowse implements OnInit, AfterViewInit, OnDestroy {
     this.productService.getProducts({
       page: this.page,
       size: this.size,
-      search: this.search || undefined,
-      categoryId: this.selectedCategory || undefined
+      search: this.search.trim() || undefined,
+      categoryId: this.selectedCategory > 0 ? this.selectedCategory : undefined
     }).subscribe({
       next: (d) => {
         this.totalElements = d.totalElements;
@@ -138,5 +140,33 @@ export class ProductBrowse implements OnInit, AfterViewInit, OnDestroy {
     if (this.sortBy === 'price_asc') return arr.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
     if (this.sortBy === 'price_desc') return arr.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
     return arr.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }
+
+  getProductImage(p: any): string {
+    if (p.imageUrl && p.imageUrl.startsWith('http') && !p.imageUrl.includes('placeholder')) return p.imageUrl;
+    
+    const cat = (p.categoryName || '').toLowerCase();
+    let query = 'product';
+    if (cat.includes('elect') || cat.includes('tech')) query = 'tech,laptop,gadget';
+    else if (cat.includes('cloth') || cat.includes('fashion')) query = 'fashion,clothes';
+    else if (cat.includes('home') || cat.includes('furni')) query = 'interior,furniture';
+    else if (cat.includes('food')) query = 'food,gourmet';
+    else if (cat.includes('sport')) query = 'fitness,sports';
+    
+    // Using a reliable placeholder service with category keywords and unique signature for variety
+    return `https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80&sig=${p.id}`; 
+    // Ideally we'd use source.unsplash.com/featured but Unsplash deprecated it. 
+    // We'll stick to our fallback system in HTML for maximum reliability.
+  }
+
+  getCategoryIcon(catName: string): string {
+    const cat = (catName || '').toLowerCase();
+    if (cat.includes('elect')) return '💻';
+    if (cat.includes('cloth')) return '👕';
+    if (cat.includes('home')) return '🏠';
+    if (cat.includes('food')) return '🍕';
+    if (cat.includes('sport')) return '⚽';
+    if (cat.includes('book')) return '📚';
+    return '📦';
   }
 }

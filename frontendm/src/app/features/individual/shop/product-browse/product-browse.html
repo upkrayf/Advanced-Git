@@ -13,21 +13,19 @@
     </div>
 
     <!-- Filters -->
-    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px; flex-wrap:wrap;">
+    <div class="card" style="margin-bottom:1rem; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
       <input type="text" [(ngModel)]="search" placeholder="Ürün ara..." (keyup.enter)="onSearch()"
-        style="flex:2; min-width:160px; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none;" />
-      <select [(ngModel)]="selectedCategory" (change)="onSearch()"
-        style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#9a9ab0; font-size:12px; cursor:pointer;">
+        class="filter-input" style="flex:2; min-width:160px;" />
+      <select [(ngModel)]="selectedCategory" (change)="onSearch()" class="filter-select">
         <option [value]="0">Tüm Kategoriler</option>
         <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
       </select>
-      <select [(ngModel)]="sortBy"
-        style="background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#9a9ab0; font-size:12px; cursor:pointer;">
+      <select [(ngModel)]="sortBy" class="filter-select">
         <option value="rating">Önce En Çok Puan Alan</option>
         <option value="price_asc">Önce En Ucuz</option>
         <option value="price_desc">Önce En Pahalı</option>
       </select>
-      <button class="btn-outline" (click)="onSearch()">🔍 Ara</button>
+      <button class="btn-outline" (click)="onSearch()">Ara</button>
     </div>
 
     <!-- Cart Success Toast -->
@@ -44,14 +42,23 @@
         onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(108,99,255,0.2)'"
         onmouseleave="this.style.transform=''; this.style.boxShadow=''">
 
-        <div style="height:140px; background:#12121a; border-radius:6px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; overflow:hidden;" routerLink="/individual/shop/{{ p.id }}">
-          <img *ngIf="p.imageUrl" [src]="p.imageUrl" [alt]="p.name" style="max-height:100%; max-width:100%; object-fit:contain;" onerror="this.style.opacity='0'" />
-          <span *ngIf="!p.imageUrl" style="font-size:40px; opacity:0.3;">📦</span>
+        <div class="product-image-wrapper" style="height: 180px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 12px 12px 0 0;" routerLink="/individual/shop/{{ p.id }}">
+          <img [src]="getProductImage(p)" 
+               [alt]="p.name"
+               (error)="$any($event.target).src = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&q=80'"
+               style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
+          <div style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.9); width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.1); font-size:14px;">
+            {{ getCategoryIcon(p.categoryName || '') }}
+          </div>
         </div>
 
-        <div routerLink="/individual/shop/{{ p.id }}">
-          <div style="font-size:15px; font-weight:600; color:var(--text-primary); margin-bottom:6px; line-height:1.2;">{{ p.name }}</div>
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px; font-weight:450;">{{ p.categoryName }}</div>
+        <div routerLink="/individual/shop/{{ p.id }}" style="padding: 12px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; min-height:36px;">
+             <div style="font-size:15px; font-weight:600; color:var(--text-primary); line-height:1.2; flex:1;">{{ p.name }}</div>
+          </div>
+          <div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px; font-weight:500; text-transform:uppercase; letter-spacing:0.5px;">
+            {{ getCategoryIcon(p.categoryName || '') }} {{ p.categoryName }}
+          </div>
 
           <div style="display:flex; align-items:center; gap:4px; margin-bottom:10px;">
             <span style="color:#f0c000; font-size:13px;">
