@@ -30,23 +30,9 @@ export class IndividualDashboard implements OnInit {
   userName = '';
   loading = false;
 
-  // Mock Trend Data
-  spendingTrend = [
-    {
-      name: 'Harcama',
-      series: [
-        { name: 'Pzt', value: 120 },
-        { name: 'Sal', value: 250 },
-        { name: 'Çar', value: 180 },
-        { name: 'Per', value: 450 },
-        { name: 'Cum', value: 320 },
-        { name: 'Cmt', value: 600 },
-        { name: 'Paz', value: 380 }
-      ]
-    }
-  ];
-
+  spendingTrend: any[] = [];
   categoryData: any[] = [];
+  orderDistribution: any[] = [];
 
   constructor(
     private analytics: Analytics,
@@ -62,6 +48,8 @@ export class IndividualDashboard implements OnInit {
     this.loadOrders();
     this.loadShipments();
     this.loadSpending();
+    this.loadSpendingTrend();
+    this.loadOrderStatusDistribution();
   }
 
   loadUser(): void {
@@ -105,6 +93,45 @@ export class IndividualDashboard implements OnInit {
         this.spendingByCategory = [];
         this.categoryData = [];
       }
+    });
+  }
+
+  loadSpendingTrend(): void {
+    this.analytics.getMySpendingTrend('daily').subscribe({
+      next: (d: any[]) => {
+        if (d && d.length > 0) {
+          this.spendingTrend = [{
+            name: 'Harcama',
+            series: d.map((item: any) => ({ name: item.name, value: item.value })).reverse()
+          }];
+        } else {
+          this.loadMonthlyTrend();
+        }
+      },
+      error: () => this.loadMonthlyTrend()
+    });
+  }
+
+  loadMonthlyTrend(): void {
+    this.analytics.getMySpendingTrend('monthly').subscribe({
+      next: (d: any[]) => {
+        if (d && d.length > 0) {
+          this.spendingTrend = [{
+            name: 'Harcama',
+            series: d.map((item: any) => ({ name: item.name, value: item.value })).reverse()
+          }];
+        } else {
+          this.spendingTrend = [];
+        }
+      },
+      error: () => this.spendingTrend = []
+    });
+  }
+
+  loadOrderStatusDistribution(): void {
+    this.analytics.getMyOrderStatusDistribution().subscribe({
+      next: (d: any[]) => this.orderDistribution = d,
+      error: () => this.orderDistribution = []
     });
   }
 

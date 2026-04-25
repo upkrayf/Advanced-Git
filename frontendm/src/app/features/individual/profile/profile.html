@@ -7,48 +7,150 @@
         <h1 class="page-title">Profilim</h1>
         <p class="page-sub">Hesap bilgilerinizi yönetin</p>
       </div>
-      <div class="topbar-actions">
-        <button *ngIf="!editMode" class="btn-outline" (click)="editMode = true">✏️ Düzenle</button>
-      </div>
     </div>
 
-    <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:3rem;">Yükleniyor…</div>
+    <div *ngIf="loading" style="text-align:center;color:var(--text-secondary);padding:3rem 0;">Yükleniyor…</div>
 
-    <div *ngIf="success" style="background:rgba(0,135,90,0.1); border:1px solid rgba(0,135,90,0.3); border-radius:8px; padding:12px 16px; color:#00875a; font-size:13px; margin-bottom:1rem;">
-      ✓ {{ success }}
-    </div>
-    <div *ngIf="error" style="background:rgba(222,53,11,0.1); border:1px solid rgba(222,53,11,0.3); border-radius:8px; padding:12px 16px; color:#de350b; font-size:13px; margin-bottom:1rem;">
-      ✗ {{ error }}
-    </div>
+    <div *ngIf="!loading && user" class="profile-wrapper">
 
-    <div *ngIf="user" class="card" style="max-width: 500px;">
-      <div style="display:flex; align-items:center; gap:16px; margin-bottom:1.5rem;">
-        <div style="width:64px; height:64px; background:linear-gradient(135deg,var(--accent-primary),#1d9e75); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; color:white; font-weight:700;">
-          {{ (user.fullName || '?').charAt(0).toUpperCase() }}
+      <!-- Hero card -->
+      <div class="profile-hero-card">
+
+        <!-- Banner -->
+        <div class="profile-banner">
+          <div class="banner-pattern"></div>
         </div>
-        <div>
-          <div style="font-size:18px; font-weight:600; color:var(--text-primary);">{{ user.fullName }}</div>
-          <div style="font-size:12px; color:var(--text-secondary);">{{ user.roleType }}</div>
+
+        <!-- Avatar -->
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar">
+            {{ (user.fullName || '?').charAt(0).toUpperCase() }}
+          </div>
         </div>
-      </div>
 
-      <div *ngIf="!editMode" style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
-        <div style="display:flex; justify-content:space-between;"><span style="color:var(--text-secondary);">E-posta</span><span style="color:var(--text-primary);">{{ user.email }}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span style="color:var(--text-secondary);">Telefon</span><span style="color:var(--text-primary);">{{ user.phone || '-' }}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span style="color:var(--text-secondary);">Şehir</span><span style="color:var(--text-primary);">{{ user.city || '-' }}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span style="color:var(--text-secondary);">Kayıt Tarihi</span><span style="color:var(--text-primary);">{{ user.createdAt ? (user.createdAt | slice:0:10) : '-' }}</span></div>
-      </div>
-
-      <div *ngIf="editMode" style="display:flex; flex-direction:column; gap:12px;">
-        <input type="text" [(ngModel)]="form.fullName" placeholder="Ad Soyad" class="profile-input" />
-        <input type="text" [(ngModel)]="form.phone" placeholder="Telefon" class="profile-input" />
-        <input type="text" [(ngModel)]="form.city" placeholder="Şehir" class="profile-input" />
-        <div style="display:flex; gap:8px;">
-          <button class="btn-outline" (click)="editMode = false">İptal</button>
-          <button class="btn-primary" (click)="save()">Kaydet</button>
+        <!-- Identity row -->
+        <div class="profile-identity">
+          <div class="profile-name-block">
+            <h2 class="profile-name">{{ user.fullName }}</h2>
+            <span class="profile-email">{{ user.email }}</span>
+          </div>
+          <div class="profile-badges">
+            <span class="badge badge-role">Individual</span>
+            <span *ngIf="user.membershipType"
+                  class="badge"
+                  [class.badge-gold]="user.membershipType === 'Gold'"
+                  [class.badge-silver]="user.membershipType === 'Silver'"
+                  [class.badge-bronze]="user.membershipType === 'Bronze'"
+                  [class.badge-premium]="user.membershipType === 'Premium'">
+              {{ user.membershipType }}
+            </span>
+          </div>
         </div>
-      </div>
-    </div>
 
+        <!-- Divider -->
+        <div class="profile-divider"></div>
+
+        <!-- ── VIEW MODE ── -->
+        <div *ngIf="!editMode">
+
+          <div *ngIf="success" class="alert alert-success">✓ {{ success }}</div>
+          <div *ngIf="error"   class="alert alert-error">✗ {{ error }}</div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-icon-box">📱</div>
+              <div class="info-content">
+                <div class="info-label">Telefon</div>
+                <div class="info-val">{{ user.phone || '—' }}</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-icon-box">🏙</div>
+              <div class="info-content">
+                <div class="info-label">Şehir</div>
+                <div class="info-val">{{ user.city || '—' }}</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-icon-box">⚧</div>
+              <div class="info-content">
+                <div class="info-label">Cinsiyet</div>
+                <div class="info-val">
+                  {{ user.gender === 'Male' ? 'Erkek' : user.gender === 'Female' ? 'Kadın' : '—' }}
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="user.age" class="info-item">
+              <div class="info-icon-box">🎂</div>
+              <div class="info-content">
+                <div class="info-label">Yaş</div>
+                <div class="info-val">{{ user.age }}</div>
+              </div>
+            </div>
+
+            <div *ngIf="user.averageRating" class="info-item">
+              <div class="info-icon-box">⭐</div>
+              <div class="info-content">
+                <div class="info-label">Ortalama Puan</div>
+                <div class="info-val">{{ user.averageRating | number:'1.1-1' }} / 5</div>
+              </div>
+            </div>
+
+            <div *ngIf="user.satisfactionLevel" class="info-item">
+              <div class="info-icon-box">😊</div>
+              <div class="info-content">
+                <div class="info-label">Memnuniyet</div>
+                <div class="info-val">{{ user.satisfactionLevel }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-footer">
+            <button class="btn-primary" (click)="startEdit()">✏️ &nbsp;Bilgileri Düzenle</button>
+          </div>
+        </div>
+
+        <!-- ── EDIT MODE ── -->
+        <div *ngIf="editMode">
+
+          <div *ngIf="error" class="alert alert-error">✗ {{ error }}</div>
+
+          <div class="edit-grid">
+            <div class="field">
+              <label class="field-label">Ad Soyad</label>
+              <input type="text" [(ngModel)]="form.fullName" class="field-input" placeholder="Ad Soyad" />
+            </div>
+            <div class="field">
+              <label class="field-label">Telefon</label>
+              <input type="tel" [(ngModel)]="form.phone" class="field-input" placeholder="05xx xxx xx xx" />
+            </div>
+            <div class="field">
+              <label class="field-label">Şehir</label>
+              <input type="text" [(ngModel)]="form.city" class="field-input" placeholder="İstanbul" />
+            </div>
+            <div class="field">
+              <label class="field-label">Cinsiyet</label>
+              <select [(ngModel)]="form.gender" class="field-input">
+                <option value="">Seçiniz</option>
+                <option value="Male">Erkek</option>
+                <option value="Female">Kadın</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="profile-footer">
+            <button class="btn-outline" (click)="editMode = false">İptal</button>
+            <button class="btn-primary" (click)="save()" [disabled]="saving">
+              {{ saving ? 'Kaydediliyor…' : 'Kaydet' }}
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /profile-hero-card -->
+
+    </div><!-- /profile-wrapper -->
   </div>
 </div>

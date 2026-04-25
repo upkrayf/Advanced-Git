@@ -28,6 +28,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o.status, COUNT(o) FROM Order o GROUP BY o.status")
     List<Object[]> getOrderCountByStatus();
+    
+    @Query("SELECT o.status, COUNT(o) FROM Order o WHERE o.user.id = :userId GROUP BY o.status")
+    List<Object[]> getOrderCountByStatusForUser(@Param("userId") Long userId);
 
     @Query("SELECT SUBSTRING(CAST(o.orderDate AS string), 1, 7) as month, SUM(o.totalAmount) FROM Order o GROUP BY month ORDER BY month")
     List<Object[]> getRevenueTrend();
@@ -59,11 +62,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "GROUP BY c.name", nativeQuery = true)
     List<Object[]> getSpendingByCategory(@Param("userId") Long userId);
 
-    @Query(value = "SELECT TO_CHAR(o.created_at, 'YYYY-MM-DD') as day, SUM(o.total_amount) " +
-           "FROM orders o " +
-           "WHERE o.user_id = :userId " +
-           "GROUP BY day ORDER BY day DESC LIMIT 30", nativeQuery = true)
-    List<Object[]> getSpendingTrendByUser(@Param("userId") Long userId);
+    @Query(value = "SELECT DATE_FORMAT(o.order_date, '%Y-%m-%d') as period_key, SUM(o.total_amount) " +
+           "FROM orders o WHERE o.user_id = :userId " +
+           "GROUP BY period_key ORDER BY period_key DESC LIMIT 30", nativeQuery = true)
+    List<Object[]> getSpendingTrendDailyByUser(@Param("userId") Long userId);
+
+    @Query(value = "SELECT DATE_FORMAT(o.order_date, '%Y-%m') as period_key, SUM(o.total_amount) " +
+           "FROM orders o WHERE o.user_id = :userId " +
+           "GROUP BY period_key ORDER BY period_key DESC LIMIT 12", nativeQuery = true)
+    List<Object[]> getSpendingTrendMonthlyByUser(@Param("userId") Long userId);
+
+    @Query(value = "SELECT YEAR(o.order_date) as period_key, SUM(o.total_amount) " +
+           "FROM orders o WHERE o.user_id = :userId " +
+           "GROUP BY period_key ORDER BY period_key DESC LIMIT 5", nativeQuery = true)
+    List<Object[]> getSpendingTrendYearlyByUser(@Param("userId") Long userId);
 
     @Query("SELECT COUNT(p) FROM Product p WHERE p.store.owner.email = :email")
     long countProductsByOwner(@Param("email") String email);

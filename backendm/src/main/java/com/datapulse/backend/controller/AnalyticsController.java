@@ -61,6 +61,11 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getMySpendingByCategory(principal.getName()));
     }
 
+    @GetMapping("/my/orders/distribution")
+    public ResponseEntity<?> getMyOrderStatusDistribution(java.security.Principal principal) {
+        return ResponseEntity.ok(analyticsService.getMyOrderStatusDistribution(principal.getName()));
+    }
+
     @GetMapping("/categories/sales")
     public ResponseEntity<?> getSalesByCategory() {
         return ResponseEntity.ok(analyticsService.getSalesByCategory());
@@ -87,7 +92,9 @@ public class AnalyticsController {
     }
 
     @GetMapping("/my/spending/trend")
-    public ResponseEntity<?> getMySpendingTrend(java.security.Principal principal) {
-        return ResponseEntity.ok(analyticsService.getMySpendingTrend(principal.getName()));
+    public ResponseEntity<?> getMySpendingTrend(
+            java.security.Principal principal,
+            @RequestParam(defaultValue = "monthly") String period) {
+        return ResponseEntity.ok(analyticsService.getMySpendingTrend(principal.getName(), period));
     }
 }

@@ -13,11 +13,12 @@ const PROFILE_KEY = 'dp_profile';
   standalone: true,
   imports: [CommonModule, FormsModule, Sidebar, RouterModule],
   templateUrl: './profile.html',
-  styleUrl: './profile.css'
+  styleUrl: './profile.css',
 })
 export class Profile implements OnInit {
   user: UserModel | null = null;
   editMode = false;
+  saving = false;
   form: Partial<UserModel> = {};
   loading = false;
   success = '';
@@ -30,41 +31,42 @@ export class Profile implements OnInit {
   load(): void {
     this.loading = true;
     this.userService.getMe().subscribe({
-      next: (u) => {
+      next: u => {
         this.user = u;
-        this.form = { ...u };
+        this.form = { fullName: u.fullName, phone: u.phone, city: u.city, gender: u.gender };
         localStorage.setItem(PROFILE_KEY, JSON.stringify(u));
         this.loading = false;
       },
       error: () => {
         const cached = localStorage.getItem(PROFILE_KEY);
-        this.user = cached ? JSON.parse(cached)
-          : { id: 1, fullName: 'Zeynep Kaya', email: 'zeynep@gmail.com', roleType: 'INDIVIDUAL', phone: '0541 200 3040', city: 'Ankara' };
-        this.form = { ...this.user };
+        this.user = cached ? JSON.parse(cached) : null;
+        if (this.user) this.form = { fullName: this.user.fullName, phone: this.user.phone, city: this.user.city, gender: this.user.gender };
         this.loading = false;
-      }
+      },
     });
   }
 
+  startEdit(): void {
+    this.form = { fullName: this.user?.fullName, phone: this.user?.phone, city: this.user?.city, gender: this.user?.gender };
+    this.editMode = true;
+  }
+
   save(): void {
+    this.saving = true;
     this.userService.updateMe(this.form).subscribe({
-      next: (u) => {
+      next: u => {
         this.user = u;
-        this.form = { ...u };
         localStorage.setItem(PROFILE_KEY, JSON.stringify(u));
         this.editMode = false;
-        this.success = 'Profil güncellendi!';
+        this.saving = false;
+        this.success = 'Profil başarıyla güncellendi!';
         setTimeout(() => this.success = '', 3000);
       },
       error: () => {
-        // Persist locally so the user sees their changes on refresh even if API is down
-        const merged = { ...this.user, ...this.form } as UserModel;
-        this.user = merged;
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(merged));
-        this.editMode = false;
-        this.error = 'Sunucuya kaydedilemedi, yerel olarak güncellendi.';
+        this.saving = false;
+        this.error = 'Kaydedilemedi. Lütfen tekrar deneyin.';
         setTimeout(() => this.error = '', 4000);
-      }
+      },
     });
   }
 }

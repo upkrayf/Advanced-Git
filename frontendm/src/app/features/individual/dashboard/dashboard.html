@@ -38,19 +38,19 @@
 
     <div class="grid-2">
       <!-- Spending Chart -->
-      <div class="card">
-        <div class="card-title">Harcama Trendi (Haftalık)</div>
+      <div class="card" *ngIf="spendingTrend.length > 0">
+        <div class="card-title">Harcama Trendi</div>
         <app-line-chart [data]="spendingTrend"></app-line-chart>
       </div>
 
       <!-- Category Distribution -->
-      <div class="card">
+      <div class="card" *ngIf="categoryData.length > 0">
         <div class="card-title">Kategori Bazlı Harcama</div>
         <app-pie-chart [data]="categoryData"></app-pie-chart>
       </div>
     </div>
 
-    <!-- Active Shipments & Shipment Status Breakdown -->
+    <!-- Active Shipments & Order distribution -->
     <div class="grid-2">
       <div class="card">
         <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
@@ -58,17 +58,6 @@
           <a routerLink="/individual/shipment-tracking" style="font-size:11px; color:#6c63ff; text-decoration:none;">Takip Et →</a>
         </div>
         
-        <!-- Status Breakdown (New Feature) -->
-        <div style="margin-bottom: 20px;">
-          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
-            <span style="color:var(--text-secondary);">Genel Teslimat Oranı</span>
-            <span style="font-weight:600; color:#1d9e75;">75%</span>
-          </div>
-          <div style="height:8px; background:#e5e0db; border-radius:10px; overflow:hidden;">
-            <div style="width:75%; height:100%; background:linear-gradient(90deg, #6c63ff, #1d9e75); border-radius:10px;"></div>
-          </div>
-        </div>
-
         <div *ngFor="let s of activeShipments" class="activity-item" style="padding: 12px 0; border-bottom: 0.5px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
            <div style="display: flex; align-items: center; gap: 12px;">
               <div style="width:36px; height:36px; border-radius:10px; background:rgba(108, 99, 255, 0.1); display:flex; align-items:center; justify-content:center; color:#6c63ff;">📦</div>
@@ -84,18 +73,18 @@
         <div *ngIf="!activeShipments.length" style="text-align:center; color:#4a4a6a; font-size:12px; padding:2rem;">Aktif kargo yok.</div>
       </div>
 
-      <!-- Recent Orders Summary -->
-      <div class="card">
-        <div class="card-title">Sipariş Dağılımı</div>
+      <!-- Real Order Distribution -->
+      <div class="card" *ngIf="orderDistribution.length > 0">
+        <div class="card-title">Sipariş Dağılımı (Durum)</div>
         <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
-           <div *ngFor="let status of ['Hazırlanıyor', 'Kargoda', 'Teslim Edildi']" style="display:flex; flex-direction:column; gap:6px;">
+           <div *ngFor="let d of orderDistribution" style="display:flex; flex-direction:column; gap:6px;">
               <div style="display:flex; justify-content:space-between; font-size:12px;">
-                 <span style="color:var(--text-secondary); font-weight:500;">{{ status }}</span>
-                 <span style="color:var(--text-primary); font-weight:600;">{{ status === 'Teslim Edildi' ? '45%' : status === 'Kargoda' ? '30%' : '25%' }}</span>
+                 <span style="color:var(--text-secondary); font-weight:500;">{{ getStatusLabel(d.status) }}</span>
+                 <span style="color:var(--text-primary); font-weight:600;">%{{ d.percentage }}</span>
               </div>
               <div style="height:6px; background:#f0f0f5; border-radius:4px; overflow:hidden;">
-                 <div [style.width]="status === 'Teslim Edildi' ? '45%' : status === 'Kargoda' ? '30%' : '25%'" 
-                      [style.background]="status === 'Teslim Edildi' ? '#1d9e75' : status === 'Kargoda' ? '#ff9f43' : '#6c63ff'" 
+                 <div [style.width]="d.percentage + '%'" 
+                      [style.background]="d.status === 'DELIVERED' ? '#1d9e75' : d.status === 'SHIPPED' ? '#ff9f43' : '#6c63ff'" 
                       style="height:100%; border-radius:4px;"></div>
               </div>
            </div>

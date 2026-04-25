@@ -33,13 +33,14 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> getMe(Authentication authentication) {
-        return ResponseEntity.ok(userService.getByEmail(authentication.getName()));
+    public ResponseEntity<?> getMe(Authentication authentication) {
+        return ResponseEntity.ok(userService.getProfileData(authentication.getName()));
     }
 
     @PutMapping("/me")
-    public ResponseEntity<User> updateMe(Authentication authentication, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateByEmail(authentication.getName(), user));
+    public ResponseEntity<?> updateMe(Authentication authentication,
+                                      @RequestBody java.util.Map<String, Object> body) {
+        return ResponseEntity.ok(userService.updateByEmail(authentication.getName(), body));
     }
 
     @GetMapping("/{id}")

@@ -6,10 +6,15 @@ export interface UserModel {
   roleType: 'ADMIN' | 'CORPORATE' | 'INDIVIDUAL';
   phone?: string;
   city?: string;
+  gender?: string;
+  age?: number;
   isActive?: boolean;
   createdAt?: string;
   profileImage?: string;
-  gender?: string;
+  // CustomerProfile fields returned by /me endpoint
+  membershipType?: string;
+  averageRating?: number;
+  satisfactionLevel?: string;
 }
 
 export interface UserPageResponse {

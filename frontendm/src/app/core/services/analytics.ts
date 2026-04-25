@@ -84,6 +84,10 @@ export class Analytics {
     return this.http.get<SpendingByCategory[]>(`${this.apiUrl}/my/spending/category`);
   }
 
+  getMyOrderStatusDistribution(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/my/orders/distribution`);
+  }
+
   getMySpendingTrend(period = 'monthly'): Observable<RevenuePoint[]> {
     const p = new HttpParams().set('period', period);
     return this.http.get<RevenuePoint[]>(`${this.apiUrl}/my/spending/trend`, { params: p });

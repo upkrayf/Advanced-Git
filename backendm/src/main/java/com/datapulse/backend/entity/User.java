@@ -26,7 +26,10 @@ public class User {
     private String fullName; // DS6 review_headline veya isme göre
 
     @Column(name = "gender")
-    private String gender; // DS2/DS3'den gelecek (Male, Female)
+    private String gender;
+
+    @Column(name = "phone")
+    private String phone;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnore
@@ -70,6 +73,8 @@ public class User {
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getGender() { return gender; }
     public void setGender(String gender) { this.gender = gender; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
     public CustomerProfile getProfile() { return profile; }
     public void setProfile(CustomerProfile profile) { this.profile = profile; }
     public List<Store> getStores() { return stores; }

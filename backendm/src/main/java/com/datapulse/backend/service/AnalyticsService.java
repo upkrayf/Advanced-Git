@@ -156,11 +156,36 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    public List<Map<String, Object>> getMySpendingTrend(String email) {
+    public List<Map<String, Object>> getMyOrderStatusDistribution(String email) {
         User user = userRepository.findByEmail(email).orElseThrow();
-        // Sadece trend sorgusu veritabanından hızlandırılmış olarak kalıyor
-        List<Object[]> results = orderRepository.getSpendingTrendByUser(user.getId());
+        List<Object[]> results = orderRepository.getOrderCountByStatusForUser(user.getId());
+        long total = results.stream().mapToLong(row -> (Long) row[1]).sum();
         
+        return results.stream().map(row -> {
+            String status = row[0].toString();
+            long count = (Long) row[1];
+            double percentage = total > 0 ? (double) count * 100 / total : 0;
+            return Map.<String, Object>of(
+                "status", status,
+                "count", count,
+                "percentage", Math.round(percentage)
+            );
+        }).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getMySpendingTrend(String email, String period) {
+        User user = userRepository.findByEmail(email).orElseThrow();
+        Long userId = user.getId();
+
+        List<Object[]> results;
+        if ("daily".equals(period)) {
+            results = orderRepository.getSpendingTrendDailyByUser(userId);
+        } else if ("yearly".equals(period)) {
+            results = orderRepository.getSpendingTrendYearlyByUser(userId);
+        } else {
+            results = orderRepository.getSpendingTrendMonthlyByUser(userId);
+        }
+
         return results.stream()
                 .map(row -> Map.of("name", row[0].toString(), "value", (Object) row[1]))
                 .collect(Collectors.toList());
