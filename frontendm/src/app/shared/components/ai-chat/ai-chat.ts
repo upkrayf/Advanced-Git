@@ -18,26 +18,73 @@ export class AiChat {
   messages: ChatMessage[] = [];
   loading = false;
 
+  private _role = '';
+
   // Chart color palette matching the dark modern design
   readonly COLORS = ['#00e5a0', '#7c6af0', '#ff9f43', '#f44336', '#00bcd4', '#9c27b0', '#2196f3', '#ff6b6b'];
 
   // SVG coordinate constants (viewBox 0 0 300 200)
-  readonly ML = 42;   // margin left  (y-axis labels)
-  readonly MR = 8;    // margin right
-  readonly MT = 14;   // margin top
-  readonly MB = 38;   // margin bottom (x-axis labels)
-  readonly AW = 300 - 42 - 8;   // chart area width  = 250
-  readonly AH = 200 - 14 - 38;  // chart area height = 148
+  readonly ML = 42;
+  readonly MR = 8;
+  readonly MT = 14;
+  readonly MB = 38;
+  readonly AW = 300 - 42 - 8;   // 250
+  readonly AH = 200 - 14 - 38;  // 148
+
+  private static readonly SAMPLE_QUESTIONS: Record<string, string[]> = {
+    ADMIN: [
+      'En çok satan 10 ürün hangileri?',
+      'Hangi mağaza en yüksek ciroyu yapıyor?',
+      'Bu ay kaç yeni kullanıcı kayıt oldu?',
+      'Kategori bazında toplam satış dağılımı',
+      'Platform geneli aylık gelir trendi',
+      'En çok iade edilen ürünler neler?',
+      'Hangi şehirden en fazla sipariş geliyor?',
+      'Mağaza başına ortalama sipariş değeri',
+    ],
+    CORPORATE: [
+      'Geçen aya göre satışlar nasıl değişti?',
+      'Stoku 10\'un altına düşen ürünler?',
+      'En değerli 5 müşterim kimler?',
+      'Bekleyen siparişlerin toplam değeri nedir?',
+      'Hangi kategoride iade oranı en yüksek?',
+      'Bu hafta yapılan sevkiyatların durumu?',
+      '1 yıldız alan ürünleri listele',
+      'Aylık gelir trendini grafik olarak göster',
+    ],
+    INDIVIDUAL: [
+      'Siparişlerimin durumu nedir?',
+      'Toplam ne kadar harcama yaptım?',
+      'En son siparişim ne zaman geldi?',
+      'Hangi kategoride en çok alışveriş yaptım?',
+      'İade ettiğim siparişler hangileri?',
+      'Bu ay kaç sipariş verdim?',
+    ],
+  };
+
+  get sampleQuestions(): string[] {
+    return AiChat.SAMPLE_QUESTIONS[this._role] ?? AiChat.SAMPLE_QUESTIONS['INDIVIDUAL'];
+  }
+
+  get showSuggestions(): boolean {
+    return this.messages.length === 1 && !this.loading;
+  }
 
   constructor(private chatService: Chat, private authService: Auth) {
-    const role = this.authService.getRole();
+    this._role = this.authService.getRole() || 'INDIVIDUAL';
+    const roleLabel = this._role === 'ADMIN' ? 'Platform geneli' : 'Mağazanızla ilgili';
     this.messages.push({
       sender: 'assistant',
-      text: `Merhaba! Ben DataPulse AI. ${role === 'ADMIN' ? 'Platform geneli' : 'Mağazanızla ilgili'} analizler ve grafikler oluşturabilirim. Nasıl yardımcı olabilirim?`,
+      text: `Merhaba! Ben DataPulse AI. ${roleLabel} analizler ve grafikler oluşturabilirim. Nasıl yardımcı olabilirim?`,
     });
   }
 
   toggleChat(): void { this.isOpen = !this.isOpen; }
+
+  askSuggestion(q: string): void {
+    this.question = q;
+    this.sendQuestion();
+  }
 
   sendQuestion(): void {
     const q = this.question?.trim();

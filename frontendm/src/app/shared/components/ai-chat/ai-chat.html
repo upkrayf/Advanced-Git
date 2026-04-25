@@ -12,6 +12,19 @@
   </div>
 
   <div class="ai-chat-messages">
+
+    <!-- ─── Suggested questions (shown only before first conversation) ─── -->
+    <div *ngIf="showSuggestions" class="suggestions-block">
+      <p class="suggestions-label">Örnek sorular — tıklayarak dene:</p>
+      <div class="suggestions-grid">
+        <button *ngFor="let q of sampleQuestions"
+                class="suggestion-chip"
+                (click)="askSuggestion(q)">
+          {{ q }}
+        </button>
+      </div>
+    </div>
+
     <ng-container *ngFor="let msg of messages; let i = index">
 
       <!-- User message -->
