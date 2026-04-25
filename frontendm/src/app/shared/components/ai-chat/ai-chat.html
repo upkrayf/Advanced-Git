@@ -4,23 +4,138 @@
 
 <div class="ai-sidebar" [class.open]="isOpen">
   <div class="ai-header">
-    <h3>DataPulse AI Asistanı</h3>
+    <div>
+      <h3>DataPulse AI</h3>
+      <span class="ai-status">● Online · Grafik destekli</span>
+    </div>
     <button class="close-btn" (click)="toggleChat()">×</button>
   </div>
 
   <div class="ai-chat-messages">
-    <div *ngFor="let message of messages" 
-         class="message" 
-         [ngClass]="{ 'message-user': message.sender === 'user', 'message-assistant': message.sender === 'assistant' }">
-      {{ message.text }}
-    </div>
-    <div *ngIf="loading" class="message message-assistant">
-      <span class="loading-dots">Düşünüyorum...</span>
+    <ng-container *ngFor="let msg of messages; let i = index">
+
+      <!-- User message -->
+      <div *ngIf="msg.sender === 'user'" class="message message-user">
+        {{ msg.text }}
+      </div>
+
+      <!-- Assistant message -->
+      <div *ngIf="msg.sender === 'assistant'" class="message message-assistant" [class.has-chart]="msg.chartData">
+        <p class="msg-text">{{ msg.text }}</p>
+
+        <!-- ─── Chart Card ─────────────────────────────────────── -->
+        <div *ngIf="msg.chartData" class="chart-card">
+          <div class="chart-header">
+            <span class="chart-icon">{{ chartIcon(msg.chartData.type) }}</span>
+            <span class="chart-type-label">{{ chartTypeLabel(msg.chartData.type) }}</span>
+          </div>
+
+          <!-- ── BAR CHART ─────────────────────────────────────── -->
+          <svg *ngIf="msg.chartData.type === 'bar'"
+               viewBox="0 0 300 200" width="100%" style="display:block; overflow:visible;">
+            <!-- y-axis grid + tick labels -->
+            <ng-container *ngFor="let tick of chartYTicks(msg.chartData.data)">
+              <line [attr.x1]="ML" [attr.y1]="tick.y"
+                    [attr.x2]="ML + AW" [attr.y2]="tick.y"
+                    stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+              <text [attr.x]="ML - 6" [attr.y]="tick.y + 4"
+                    text-anchor="end" font-size="9" fill="#6a6a9a">{{ tick.label }}</text>
+            </ng-container>
+
+            <!-- x-axis baseline -->
+            <line [attr.x1]="ML" [attr.y1]="MT + AH"
+                  [attr.x2]="ML + AW" [attr.y2]="MT + AH"
+                  stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+
+            <!-- bars -->
+            <ng-container *ngFor="let bar of chartBars(msg.chartData.data)">
+              <rect [attr.x]="bar.x" [attr.y]="bar.y"
+                    [attr.width]="bar.w" [attr.height]="bar.h"
+                    [attr.fill]="bar.color"
+                    rx="3" ry="3" opacity="0.92"/>
+              <!-- x-axis label -->
+              <text [attr.x]="bar.lx" [attr.y]="bar.ly"
+                    text-anchor="middle" font-size="8.5" fill="#7878a8">{{ bar.label }}</text>
+            </ng-container>
+          </svg>
+
+          <!-- ── LINE CHART ────────────────────────────────────── -->
+          <svg *ngIf="msg.chartData.type === 'line'"
+               viewBox="0 0 300 200" width="100%" style="display:block; overflow:visible;">
+            <defs>
+              <linearGradient [attr.id]="'lg' + i" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#7c6af0" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#7c6af0" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+
+            <!-- y-axis grid + tick labels -->
+            <ng-container *ngFor="let tick of chartYTicks(msg.chartData.data)">
+              <line [attr.x1]="ML" [attr.y1]="tick.y"
+                    [attr.x2]="ML + AW" [attr.y2]="tick.y"
+                    stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+              <text [attr.x]="ML - 6" [attr.y]="tick.y + 4"
+                    text-anchor="end" font-size="9" fill="#6a6a9a">{{ tick.label }}</text>
+            </ng-container>
+
+            <!-- x-axis baseline -->
+            <line [attr.x1]="ML" [attr.y1]="MT + AH"
+                  [attr.x2]="ML + AW" [attr.y2]="MT + AH"
+                  stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+
+            <!-- filled area -->
+            <path [attr.d]="chartAreaPath(msg.chartData.data)"
+                  [attr.fill]="'url(#lg' + i + ')'"/>
+
+            <!-- line -->
+            <path [attr.d]="chartLinePath(msg.chartData.data)"
+                  fill="none" stroke="#7c6af0" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+
+            <!-- dots + x labels -->
+            <ng-container *ngFor="let dot of chartDots(msg.chartData.data)">
+              <circle [attr.cx]="dot.cx" [attr.cy]="dot.cy" r="4"
+                      fill="#12121e" stroke="#7c6af0" stroke-width="2.5"/>
+              <text [attr.x]="dot.lx" [attr.y]="dot.ly"
+                    text-anchor="middle" font-size="8.5" fill="#7878a8">{{ dot.label }}</text>
+            </ng-container>
+          </svg>
+
+          <!-- ── PIE / DONUT CHART ─────────────────────────────── -->
+          <ng-container *ngIf="msg.chartData.type === 'pie'">
+            <svg viewBox="0 0 300 180" width="100%" style="display:block;">
+              <path *ngFor="let seg of chartDonutSegments(msg.chartData.data)"
+                    [attr.d]="seg.path"
+                    [attr.fill]="seg.color"
+                    opacity="0.92"
+                    stroke="#12121e" stroke-width="1.5"/>
+            </svg>
+            <div class="chart-legend">
+              <div *ngFor="let seg of chartDonutSegments(msg.chartData.data)" class="legend-item">
+                <span class="legend-dot" [style.background]="seg.color"></span>
+                <span class="legend-name">{{ seg.name }}</span>
+                <span class="legend-pct">{{ seg.pct }}</span>
+              </div>
+            </div>
+          </ng-container>
+
+        </div><!-- /chart-card -->
+      </div><!-- /message-assistant -->
+
+    </ng-container>
+
+    <div *ngIf="loading" class="message message-assistant loading-msg">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </div>
   </div>
 
   <form class="ai-chat-form" (ngSubmit)="sendQuestion()">
-    <input name="question" [(ngModel)]="question" placeholder="E-ticaret verilerinle ilgili soru sor..." autocomplete="off" />
-    <button type="submit" [disabled]="loading || !question.trim()">Gönder</button>
+    <input name="question" [(ngModel)]="question"
+           placeholder="Verilerinle ilgili soru sor…" autocomplete="off"/>
+    <button type="submit" [disabled]="loading || !question.trim()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
   </form>
 </div>

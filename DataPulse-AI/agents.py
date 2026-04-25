@@ -198,18 +198,42 @@ def _check_bypass(question: str) -> Optional[str]:
 
 
 def _check_cross_store(question: str, user_id: int) -> Optional[str]:
-    """Detect if Corporate user explicitly requests a specific store_id that isn't theirs.
-    We cannot know all valid store IDs without a DB call, so we flag any explicit
-    numeric store_id reference in the question — the SQL validator catches the rest.
-    """
+    """Detect if Corporate user explicitly requests a specific store_id that isn't theirs."""
     q = question.lower()
-    # Matches patterns like store_id=2055, store id: 1042, mağaza 3001
     mentioned = re.findall(
         r'(?:store[_\s]?id|mağaza[_\s]?(?:id|no))[_\s]*[=:]\s*(\d+)', q
     )
     for sid in mentioned:
-        if int(sid) != user_id:  # comparing against owner_id / user_id
+        if int(sid) != user_id:
             return "Cross-store Data Access"
+    return None
+
+
+def _check_cross_user(question: str, user_id: int) -> Optional[str]:
+    """Block non-ADMIN users from querying a specific OTHER user's/customer's data.
+
+    Matches patterns like: 'customer 101', 'müşteri 101', 'user_id=101',
+    'kullanıcı 42', 'customer id: 7', etc.
+    If the mentioned ID differs from the logged-in user_id, it is blocked.
+    """
+    q = question.lower()
+    mentioned = re.findall(
+        r'(?:customer|müşteri|kullanıcı|user)[_\s]*(?:id[_\s]*[=:]?\s*)?(\d+)',
+        q,
+    )
+    # Also catch bare 'user_id=N' / 'user_id: N' forms
+    mentioned += re.findall(r'user[_\s]?id\s*[=:]\s*(\d+)', q)
+    for uid in mentioned:
+        if int(uid) != user_id:
+            return "Cross-user Data Access"
+    return None
+
+
+def _validate_individual_sql(sql: str) -> Optional[str]:
+    """Second-line check: INDIVIDUAL SQL must not query STORES or other users."""
+    sql_upper = sql.upper()
+    if re.search(r'\bSTORES\b', sql_upper):
+        return "INDIVIDUAL SQL references STORES table"
     return None
 
 
@@ -282,6 +306,17 @@ def security_guardrail_node(state: AgentState) -> Dict:
                 "is_in_scope": False,
             }
 
+    # ── 4b. Cross-user (non-ADMIN): block queries about OTHER users' private data ──
+    if role != "ADMIN" and user_id:
+        threat = _check_cross_user(question, user_id)
+        if threat:
+            logger.warning("[GUARDRAIL] Cross-user access blocked | q=%s", question[:120])
+            return {
+                "guardrail_status": "blocked",
+                "guardrail_blocked_reason": "Cross-user Data Access",
+                "is_in_scope": False,
+            }
+
     # ── 5. External platform comparison ───────────────────────────────────────
     words = set(re.split(r"\W+", q_norm))
     if words & _CROSS_SITE_WORDS:
@@ -322,9 +357,10 @@ def blocked_response_node(state: AgentState) -> Dict:
         return {}
 
     _messages = {
-        "Prompt Injection": "Güvenlik politikası gereği bu isteği işleyemiyorum.",
-        "Filter Bypass": "Yalnızca kendi mağazanıza ait verilere erişim yetkiniz bulunmaktadır.",
-        "Cross-store Data Access": "Yalnızca kendi mağazanıza ait verilere erişebilirsiniz.",
+        "Prompt Injection":           "Güvenlik politikası gereği bu isteği işleyemiyorum.",
+        "Filter Bypass":              "Yalnızca kendi verilerinize erişim yetkiniz bulunmaktadır.",
+        "Cross-store Data Access":    "Yalnızca kendi mağazanıza ait verilere erişebilirsiniz.",
+        "Cross-user Data Access":     "Başka kullanıcılara ait verileri görüntüleme yetkiniz bulunmamaktadır.",
         "External Platform Comparison": "Yalnızca DataPulse platformundaki verilerinizi analiz edebilirim.",
     }
 
@@ -493,17 +529,28 @@ FORBIDDEN — return SELECT '{FORBIDDEN_MARKER}' AS result if asked:
 
 def sql_validator_node(state: AgentState) -> Dict:
     """
-    Post-generation safety check (Corporate only).
-    Verifies that the generated SQL contains the mandatory STORES.owner_id filter.
-    If missing: asks the LLM to add it. If still missing: blocks with FORBIDDEN_MARKER.
+    Post-generation safety check.
+    • CORPORATE: verifies STORES.owner_id filter is present.
+    • INDIVIDUAL: verifies STORES table is not referenced.
     This is the last line of defense before the query hits the database.
     """
     sql = state.get("sql_query")
     role = state.get("role_type", "INDIVIDUAL")
     user_id = state.get("user_id")
 
-    # Only validate Corporate queries — skip everything else
-    if role != "CORPORATE" or not user_id or not sql:
+    if not sql or FORBIDDEN_MARKER in sql:
+        return {}
+
+    # ── INDIVIDUAL: must not access STORES ───────────────────────────────────
+    if role == "INDIVIDUAL" and user_id:
+        violation = _validate_individual_sql(sql)
+        if violation:
+            logger.warning("[SQL_VALIDATOR] INDIVIDUAL accessing STORES — blocked.")
+            return {"sql_query": f"SELECT '{FORBIDDEN_MARKER}' AS result"}
+        return {}
+
+    # Only validate Corporate queries below
+    if role != "CORPORATE" or not user_id:
         return {}
 
     if FORBIDDEN_MARKER in sql:
@@ -613,62 +660,120 @@ def error_recovery_node(state: AgentState) -> Dict:
     return {"iteration_count": iteration}
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  CHART BUILDER (deterministic — no LLM needed)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_LINE_KWS  = ["ay", "hafta", "gün", "günlük", "aylık", "trend", "zaman",
+               "tarih", "dönem", "weekly", "daily", "monthly", "tarih"]
+_PIE_KWS   = ["dağılım", "oran", "yüzde", "pay", "pasta",
+               "distribution", "percentage", "breakdown"]
+_NAME_HINTS = ["name", "ad", "isim", "category", "kategori", "month", "ay",
+               "date", "tarih", "status", "durum", "day", "gün", "label"]
+_VAL_HINTS  = ["total", "sum", "count", "amount", "revenue", "value", "price",
+               "tutar", "gelir", "toplam", "adet", "sayi", "quantity"]
+
+
+def _build_chart(data: List[Dict], question: str) -> Optional[str]:
+    """Return a JSON string chart spec, or None if a chart is not meaningful."""
+    if not data or len(data) < 2:
+        return None
+
+    q = question.lower()
+    if any(k in q for k in _LINE_KWS):
+        chart_type = "line"
+    elif any(k in q for k in _PIE_KWS):
+        chart_type = "pie"
+    else:
+        chart_type = "bar"
+
+    sample = data[0]
+    cols   = list(sample.keys())
+    name_col: Optional[str] = None
+    value_col: Optional[str] = None
+
+    # Prefer columns with suggestive names
+    for col in cols:
+        cl = col.lower()
+        if any(k in cl for k in _NAME_HINTS) and name_col is None:
+            name_col = col
+        elif any(k in cl for k in _VAL_HINTS) and value_col is None:
+            v = sample.get(col)
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                value_col = col
+
+    # Fallback: first string col → name, first numeric col → value
+    if name_col is None or value_col is None:
+        for col, val in sample.items():
+            if isinstance(val, str) and name_col is None:
+                name_col = col
+            elif (isinstance(val, (int, float)) and not isinstance(val, bool)
+                  and value_col is None):
+                value_col = col
+
+    if name_col is None or value_col is None:
+        if len(cols) >= 2:
+            name_col, value_col = cols[0], cols[1]
+        else:
+            return None
+
+    chart_data = []
+    for row in data[:15]:
+        name = str(row.get(name_col, ""))
+        try:
+            val = float(row.get(value_col) or 0)
+        except (TypeError, ValueError):
+            val = 0.0
+        chart_data.append({"name": name, "value": val})
+
+    if not chart_data:
+        return None
+
+    return json.dumps({
+        "type":       chart_type,
+        "title":      question[:80],
+        "valueLabel": value_col.replace("_", " ").title(),
+        "data":       chart_data,
+    }, ensure_ascii=False)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  NODE: ANALYSIS AGENT
 # ─────────────────────────────────────────────────────────────────────────────
 
 def analysis_node(state: AgentState) -> Dict:
-    """
-    Produces the final Turkish text summary + optional Plotly visualization JSON.
-    Works with the structured query_data list, not raw string output.
-    """
+    """Produces the final Turkish text summary + deterministic chart JSON."""
     error = state.get("error")
-    res = state.get("query_result")
+    res   = state.get("query_result")
     data: List[Dict] = state.get("query_data") or []
-    role = state.get("role_type", "INDIVIDUAL")
 
     # ── Error path ────────────────────────────────────────────────────────────
     if error and not data:
-        return {
-            "final_answer": "Sorgu çalıştırılırken bir hata oluştu.",
-            "visualization_code": None,
-        }
+        return {"final_answer": "Sorgu çalıştırılırken bir hata oluştu.", "visualization_code": None}
 
     # ── Forbidden access path ─────────────────────────────────────────────────
     if res == FORBIDDEN_MARKER or (res and FORBIDDEN_MARKER in str(res)):
-        msg = "Bu bilgiye erişim yetkiniz bulunmamaktadır."
-        return {"final_answer": msg, "visualization_code": None}
+        return {"final_answer": "Bu bilgiye erişim yetkiniz bulunmamaktadır.", "visualization_code": None}
 
     # ── No data path ──────────────────────────────────────────────────────────
     if not data:
-        return {
-            "final_answer": "Bu soruya uygun veri bulunamadı.",
-            "visualization_code": None,
-        }
+        return {"final_answer": "Bu soruya uygun veri bulunamadı.", "visualization_code": None}
 
-    # ── LLM: analyze + optional visualization ────────────────────────────────
+    # ── Build chart deterministically (no LLM needed) ─────────────────────────
+    viz_json = _build_chart(data, state["question"])
+
+    # ── LLM: text-only analysis ───────────────────────────────────────────────
     prompt = (
-        f"Veri (SQL sorgu sonucu, JSON formatında):\n"
+        f"Veri (SQL sorgu sonucu, JSON):\n"
         f"{json.dumps(data[:50], ensure_ascii=False, indent=2)}\n\n"
         f"Kullanıcı sorusu: {state['question']}\n\n"
         "Soruya sağlanan verilerle doğrudan ve kısa bir şekilde cevap ver. "
         "Metin içerisinde ürün isimlerini ve önemli sayısal değerleri mutlaka belirt. "
-        "Giriş ve sonuç cümleleri kurma. "
-        "EĞER VERİDE BİRDEN FAZLA SATIR VARSA (sıralama, trend, karşılaştırma gibi), "
-        "yanıtın sonuna MUTLAKA şu formatta geçerli bir Plotly ```json``` bloğu ekle:\n"
-        "```json\n"
-        "{\"data\": [{\"x\": [\"A\", \"B\"], \"y\": [10, 20], \"type\": \"bar\"}], \"layout\": {\"title\": \"...\", \"paper_bgcolor\": \"rgba(0,0,0,0)\", \"plot_bgcolor\": \"rgba(0,0,0,0)\"}}\n"
-        "```\n"
-        "Grafik oluşturmak için elindeki veriyi tam olarak kullan."
+        "Giriş ve sonuç cümleleri kurma. Markdown veya kod bloğu kullanma."
     )
 
     response = llm.invoke(prompt)
-    content = response.content
-
-    # More flexible regex to catch JSON blocks regardless of newlines
-    viz_match = re.search(r"```json\s*(.*?)\s*```", content, re.DOTALL | re.IGNORECASE)
-    text_part = content.split("```json")[0].strip()
 
     return {
-        "final_answer": text_part,
-        "visualization_code": viz_match.group(1).strip() if viz_match else None,
+        "final_answer":      response.content.strip(),
+        "visualization_code": viz_json,
     }
