@@ -12,3 +12,4 @@ e-commerce-frontend/dist/
 # IDE
 .idea/
 .vscode/
+.env
