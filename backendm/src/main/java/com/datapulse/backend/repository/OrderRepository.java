@@ -13,6 +13,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUser(User user);
 
     List<Order> findByUserOrderByOrderDateDesc(User user);
+    List<Order> findByUserAndStatus(User user, String status);
 
     Optional<Order> findByOrderNumber(String orderNumber);
 
@@ -43,6 +44,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COUNT(DISTINCT oi.order) FROM OrderItem oi WHERE oi.product.store.owner.email = :email AND CAST(oi.order.orderDate AS date) = CURRENT_DATE")
     long countOrdersTodayByOwner(@Param("email") String email);
 
+    @Query("SELECT COUNT(DISTINCT oi.order) FROM OrderItem oi WHERE oi.product.store.owner.email = :email")
+    long countTotalOrdersByOwner(@Param("email") String email);
+
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.user.id = :userId")
     BigDecimal getTotalSpentByUser(@Param("userId") Long userId);
 
@@ -70,9 +74,21 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT DISTINCT o FROM Order o JOIN o.items oi WHERE oi.product.store.owner.email = :email")
     List<Order> findByStoreOwnerEmail(@Param("email") String email);
 
+    @Query("SELECT DISTINCT o FROM Order o JOIN o.items oi WHERE oi.product.store.owner.email = :email AND o.status = :status")
+    List<Order> findByStoreOwnerEmailAndStatus(@Param("email") String email, @Param("status") String status);
+
     @Query("SELECT o FROM Order o WHERE o.user.email = :email AND o.shipment IS NOT NULL ORDER BY o.orderDate DESC")
     List<Order> findByUserEmailWithShipment(@Param("email") String email);
 
     @Query("SELECT SUBSTRING(CAST(o.orderDate AS string), 1, 7) as month, SUM(o.totalAmount) FROM Order o JOIN o.items oi WHERE oi.product.store.owner.email = :email GROUP BY month ORDER BY month")
     List<Object[]> getRevenueTrendByOwner(@Param("email") String email);
+
+    @Query("SELECT u.id, u.fullName, u.email, cp.city, COUNT(DISTINCT o.id), SUM(oi.price * oi.quantity) " +
+           "FROM User u " +
+           "JOIN u.orders o " +
+           "JOIN o.items oi " +
+           "LEFT JOIN u.profile cp " +
+           "WHERE oi.product.store.owner.email = :email " +
+           "GROUP BY u.id, u.fullName, u.email, cp.city")
+    List<Object[]> getCustomersByStoreOwnerEmail(@Param("email") String email);
 }

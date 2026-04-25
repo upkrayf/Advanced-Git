@@ -2,9 +2,11 @@ package com.datapulse.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "products", indexes = {
@@ -52,6 +54,9 @@ public class Product {
     @Column(name = "icon")
     private String icon;
 
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+
     public Product() {}
 
     // --- GETTER VE SETTERLAR ---
@@ -77,6 +82,8 @@ public class Product {
     public void setStore(Store store) {this.store = store;}
     public List<Review> getReviews() { return reviews; }
     public void setReviews(List<Review> reviews) { this.reviews = reviews; }
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 
     // Frontend uyumu için alias getter'lar
     @JsonProperty("price")
@@ -95,4 +102,22 @@ public class Product {
 
     @JsonProperty("storeName")
     public String getStoreName() { return store != null ? store.getName() : null; }
+
+    @JsonProperty("price")
+    public void setPrice(BigDecimal price) { this.unitPrice = price; }
+
+    @JsonProperty("stock")
+    public void setStock(Integer stock) { this.stockQuantity = stock; }
+
+    @JsonProperty("imageUrl")
+    public void setImageUrl(String imageUrl) { this.icon = imageUrl; }
+
+    @JsonProperty("categoryId")
+    public void setCategoryId(Long categoryId) {
+        if (categoryId != null) {
+            Category c = new Category();
+            c.setId(categoryId);
+            this.category = c;
+        }
+    }
 }

@@ -20,8 +20,10 @@ public class UserController {
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<?> getAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(userService.getAll(org.springframework.data.domain.PageRequest.of(page, size)));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String role) {
+        return ResponseEntity.ok(userService.getAll(search, role, org.springframework.data.domain.PageRequest.of(page, size)));
     }
 
     @PostMapping
@@ -63,5 +65,11 @@ public class UserController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/customers")
+    @PreAuthorize("hasAuthority('CORPORATE')")
+    public ResponseEntity<?> getStoreCustomers(Authentication authentication) {
+        return ResponseEntity.ok(userService.getStoreCustomers(authentication.getName()));
     }
 }

@@ -84,8 +84,14 @@ public class Review {
         return product != null ? product.getId() : null;
     }
 
+    @Column(name = "store_response", length = 1000)
+    private String storeResponse;
+
     @com.fasterxml.jackson.annotation.JsonProperty("createdAt")
     public LocalDate getCreatedAt() {
         return date;
     }
+
+    public String getStoreResponse() { return storeResponse; }
+    public void setStoreResponse(String storeResponse) { this.storeResponse = storeResponse; }
 }

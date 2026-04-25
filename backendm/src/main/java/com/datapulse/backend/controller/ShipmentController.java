@@ -19,7 +19,11 @@ public class ShipmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Shipment>> getAll() {
+    public ResponseEntity<?> getAll(Authentication authentication) {
+        boolean isCorporate = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("CORPORATE"));
+        if (isCorporate) {
+            return ResponseEntity.ok(shipmentService.getStoreShipmentsEnriched(authentication.getName()));
+        }
         return ResponseEntity.ok(shipmentService.getAll());
     }
 

@@ -20,23 +20,27 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Order>> getOrders(Authentication authentication) {
+    public ResponseEntity<List<Order>> getOrders(
+            Authentication authentication,
+            @RequestParam(required = false) String status) {
         String email = authentication.getName();
         boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
         boolean isCorporate = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("CORPORATE"));
 
         if (isAdmin) {
-            return ResponseEntity.ok(orderService.getAll());
+            return ResponseEntity.ok(orderService.getAll(status));
         } else if (isCorporate) {
-            return ResponseEntity.ok(orderService.getStoreOrders(email));
+            return ResponseEntity.ok(orderService.getStoreOrders(email, status));
         } else {
-            return ResponseEntity.ok(orderService.getMyOrders(email));
+            return ResponseEntity.ok(orderService.getMyOrders(email, status));
         }
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<Order>> getMyOrders(Authentication authentication) {
-        return ResponseEntity.ok(orderService.getMyOrders(authentication.getName()));
+    public ResponseEntity<List<Order>> getMyOrders(
+            Authentication authentication,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(orderService.getMyOrders(authentication.getName(), status));
     }
 
     @GetMapping("/{id}")

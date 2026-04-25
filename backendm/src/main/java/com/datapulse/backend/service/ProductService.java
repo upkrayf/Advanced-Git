@@ -4,6 +4,7 @@ import com.datapulse.backend.entity.Product;
 import com.datapulse.backend.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +36,9 @@ public class ProductService {
     }
 
     public Product create(Product product) {
+        if (product.getSku() == null || product.getSku().isEmpty()) {
+            product.setSku("P-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        }
         return productRepository.save(product);
     }
 
@@ -46,6 +50,7 @@ public class ProductService {
         p.setStockQuantity(details.getStockQuantity());
         p.setCategory(details.getCategory());
         p.setStore(details.getStore());
+        p.setIsActive(details.getIsActive());
         return productRepository.save(p);
     }
 

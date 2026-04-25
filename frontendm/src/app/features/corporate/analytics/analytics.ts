@@ -120,5 +120,11 @@ export class CorporateAnalytics implements OnInit {
     return c[s] || '#5a5a5a';
   }
 
+  getAvgOrderValue(): number {
+    if (this.kpis?.avgOrderValue && this.kpis.avgOrderValue > 0) return this.kpis.avgOrderValue;
+    const total = this.orderStatus.reduce((s, o) => s + o.count, 0);
+    return total > 0 && this.kpis ? this.kpis.totalRevenue / total : 0;
+  }
+
   formatCurrency(v: number): string { return '$' + (+v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 }

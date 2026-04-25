@@ -47,4 +47,9 @@ export class UserService {
   updateMe(user: Partial<UserModel>): Observable<UserModel> {
     return this.http.put<UserModel>(`${this.apiUrl}/me`, user);
   }
+
+  getStoreCustomers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/customers`);
+  }
 }
+

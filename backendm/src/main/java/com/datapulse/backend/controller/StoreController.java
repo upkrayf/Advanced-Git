@@ -19,8 +19,8 @@ public class StoreController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Store>> getAll() {
-        return ResponseEntity.ok(storeService.getAll());
+    public ResponseEntity<?> getAll() {
+        return ResponseEntity.ok(storeService.getAllEnriched());
     }
 
     @GetMapping("/my")
@@ -44,13 +44,14 @@ public class StoreController {
         return ResponseEntity.ok(store);
     }
 
-    @PutMapping("/{id}/status")
+    @PatchMapping("/{id}/active")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Store> changeStatus(@PathVariable Long id, @RequestBody Store statusHolder) {
-        if ("ACTIVE".equalsIgnoreCase(statusHolder.getStatus())) {
-            return ResponseEntity.ok(storeService.open(id));
-        } else {
+    public ResponseEntity<Store> toggleActive(@PathVariable Long id) {
+        Store store = storeService.getById(id);
+        if ("ACTIVE".equalsIgnoreCase(store.getStatus())) {
             return ResponseEntity.ok(storeService.close(id));
+        } else {
+            return ResponseEntity.ok(storeService.open(id));
         }
     }
 }

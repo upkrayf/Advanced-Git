@@ -59,10 +59,16 @@ export class StoreManagement implements OnInit {
   loadStores(): void {
     this.loading = true;
     this.storeService.getAll({ page: this.page, size: this.size, search: this.search || undefined }).subscribe({
-      next: (data) => {
-        this.stores = data.content;
-        this.totalElements = data.totalElements;
-        this.totalPages = data.totalPages;
+      next: (data: any) => {
+        if (Array.isArray(data)) {
+          this.stores = data;
+          this.totalElements = data.length;
+          this.totalPages = 1;
+        } else {
+          this.stores = data.content || [];
+          this.totalElements = data.totalElements || 0;
+          this.totalPages = data.totalPages || 1;
+        }
         this.loading = false;
       },
       error: () => {
@@ -80,7 +86,7 @@ export class StoreManagement implements OnInit {
   toggleActive(store: StoreModel): void {
     this.storeService.toggleActive(store.id).subscribe({
       next: (updated) => {
-        const idx = this.stores.findIndex(s => s.id === store.id);
+        const idx = (this.stores || []).findIndex(s => s.id === store.id);
         if (idx >= 0) this.stores[idx] = updated;
       },
       error: () => {}
@@ -105,8 +111,8 @@ export class StoreManagement implements OnInit {
     });
   }
 
-  get activeCount(): number { return this.stores.filter(s => s.isActive).length; }
-  get inactiveCount(): number { return this.stores.filter(s => !s.isActive).length; }
+  get activeCount(): number { return (this.stores || []).filter(s => s.isActive).length; }
+  get inactiveCount(): number { return (this.stores || []).filter(s => !s.isActive).length; }
 
   onSearch(): void { this.page = 0; this.loadStores(); }
   prevPage(): void { if (this.page > 0) { this.page--; this.loadStores(); } }

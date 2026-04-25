@@ -28,15 +28,15 @@ export class Customers implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.userService.getUsers({ page: this.page, size: this.size, role: 'INDIVIDUAL', search: this.search || undefined }).subscribe({
+    this.userService.getStoreCustomers().subscribe({
       next: (data) => {
-        this.customers = (data.content as any[]).map(u => ({
+        this.customers = data.map(u => ({
           id: u.id, userId: u.id, name: u.fullName || u.email, email: u.email,
-          phone: u.phone, city: u.city, totalOrders: u.totalOrders || 0,
-          totalSpent: u.totalSpent || 0, createdAt: u.createdAt
+          city: u.city, totalOrders: u.totalOrders || 0,
+          totalSpent: u.totalSpent || 0
         }));
-        this.totalElements = data.totalElements;
-        this.totalPages = data.totalPages;
+        this.totalElements = data.length;
+        this.totalPages = 1;
         this.loading = false;
       },
       error: () => {

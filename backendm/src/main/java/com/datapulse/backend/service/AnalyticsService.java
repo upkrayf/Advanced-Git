@@ -172,19 +172,26 @@ public class AnalyticsService {
         BigDecimal revenue = orderRepository.getTotalRevenueByOwner(email);
         if (revenue == null) revenue = BigDecimal.ZERO;
         long ordersToday = orderRepository.countOrdersTodayByOwner(email);
+        long totalOrders = orderRepository.countTotalOrdersByOwner(email);
         long totalProducts = orderRepository.countProductsByOwner(email);
         long lowStock = orderRepository.countLowStockProductsByOwner(email);
 
         double avgOrderValue = 0.0;
-        if (ordersToday > 0) {
-            avgOrderValue = revenue.divide(BigDecimal.valueOf(ordersToday), 2, java.math.RoundingMode.HALF_UP).doubleValue();
+        if (totalOrders > 0) {
+            avgOrderValue = revenue.divide(BigDecimal.valueOf(totalOrders), 2, java.math.RoundingMode.HALF_UP).doubleValue();
         }
+
+        // Count pending shipments: status is PLACED, PENDING, CONFIRMED or SHIPPED
+        List<Order> allOrders = orderRepository.findByStoreOwnerEmail(email);
+        long pending = allOrders.stream()
+                .filter(o -> List.of("PLACED", "PENDING", "CONFIRMED", "SHIPPED").contains(o.getStatus()))
+                .count();
 
         return Map.of(
             "totalRevenue", revenue,
             "ordersToday", (int) ordersToday,
             "avgOrderValue", avgOrderValue,
-            "pendingShipments", 0,
+            "pendingShipments", (int) pending,
             "lowStockItems", lowStock,
             "totalProducts", totalProducts
         );

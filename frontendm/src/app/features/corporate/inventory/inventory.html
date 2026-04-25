@@ -30,7 +30,7 @@
 
     <div class="card" style="margin-bottom:1rem;">
       <input type="text" [(ngModel)]="search" placeholder="Ürün veya kategori ara..."
-        style="width:100%; background:#12121a; border:0.5px solid #2e2e3e; border-radius:7px; padding:8px 12px; color:#f0f0f5; font-size:12px; outline:none; box-sizing:border-box;" />
+        class="filter-input" style="width:100%; box-sizing:border-box;" />
     </div>
 
     <div class="card">
@@ -48,21 +48,21 @@
         </thead>
         <tbody>
           <tr *ngFor="let p of filtered">
-            <td style="color:#f0f0f5; font-weight:500;">{{ p.name }}</td>
-            <td style="color:#7a7a9a;">{{ p.categoryName || '-' }}</td>
-            <td style="color:#9a9ab0;">${{ p.price }}</td>
-            <td style="font-weight:600;">{{ p.stock || 0 }}</td>
+            <td style="color:var(--text-primary); font-weight:700; font-size:14px;">{{ p.name }}</td>
+            <td style="color:var(--text-secondary);">{{ p.categoryName || '-' }}</td>
+            <td style="color:var(--text-primary); font-weight:600;">${{ p.price }}</td>
+            <td style="color:var(--text-primary); font-weight:700; font-size:15px;">{{ p.stock || 0 }}</td>
             <td>
               <span class="status-pill" [class]="getStockClass(p.stock || 0)">{{ getStockStatus(p.stock || 0) }}</span>
             </td>
             <td>
               <div *ngIf="editingId !== p.id" style="display:flex; align-items:center; gap:6px;">
-                <span style="color:#9a9ab0; font-size:12px;">{{ p.stock || 0 }} adet</span>
-                <button class="btn-outline" (click)="startEdit(p)" style="font-size:11px;">✏️ Düzenle</button>
+                <span style="color:var(--text-secondary); font-size:12px;">{{ p.stock || 0 }} adet</span>
+                <button class="btn-outline" (click)="startEdit(p)" style="font-size:11px; padding:4px 10px;">✏️ Düzenle</button>
               </div>
               <div *ngIf="editingId === p.id" style="display:flex; gap:6px; align-items:center;">
-                <input type="number" [(ngModel)]="editStock" min="0"
-                  style="width:70px; background:#12121a; border:0.5px solid #6c63ff; border-radius:5px; padding:4px 8px; color:#f0f0f5; font-size:12px; outline:none;" />
+                <input type="number" [(ngModel)]="editStock" min="0" autocomplete="off"
+                  style="width:80px; background:var(--bg-secondary); border:1px solid var(--accent-primary); border-radius:6px; padding:6px 10px; color:var(--text-primary); font-size:13px; outline:none;" />
                 <button class="btn-primary" (click)="saveStock(p)" style="font-size:11px;">Kaydet</button>
                 <button class="btn-outline" (click)="editingId = null" style="font-size:11px;">✕</button>
               </div>

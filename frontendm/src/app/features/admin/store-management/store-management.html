@@ -6,7 +6,7 @@
     <div class="topbar">
       <div>
         <h1 class="page-title">Mağaza Yönetimi</h1>
-        <p class="page-sub">{{ totalElements || stores.length }} mağaza kayıtlı</p>
+        <p class="page-sub">{{ totalElements || (stores?.length || 0) }} mağaza kayıtlı</p>
       </div>
     </div>
 
@@ -34,7 +34,7 @@
       <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:1.5rem;">
         <div class="kpi-card" style="border-left:3px solid #6c63ff; padding:12px 16px;">
           <div class="kpi-label">Toplam Mağaza</div>
-          <div class="kpi-value" style="font-size:28px;">{{ stores.length }}</div>
+          <div class="kpi-value" style="font-size:28px;">{{ stores?.length || 0 }}</div>
         </div>
         <div class="kpi-card" style="border-left:3px solid #00875a; padding:12px 16px;">
           <div class="kpi-label">Aktif</div>
@@ -57,14 +57,14 @@
       <div class="card">
         <div *ngIf="loading" style="text-align:center; color:var(--accent-primary); padding:2rem;">Yükleniyor…</div>
 
-        <div *ngIf="!loading && !stores.length"
+        <div *ngIf="!loading && (!stores || !stores.length)"
              style="text-align:center; color:var(--text-secondary); padding:3rem;">
           <div style="font-size:32px; margin-bottom:12px;">🏪</div>
           <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Mağaza bulunamadı</div>
           <div style="font-size:13px;">Arama kriterini değiştirin veya henüz kayıtlı mağaza yok.</div>
         </div>
 
-        <table class="data-table" *ngIf="!loading && stores.length">
+        <table class="data-table" *ngIf="!loading && stores && stores.length">
           <thead>
             <tr>
               <th>#</th><th>Mağaza</th><th>Sahip</th><th>Şehir</th>

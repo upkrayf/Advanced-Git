@@ -14,4 +14,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     @Query("SELECT s FROM Shipment s WHERE s.id IN (SELECT o.shipment.id FROM Order o WHERE o.user.email = :email AND o.shipment IS NOT NULL)")
     List<Shipment> findByUserEmail(@Param("email") String email);
+
+    @Query("SELECT s FROM Shipment s WHERE s.id IN (SELECT o.shipment.id FROM Order o JOIN o.items oi WHERE oi.product.store.owner.email = :email AND o.shipment IS NOT NULL)")
+    List<Shipment> findByStoreOwnerEmail(@Param("email") String email);
 }

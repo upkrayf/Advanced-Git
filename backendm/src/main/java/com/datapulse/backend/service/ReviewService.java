@@ -31,4 +31,11 @@ public class ReviewService {
         review.setDate(LocalDate.now());
         return reviewRepository.save(review);
     }
+
+    public Review respondToReview(Long id, String response) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+        review.setStoreResponse(response);
+        return reviewRepository.save(review);
+    }
 }

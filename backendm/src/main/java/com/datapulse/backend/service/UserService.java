@@ -5,15 +5,21 @@ import com.datapulse.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.datapulse.backend.repository.OrderRepository;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, OrderRepository orderRepository) {
         this.userRepository = userRepository;
+        this.orderRepository = orderRepository;
     }
 
     public List<User> getAll() {
@@ -22,6 +28,10 @@ public class UserService {
 
     public Page<User> getAll(Pageable pageable) {
         return userRepository.findAll(pageable);
+    }
+
+    public Page<User> getAll(String search, String role, Pageable pageable) {
+        return userRepository.searchUsers(search, role, pageable);
     }
 
     public User getById(Long id) {
@@ -63,5 +73,19 @@ public class UserService {
 
     public User create(User user) {
         return userRepository.save(user);
+    }
+
+    public List<Map<String, Object>> getStoreCustomers(String email) {
+        List<Object[]> results = orderRepository.getCustomersByStoreOwnerEmail(email);
+        return results.stream().map(row -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", row[0]);
+            map.put("fullName", row[1]);
+            map.put("email", row[2]);
+            map.put("city", row[3]);
+            map.put("totalOrders", row[4]);
+            map.put("totalSpent", row[5]);
+            return map;
+        }).collect(Collectors.toList());
     }
 }

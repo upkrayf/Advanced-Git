@@ -38,4 +38,11 @@ public class ReviewController {
     public ResponseEntity<Review> create(@RequestBody Review review) {
         return ResponseEntity.ok(reviewService.create(review));
     }
+
+    @PostMapping("/{id}/respond")
+    @PreAuthorize("hasAuthority('CORPORATE')")
+    public ResponseEntity<Review> respond(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        String response = body.getOrDefault("storeResponse", body.get("response"));
+        return ResponseEntity.ok(reviewService.respondToReview(id, response));
+    }
 }

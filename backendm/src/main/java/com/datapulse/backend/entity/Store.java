@@ -38,4 +38,27 @@ public class Store {
     public void setStatus(String status) { this.status = status; }
     public User getOwner() { return owner; }
     public void setOwner(User owner) { this.owner = owner; }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isActive")
+    public boolean getIsActive() {
+        return "ACTIVE".equalsIgnoreCase(status);
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("ownerName")
+    public String getOwnerName() {
+        return owner != null ? owner.getFullName() : "-";
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("city")
+    public String getCity() {
+        if (owner != null && owner.getProfile() != null) {
+            return owner.getProfile().getCity();
+        }
+        return "-";
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("productCount")
+    public int getProductCount() {
+        return products != null ? products.size() : 0;
+    }
 }

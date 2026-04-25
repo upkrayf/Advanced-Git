@@ -43,10 +43,16 @@ export class Shipments implements OnInit {
       size: this.size,
       status: this.selectedStatus || undefined
     }).subscribe({
-      next: (d) => {
-        this.shipments = d.content;
-        this.totalElements = d.totalElements;
-        this.totalPages = d.totalPages;
+      next: (d: any) => {
+        if (Array.isArray(d)) {
+          this.shipments = d;
+          this.totalElements = d.length;
+          this.totalPages = 1;
+        } else {
+          this.shipments = d.content || [];
+          this.totalElements = d.totalElements || 0;
+          this.totalPages = d.totalPages || 1;
+        }
         this.loading = false;
       },
       error: () => {

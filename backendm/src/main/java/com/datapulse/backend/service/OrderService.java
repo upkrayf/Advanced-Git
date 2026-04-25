@@ -30,7 +30,10 @@ public class OrderService {
         this.shipmentService = shipmentService;
     }
 
-    public List<Order> getAll() {
+    public List<Order> getAll(String status) {
+        if (status != null && !status.isBlank()) {
+            return orderRepository.findByStatus(status);
+        }
         return orderRepository.findAll();
     }
 
@@ -38,12 +41,18 @@ public class OrderService {
         return orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
-    public List<Order> getMyOrders(String email) {
+    public List<Order> getMyOrders(String email, String status) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        if (status != null && !status.isBlank()) {
+            return orderRepository.findByUserAndStatus(user, status);
+        }
         return orderRepository.findByUserOrderByOrderDateDesc(user);
     }
 
-    public List<Order> getStoreOrders(String email) {
+    public List<Order> getStoreOrders(String email, String status) {
+        if (status != null && !status.isBlank()) {
+            return orderRepository.findByStoreOwnerEmailAndStatus(email, status);
+        }
         return orderRepository.findByStoreOwnerEmail(email);
     }
 

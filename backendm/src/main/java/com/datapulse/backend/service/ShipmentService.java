@@ -8,6 +8,8 @@ import com.datapulse.backend.repository.ShipmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +24,31 @@ public class ShipmentService {
 
     public List<Shipment> getAll() {
         return shipmentRepository.findAll();
+    }
+
+    public List<Shipment> getStoreShipments(String email) {
+        return shipmentRepository.findByStoreOwnerEmail(email);
+    }
+
+    public List<Map<String, Object>> getStoreShipmentsEnriched(String email) {
+        List<Order> orders = orderRepository.findByStoreOwnerEmail(email);
+        return orders.stream()
+            .filter(o -> o.getShipment() != null)
+            .map(o -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", o.getShipment().getId());
+                map.put("orderId", o.getId());
+                map.put("orderNumber", o.getOrderNumber());
+                map.put("customerName", o.getCustomerName());
+                map.put("trackingNo", "TRK" + (100000 + o.getShipment().getId()));
+                map.put("carrier", o.getShipment().getModeOfShipment().equals("Ship") ? "Deniz Lojistik" : 
+                                    o.getShipment().getModeOfShipment().equals("Flight") ? "Hava Kargo" : "Yol Lojistik");
+                map.put("status", o.getStatus());
+                map.put("estimatedDelivery", o.getOrderDate().plusDays(4).toString());
+                map.put("createdAt", o.getCreatedAt());
+                return map;
+            })
+            .collect(Collectors.toList());
     }
 
     public Shipment getById(Long id) {
