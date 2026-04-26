@@ -1,26 +1,30 @@
 from typing import TypedDict, Optional, List, Any
 
+
 class AgentState(TypedDict):
-    # Input
+    # ── Input ─────────────────────────────────────────────────────────────────
     question: str
     user_id: Optional[int]
-    role_type: Optional[str]       # ADMIN | CORPORATE | INDIVIDUAL
-    store_id: Optional[int]        # Corporate: store owned by this user (from session)
 
-    # Security layer
-    guardrail_status: Optional[str]         # "passed" | "blocked"
-    guardrail_blocked_reason: Optional[str] # "Prompt Injection" | "Filter Bypass" | "Cross-store Data Access" | ...
+    # ── DB-verified identity (set by guardrail, never trusted from frontend) ──
+    verified_role: Optional[str]             # ADMIN | CORPORATE | INDIVIDUAL
+    verified_store_ids: Optional[List[int]]  # all store IDs owned by this corporate user
+    verified_store_id: Optional[int]         # primary store_id (first owned store)
 
-    # Scope
+    # ── Security layer ────────────────────────────────────────────────────────
+    guardrail_status: Optional[str]          # "passed" | "blocked"
+    guardrail_blocked_reason: Optional[str]
+
+    # ── Scope ─────────────────────────────────────────────────────────────────
     is_in_scope: bool
 
-    # SQL pipeline
+    # ── SQL pipeline ──────────────────────────────────────────────────────────
     sql_query: Optional[str]
-    query_result: Optional[str]        # JSON string representation (for LLM analysis)
-    query_data: Optional[List[Any]]    # Structured list of dicts (for frontend)
+    query_result: Optional[str]      # JSON string for LLM analysis
+    query_data: Optional[List[Any]]  # structured list of dicts for frontend
     error: Optional[str]
     iteration_count: int
 
-    # Output
+    # ── Output ────────────────────────────────────────────────────────────────
     final_answer: Optional[str]
     visualization_code: Optional[str]

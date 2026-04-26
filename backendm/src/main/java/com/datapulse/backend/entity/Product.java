@@ -103,6 +103,22 @@ public class Product {
     @JsonProperty("storeName")
     public String getStoreName() { return store != null ? store.getName() : null; }
 
+    @JsonProperty("rating")
+    public Double getRating() {
+        if (reviews == null || reviews.isEmpty()) return 0.0;
+        double avg = reviews.stream()
+            .filter(r -> r.getRating() != null)
+            .mapToInt(Review::getRating)
+            .average().orElse(0.0);
+        return Math.round(avg * 10.0) / 10.0;
+    }
+
+    @JsonProperty("reviewCount")
+    public Integer getReviewCount() {
+        if (reviews == null) return 0;
+        return (int) reviews.stream().filter(r -> r.getRating() != null).count();
+    }
+
     @JsonProperty("price")
     public void setPrice(BigDecimal price) { this.unitPrice = price; }
 

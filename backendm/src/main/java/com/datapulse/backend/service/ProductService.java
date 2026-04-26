@@ -26,7 +26,7 @@ public class ProductService {
             return productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(searchTerm, searchTerm, pageable);
         }
         if (categoryId != null) {
-            return productRepository.findByCategoryId(categoryId, pageable);
+            return productRepository.findByCategory_Id(categoryId, pageable);
         }
         return productRepository.findAll(pageable);
     }
@@ -59,10 +59,10 @@ public class ProductService {
     }
 
     public List<Product> findByStore(Long storeId) {
-        return productRepository.findByStoreId(storeId);
+        return productRepository.findByStore_Id(storeId);
     }
 
     public List<Product> findByCategory(Long categoryId) {
-        return productRepository.findByCategoryId(categoryId);
+        return productRepository.findByCategory_Id(categoryId);
     }
 }

@@ -47,7 +47,7 @@ public class BackendApplication {
             }
 
             Category electronics = categoryRepository.findByName("Electronics")
-                    .orElseGet(() -> categoryRepository.save(new Category("Electronics")));
+                    .orElseGet(() -> categoryRepository.save(new Category("Electronics"))); 
             Category fashion = categoryRepository.findByName("Fashion")
                     .orElseGet(() -> categoryRepository.save(new Category("Fashion")));
 

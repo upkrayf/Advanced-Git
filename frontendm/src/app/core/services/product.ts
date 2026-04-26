@@ -14,10 +14,10 @@ export class ProductService {
     storeId?: number; search?: string; minPrice?: number; maxPrice?: number;
   }): Observable<ProductPageResponse> {
     let p = new HttpParams();
-    if (params?.page !== undefined) p = p.set('page', params.page);
-    if (params?.size !== undefined) p = p.set('size', params.size);
-    if (params?.categoryId) p = p.set('categoryId', params.categoryId);
-    if (params?.storeId) p = p.set('storeId', params.storeId);
+    if (params?.page !== undefined) p = p.set('page', params.page.toString());
+    if (params?.size !== undefined) p = p.set('size', params.size.toString());
+    if (params?.categoryId !== undefined && params.categoryId !== null) p = p.set('categoryId', params.categoryId.toString());
+    if (params?.storeId !== undefined && params.storeId !== null) p = p.set('storeId', params.storeId.toString());
     if (params?.search) p = p.set('searchTerm', params.search);
     if (params?.minPrice !== undefined) p = p.set('minPrice', params.minPrice);
     if (params?.maxPrice !== undefined) p = p.set('maxPrice', params.maxPrice);
