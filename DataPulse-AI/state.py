@@ -28,3 +28,4 @@ class AgentState(TypedDict):
     # ── Output ────────────────────────────────────────────────────────────────
     final_answer: Optional[str]
     visualization_code: Optional[str]
+    needs_visualization: Optional[bool]   # set by analysis_agent for decide_graph routing

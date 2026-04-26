@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataPulse AI - Teknik Rapor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.7;
+    color: #1a1a2e;
+    background: #fff;
+  }
+
+  /* PAGE BREAKS */
+  .page-break { page-break-after: always; break-after: page; }
+  .no-break { page-break-inside: avoid; break-inside: avoid; }
+
+  /* COVER PAGE */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 60px 80px;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: white;
+    text-align: center;
+  }
+  .cover-logo {
+    width: 90px; height: 90px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 28px;
+    font-size: 42px; font-weight: 900; color: white;
+    box-shadow: 0 20px 60px rgba(102,126,234,0.4);
+  }
+  .cover h1 {
+    font-size: 38pt; font-weight: 700; margin-bottom: 10px;
+    background: linear-gradient(to right, #a78bfa, #60a5fa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cover .subtitle {
+    font-size: 16pt; color: rgba(255,255,255,0.75); margin-bottom: 8px;
+  }
+  .cover .course-name {
+    font-size: 12pt; color: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 6px 20px; border-radius: 20px; margin-bottom: 60px;
+    letter-spacing: 0.5px;
+  }
+  .cover-divider {
+    width: 80px; height: 2px;
+    background: linear-gradient(to right, #667eea, #764ba2);
+    margin: 30px auto;
+  }
+  .cover-info-box {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 36px 50px;
+    margin-top: 40px;
+    width: 100%; max-width: 500px;
+  }
+  .cover-info-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 10.5pt;
+  }
+  .cover-info-row:last-child { border-bottom: none; }
+  .cover-info-row .label { color: rgba(255,255,255,0.5); }
+  .cover-info-row .value { color: #a78bfa; font-weight: 600; }
+
+  /* MAIN CONTENT */
+  .content {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 50px 60px;
+  }
+
+  /* TOC */
+  .toc-page { padding: 50px 60px; max-width: 780px; margin: 0 auto; }
+  .toc-title {
+    font-size: 22pt; font-weight: 700; color: #302b63;
+    margin-bottom: 28px; padding-bottom: 12px;
+    border-bottom: 3px solid #667eea;
+  }
+  .toc-item {
+    display: flex; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px dotted #d4d4e8;
+  }
+  .toc-num { width: 36px; color: #667eea; font-weight: 700; font-size: 10.5pt; flex-shrink: 0; }
+  .toc-text { flex: 1; font-size: 10.5pt; color: #333; }
+  .toc-dots { flex: 1; border-bottom: 1px dotted #ccc; margin: 0 8px; position: relative; top: -3px; }
+  .toc-page-num { color: #667eea; font-weight: 600; font-size: 10pt; }
+  .toc-section { font-size: 13pt; font-weight: 700; color: #302b63; margin-top: 16px; margin-bottom: 4px; }
+
+  /* SECTION HEADERS */
+  .section-header {
+    background: linear-gradient(135deg, #302b63, #667eea);
+    color: white;
+    padding: 14px 24px;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    margin-top: 36px;
+    page-break-after: avoid;
+  }
+  .section-header h2 {
+    font-size: 16pt; font-weight: 700; margin: 0;
+  }
+  .section-header .section-num {
+    font-size: 10pt; opacity: 0.75; margin-bottom: 2px; font-weight: 500;
+  }
+
+  h3 {
+    font-size: 13pt; font-weight: 700; color: #302b63;
+    margin-top: 28px; margin-bottom: 10px;
+    padding-left: 12px;
+    border-left: 4px solid #667eea;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 11.5pt; font-weight: 600; color: #444;
+    margin-top: 18px; margin-bottom: 8px;
+  }
+
+  p { margin-bottom: 12px; text-align: justify; }
+
+  ul, ol { padding-left: 22px; margin-bottom: 12px; }
+  li { margin-bottom: 5px; }
+
+  /* TABLES */
+  table {
+    width: 100%; border-collapse: collapse;
+    margin: 16px 0; font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+  thead tr { background: linear-gradient(135deg, #302b63, #667eea); color: white; }
+  thead th { padding: 9px 12px; text-align: left; font-weight: 600; }
+  tbody tr:nth-child(even) { background: #f4f4ff; }
+  tbody tr:nth-child(odd) { background: #fff; }
+  tbody td { padding: 8px 12px; border-bottom: 1px solid #e8e8f4; vertical-align: top; }
+  tbody tr:hover { background: #eef0ff; }
+
+  /* HIGHLIGHT BOXES */
+  .info-box {
+    background: #eef2ff; border-left: 4px solid #667eea;
+    padding: 14px 18px; border-radius: 0 8px 8px 0;
+    margin: 16px 0; font-size: 10.5pt;
+  }
+  .warning-box {
+    background: #fff7ed; border-left: 4px solid #f59e0b;
+    padding: 14px 18px; border-radius: 0 8px 8px 0;
+    margin: 16px 0; font-size: 10.5pt;
+  }
+  .success-box {
+    background: #f0fdf4; border-left: 4px solid #22c55e;
+    padding: 14px 18px; border-radius: 0 8px 8px 0;
+    margin: 16px 0; font-size: 10.5pt;
+  }
+  .box-title { font-weight: 700; margin-bottom: 5px; color: #302b63; }
+
+  /* FLOW DIAGRAM */
+  .flow-container {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0; margin: 20px 0; padding: 20px;
+    background: #f8f8ff; border-radius: 12px;
+    border: 1px solid #e0e0f0;
+    page-break-inside: avoid;
+  }
+  .flow-node {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 280px; padding: 10px 20px;
+    border-radius: 10px; text-align: center;
+    font-size: 10.5pt; font-weight: 600; color: white;
+  }
+  .flow-node.start { background: #22c55e; }
+  .flow-node.guard { background: #7c3aed; }
+  .flow-node.sql { background: #2563eb; }
+  .flow-node.exec { background: #0891b2; }
+  .flow-node.error { background: #dc2626; }
+  .flow-node.analysis { background: #059669; }
+  .flow-node.viz { background: #d97706; }
+  .flow-node.end { background: #374151; }
+  .flow-arrow {
+    font-size: 18pt; color: #667eea; line-height: 1; margin: 2px 0;
+  }
+  .flow-branches {
+    display: flex; gap: 16px; align-items: flex-start; margin: 4px 0;
+    page-break-inside: avoid;
+  }
+  .flow-branch {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .flow-branch-label {
+    font-size: 8.5pt; color: #666; background: #fff;
+    border: 1px solid #ddd; border-radius: 4px; padding: 1px 8px;
+    margin: 2px 0;
+  }
+  .flow-node.branch-end {
+    background: #6b7280; min-width: 160px; font-size: 9pt; padding: 7px 12px;
+  }
+
+  /* ER DIAGRAM */
+  .er-diagram {
+    background: #f8f8ff; border: 1px solid #e0e0f0;
+    border-radius: 12px; padding: 24px;
+    font-family: 'Courier New', monospace; font-size: 9pt;
+    line-height: 1.8; color: #1a1a2e;
+    margin: 16px 0; page-break-inside: avoid;
+  }
+  .er-entity { color: #302b63; font-weight: bold; }
+  .er-pk { color: #dc2626; }
+  .er-fk { color: #2563eb; }
+  .er-field { color: #374151; }
+  .er-rel { color: #059669; font-style: italic; }
+
+  /* TECH BADGES */
+  .badge {
+    display: inline-block; padding: 2px 10px;
+    border-radius: 20px; font-size: 8.5pt; font-weight: 600;
+    margin: 2px 3px;
+  }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-purple { background: #ede9fe; color: #7c3aed; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-orange { background: #ffedd5; color: #c2410c; }
+  .badge-gray { background: #f3f4f6; color: #374151; }
+
+  /* STACK TABLE */
+  .stack-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin: 16px 0;
+  }
+  .stack-card {
+    background: #f8f8ff; border: 1px solid #e0e0f0;
+    border-radius: 10px; padding: 16px;
+  }
+  .stack-card-title {
+    font-weight: 700; color: #302b63; font-size: 11pt;
+    margin-bottom: 8px; border-bottom: 2px solid #667eea;
+    padding-bottom: 5px;
+  }
+  .stack-card li { font-size: 9.5pt; }
+
+  /* FOOTER */
+  @page {
+    margin: 20mm 20mm 20mm 20mm;
+    @bottom-center {
+      content: "DataPulse AI — Teknik Rapor | CSE 214 | Beren Susam & Yusuf Karaoğlan";
+      font-size: 8pt; color: #999;
+    }
+    @bottom-right {
+      content: "Sayfa " counter(page);
+      font-size: 8pt; color: #999;
+    }
+  }
+
+  @media print {
+    body { font-size: 10.5pt; }
+    .cover { min-height: 100vh; page-break-after: always; }
+    .stack-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .chapter-intro {
+    background: linear-gradient(135deg, #f0f0ff, #fafaff);
+    border-radius: 10px; padding: 16px 20px;
+    margin-bottom: 20px; font-size: 10.5pt;
+    border: 1px solid #e0e0f0;
+    color: #444; font-style: italic;
+  }
+
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin: 16px 0;
+  }
+  .kpi-card {
+    background: linear-gradient(135deg, #302b63, #667eea);
+    color: white; border-radius: 10px;
+    padding: 14px 10px; text-align: center;
+  }
+  .kpi-value { font-size: 18pt; font-weight: 700; }
+  .kpi-label { font-size: 8pt; opacity: 0.8; margin-top: 3px; }
+
+  .endpoint-block {
+    background: #1e1e2e; color: #a6e3a1;
+    border-radius: 8px; padding: 10px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 9pt; margin: 6px 0;
+    line-height: 1.6;
+    page-break-inside: avoid;
+  }
+  .method-get { color: #94e2d5; }
+  .method-post { color: #a6e3a1; }
+  .method-put { color: #f9e2af; }
+  .method-patch { color: #fab387; }
+  .method-delete { color: #f38ba8; }
+  .path-text { color: #cdd6f4; }
+  .comment-text { color: #6c7086; }
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     KAPAK SAYFASI
+     ================================================================ -->
+<div class="cover">
+  <div class="cover-logo">D</div>
+  <div class="course-name">Advanced Application Development — CSE 214</div>
+  <h1>DataPulse AI</h1>
+  <div class="subtitle">E-Ticaret Analitik Platformu ile<br>Multi-Agent Text2SQL Chatbot</div>
+  <div class="cover-divider"></div>
+  <p style="color:rgba(255,255,255,0.6); font-size:10.5pt; max-width:480px; margin-top:10px;">
+    Çok katmanlı e-ticaret platformunun veritabanı tasarımı, REST API mimarisi,
+    Angular bileşen yapısı ve LangGraph tabanlı yapay zeka sisteminin teknik dokümantasyonu.
+  </p>
+  <div class="cover-info-box">
+    <div class="cover-info-row">
+      <span class="label">Hazırlayanlar</span>
+      <span class="value">Beren Susam &amp; Yusuf Karaoğlan</span>
+    </div>
+    <div class="cover-info-row">
+      <span class="label">Ders</span>
+      <span class="value">CSE 214 — Advanced App Development</span>
+    </div>
+    <div class="cover-info-row">
+      <span class="label">Platform Adı</span>
+      <span class="value">DataPulse AI v4.0</span>
+    </div>
+    <div class="cover-info-row">
+      <span class="label">Backend</span>
+      <span class="value">Spring Boot 4.0.5 / Java 21</span>
+    </div>
+    <div class="cover-info-row">
+      <span class="label">Frontend</span>
+      <span class="value">Angular 21 / TypeScript</span>
+    </div>
+    <div class="cover-info-row">
+      <span class="label">AI Katmanı</span>
+      <span class="value">Python / LangGraph / Gemini 2.0</span>
+    </div>
+    <div class="cover-info-row">
+      <span class="label">Tarih</span>
+      <span class="value">Nisan 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     İÇİNDEKİLER
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="toc-page">
+  <div class="toc-title">İçindekiler</div>
+
+  <div class="toc-section">Bölüm 1 — Projeye Genel Bakış</div>
+  <div class="toc-item"><span class="toc-num">1.1</span><span class="toc-text">Proje Amacı ve Kapsamı</span><span class="toc-dots"></span><span class="toc-page-num">3</span></div>
+  <div class="toc-item"><span class="toc-num">1.2</span><span class="toc-text">Kullanıcı Rolleri ve Sorumluluklar</span><span class="toc-dots"></span><span class="toc-page-num">3</span></div>
+  <div class="toc-item"><span class="toc-num">1.3</span><span class="toc-text">Teknoloji Yığını ve Mimari Kararlar</span><span class="toc-dots"></span><span class="toc-page-num">4</span></div>
+
+  <div class="toc-section">Bölüm 2 — Veri Kaynakları ve ETL Süreci</div>
+  <div class="toc-item"><span class="toc-num">2.1</span><span class="toc-text">Kaynak Veri Setleri</span><span class="toc-dots"></span><span class="toc-page-num">5</span></div>
+  <div class="toc-item"><span class="toc-num">2.2</span><span class="toc-text">Alan Eşleştirme (Field Mapping) Tablosu</span><span class="toc-dots"></span><span class="toc-page-num">5</span></div>
+  <div class="toc-item"><span class="toc-num">2.3</span><span class="toc-text">Veri Dönüşüm Adımları</span><span class="toc-dots"></span><span class="toc-page-num">6</span></div>
+
+  <div class="toc-section">Bölüm 3 — Veritabanı Tasarımı</div>
+  <div class="toc-item"><span class="toc-num">3.1</span><span class="toc-text">Varlık-İlişki (ER) Diyagramı</span><span class="toc-dots"></span><span class="toc-page-num">7</span></div>
+  <div class="toc-item"><span class="toc-num">3.2</span><span class="toc-text">Tablo Açıklamaları ve Alanlar</span><span class="toc-dots"></span><span class="toc-page-num">8</span></div>
+  <div class="toc-item"><span class="toc-num">3.3</span><span class="toc-text">İlişkiler ve Yabancı Anahtar Yapısı</span><span class="toc-dots"></span><span class="toc-page-num">9</span></div>
+
+  <div class="toc-section">Bölüm 4 — Backend: Spring Boot API</div>
+  <div class="toc-item"><span class="toc-num">4.1</span><span class="toc-text">JWT Kimlik Doğrulama Akışı</span><span class="toc-dots"></span><span class="toc-page-num">10</span></div>
+  <div class="toc-item"><span class="toc-num">4.2</span><span class="toc-text">RBAC Güvenlik Mimarisi</span><span class="toc-dots"></span><span class="toc-page-num">10</span></div>
+  <div class="toc-item"><span class="toc-num">4.3</span><span class="toc-text">REST API Uç Noktaları</span><span class="toc-dots"></span><span class="toc-page-num">11</span></div>
+
+  <div class="toc-section">Bölüm 5 — Frontend: Angular Mimarisi</div>
+  <div class="toc-item"><span class="toc-num">5.1</span><span class="toc-text">Bileşen Hiyerarşisi ve Modül Yapısı</span><span class="toc-dots"></span><span class="toc-page-num">12</span></div>
+  <div class="toc-item"><span class="toc-num">5.2</span><span class="toc-text">Yönlendirme ve Guard Yapısı</span><span class="toc-dots"></span><span class="toc-page-num">12</span></div>
+  <div class="toc-item"><span class="toc-num">5.3</span><span class="toc-text">Kullanılan Kütüphaneler</span><span class="toc-dots"></span><span class="toc-page-num">13</span></div>
+
+  <div class="toc-section">Bölüm 6 — AI Chatbot: Multi-Agent LangGraph</div>
+  <div class="toc-item"><span class="toc-num">6.1</span><span class="toc-text">Mimari Genel Bakış</span><span class="toc-dots"></span><span class="toc-page-num">13</span></div>
+  <div class="toc-item"><span class="toc-num">6.2</span><span class="toc-text">Ajan Tanımları ve Sorumlulukları</span><span class="toc-dots"></span><span class="toc-page-num">14</span></div>
+  <div class="toc-item"><span class="toc-num">6.3</span><span class="toc-text">Güvenlik ve RBAC Katmanı</span><span class="toc-dots"></span><span class="toc-page-num">14</span></div>
+  <div class="toc-item"><span class="toc-num">6.4</span><span class="toc-text">Ajanlar Arası İletişim Akışı</span><span class="toc-dots"></span><span class="toc-page-num">15</span></div>
+
+  <div class="toc-section">Bölüm 7 — Karşılaşılan Zorluklar ve Çözümler</div>
+  <div class="toc-item"><span class="toc-num">7.1</span><span class="toc-text">ETL: Eksik Sütun Sorunu ve Çözümü</span><span class="toc-dots"></span><span class="toc-page-num">15</span></div>
+  <div class="toc-item"><span class="toc-num">7.2</span><span class="toc-text">Diğer Teknik Zorluklar</span><span class="toc-dots"></span><span class="toc-page-num">16</span></div>
+
+  <div class="toc-section">Bölüm 8 — Sonuç</div>
+  <div class="toc-item"><span class="toc-num">8.1</span><span class="toc-text">Proje Değerlendirmesi</span><span class="toc-dots"></span><span class="toc-page-num">16</span></div>
+</div>
+
+<!-- ================================================================
+     BÖLÜM 1: PROJE GENEL BAKIŞ
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-num">Bölüm 1</div>
+    <h2>Projeye Genel Bakış ve Mimari Kararlar</h2>
+  </div>
+
+  <div class="chapter-intro">
+    Bu bölümde DataPulse AI platformunun temel amacı, hedef kullanıcı grupları ve
+    teknoloji yığınının seçim gerekçeleri ele alınmaktadır.
+  </div>
+
+  <h3>1.1 Proje Amacı ve Kapsamı</h3>
+
+  <p>
+    DataPulse AI, e-ticaret ekosistemindeki farklı paydaşların ihtiyaçlarını tek bir platform
+    altında karşılamayı hedefleyen, çok katmanlı bir analitik ve yönetim platformudur. Platform;
+    sistem yöneticilerinin tüm platformu denetlemesine, kurumsal satıcıların kendi mağazalarını
+    yönetmesine ve bireysel müşterilerin sorunsuz bir alışveriş deneyimi yaşamasına olanak tanır.
+  </p>
+
+  <p>
+    Platformun ayırt edici özelliği, teknik bilgisi olmayan kullanıcıların da veritabanındaki
+    verileri doğal dil soruları aracılığıyla sorgulamasına imkân tanıyan yapay zeka destekli
+    Text2SQL chatbot sistemidir. Bu sistem, Metabase gibi iş zekası araçlarından ilham
+    alınarak tasarlanmış ve LangGraph çerçevesiyle çok-ajanlı (multi-agent) bir mimari
+    üzerine inşa edilmiştir.
+  </p>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">11</div>
+      <div class="kpi-label">Veritabanı Tablosu</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">40+</div>
+      <div class="kpi-label">REST API Endpoint</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">6</div>
+      <div class="kpi-label">AI Ajanı</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">3</div>
+      <div class="kpi-label">Kullanıcı Rolü</div>
+    </div>
+  </div>
+
+  <h3>1.2 Kullanıcı Rolleri ve Sorumluluklar</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Rol</th>
+        <th>Temel Sorumluluklar</th>
+        <th>Veri Erişim Kapsamı</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Admin</strong></td>
+        <td>Platform yönetimi, kullanıcı yönetimi, mağaza açma/kapama, kategori yönetimi, platform geneli analitik</td>
+        <td>Tüm tablolara tam erişim (şifre alanları hariç)</td>
+      </tr>
+      <tr>
+        <td><strong>Corporate</strong></td>
+        <td>Mağaza yönetimi, ürün kataloğu CRUD, sipariş yönetimi, müşteri segmentasyonu, gelir raporlama</td>
+        <td>Yalnızca kendi mağazasına ait ürün, sipariş, yorum ve müşteri verileri</td>
+      </tr>
+      <tr>
+        <td><strong>Individual</strong></td>
+        <td>Ürün arama/satın alma, sepet yönetimi, sipariş takibi, ürün yorumlama, kişisel harcama analizi</td>
+        <td>Kendi siparişleri, müşteri profili ve genel ürün kataloğu</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>1.3 Teknoloji Yığını ve Mimari Kararlar</h3>
+
+  <p>
+    Teknoloji seçimlerinde öncelikle <strong>endüstri standardı</strong> olmak, <strong>aktif topluluk desteği</strong>
+    bulunmak ve <strong>rol tabanlı erişim kontrolünün</strong> kolayca uygulanabilmesi kriterleri gözetilmiştir.
+  </p>
+
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="stack-card-title">Backend — Spring Boot</div>
+      <ul>
+        <li>Spring Boot 4.0.5 / Java 21</li>
+        <li>Spring Security 6.x (Stateless JWT)</li>
+        <li>JPA/Hibernate (ORM)</li>
+        <li>MySQL 8.0+</li>
+        <li>Springdoc OpenAPI (Swagger)</li>
+        <li>BCrypt şifre hashleme</li>
+      </ul>
+    </div>
+    <div class="stack-card">
+      <div class="stack-card-title">Frontend — Angular</div>
+      <ul>
+        <li>Angular 21 (Standalone Components)</li>
+        <li>TypeScript / Vite build</li>
+        <li>@swimlane/ngx-charts + D3.js</li>
+        <li>RxJS 7.8 (reaktif iletişim)</li>
+        <li>Lazy-loading routing</li>
+      </ul>
+    </div>
+    <div class="stack-card">
+      <div class="stack-card-title">AI Katmanı — Python</div>
+      <ul>
+        <li>Python 3.9 / FastAPI</li>
+        <li>LangGraph (state machine)</li>
+        <li>LangChain</li>
+        <li>Google Gemini 2.0 Flash</li>
+        <li>SQLAlchemy (DB bağlantısı)</li>
+      </ul>
+    </div>
+    <div class="stack-card">
+      <div class="stack-card-title">Entegrasyon</div>
+      <ul>
+        <li>Angular → Spring Boot: HTTP/REST</li>
+        <li>Spring Boot → Python AI: REST (/api/chat/ask)</li>
+        <li>Python AI → MySQL: SQLAlchemy</li>
+        <li>Auth: JWT Bearer Token (HS256)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="box-title">Mimari Karar: Neden Standalone Components?</div>
+    Angular 17'den itibaren önerilen Standalone Components mimarisi, NgModule bağımlılığını
+    ortadan kaldırarak her bileşenin kendi bağımlılıklarını doğrudan import etmesine olanak tanır.
+    Bu yaklaşım, lazy loading ile birleşince uygulama ilk yüklenme süresi önemli ölçüde kısalmış
+    ve tree-shaking verimliliği artmıştır.
+  </div>
+
+  <div class="info-box">
+    <div class="box-title">Mimari Karar: Neden LangGraph?</div>
+    LangGraph, basit LLM zincirlerinin ötesine geçerek döngüsel (cyclic) ve koşullu iş akışları
+    kurulmasına izin verir. SQL hatalarında Error Agent'a geri dönüş (retry loop) ve güvenlik
+    kapısında erken sonlandırma gibi senaryolar, LangGraph'ın durum makinesi (state machine)
+    modeliyle doğal biçimde ifade edilmiştir.
+  </div>
+
+</div>
+
+<!-- ================================================================
+     BÖLÜM 2: ETL
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-num">Bölüm 2</div>
+    <h2>Veri Kaynakları ve ETL Süreci</h2>
+  </div>
+
+  <div class="chapter-intro">
+    Platform, altı farklı Kaggle veri setinden alınan ham verileri tek bir normalize edilmiş
+    ilişkisel şemada birleştirmektedir. Bu bölümde kaynak veri setleri, alan eşleştirme
+    tablosu ve uygulanan dönüşüm adımları açıklanmaktadır.
+  </div>
+
+  <h3>2.1 Kaynak Veri Setleri</h3>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Veri Seti</th><th>Temel Alanlar</th><th>Hedef Tablo(lar)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>DS1</td>
+        <td><strong>UCI Online Retail</strong><br><small>(E-Commerce Sales Forecast)</small></td>
+        <td>InvoiceNo, StockCode, Description, Quantity, InvoiceDate, UnitPrice, CustomerID</td>
+        <td>ORDERS, ORDER_ITEMS, PRODUCTS</td>
+      </tr>
+      <tr>
+        <td>DS2</td>
+        <td><strong>E-Commerce Customer Behavior</strong></td>
+        <td>CustomerID, Gender, Age, City, MembershipType, TotalSpend, ItemsPurchased, AvgRating, DiscountApplied, SatisfactionLevel</td>
+        <td>USERS, CUSTOMER_PROFILES</td>
+      </tr>
+      <tr>
+        <td>DS3</td>
+        <td><strong>E-Commerce Shipping Data</strong></td>
+        <td>WarehouseBlock, ModeOfShipment, CustomerRating, ProductImportance, DiscountOffered, WeightInGms, ReachingOnTime</td>
+        <td>SHIPMENTS</td>
+      </tr>
+      <tr>
+        <td>DS4</td>
+        <td><strong>E-Commerce Sales (Amazon)</strong></td>
+        <td>OrderID, Date, Status, ShipServiceLevel, SKU, Category, Fulfilment</td>
+        <td>ORDERS (status, service_level), SHIPMENTS</td>
+      </tr>
+      <tr>
+        <td>DS5</td>
+        <td><strong>Pakistan E-Commerce Orders</strong></td>
+        <td>ItemID, Status, CreatedAt, SKU, Price, QtyOrdered, GrandTotal, PaymentMethod</td>
+        <td>ORDERS, ORDER_ITEMS, PAYMENTS</td>
+      </tr>
+      <tr>
+        <td>DS6</td>
+        <td><strong>Amazon US Customer Reviews</strong></td>
+        <td>CustomerID, ReviewID, ProductID, ProductTitle, StarRating, ReviewHeadline, Sentiment</td>
+        <td>REVIEWS</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 Alan Eşleştirme (Field Mapping) Tablosu</h3>
+
+  <p>Aşağıdaki tablo, kaynak veri setlerindeki alanların hedef veritabanı şemasına nasıl eşleştirildiğini göstermektedir:</p>
+
+  <table>
+    <thead>
+      <tr><th>Kaynak Alan (Dataset)</th><th>Kaynak DS</th><th>Hedef Tablo</th><th>Hedef Alan</th><th>Dönüşüm</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>CustomerID</td><td>DS1, DS2, DS6</td><td>USERS</td><td>id</td><td>Surrogate key üretimi</td></tr>
+      <tr><td>Gender, Age, City</td><td>DS2</td><td>CUSTOMER_PROFILES</td><td>gender, age, city</td><td>Doğrudan kopyalama</td></tr>
+      <tr><td>MembershipType</td><td>DS2</td><td>CUSTOMER_PROFILES</td><td>membership_type</td><td>Enum dönüşümü (Gold/Silver/Bronze/Premium)</td></tr>
+      <tr><td>TotalSpend, ItemsPurchased</td><td>DS2</td><td>CUSTOMER_PROFILES</td><td>total_spend, items_purchased</td><td>Sayısal normalleştirme</td></tr>
+      <tr><td>AvgRating</td><td>DS2</td><td>CUSTOMER_PROFILES</td><td>average_rating</td><td>0–5 aralığına normalleştirme</td></tr>
+      <tr><td>SatisfactionLevel</td><td>DS2</td><td>CUSTOMER_PROFILES</td><td>satisfaction_level</td><td>Kategorik → string</td></tr>
+      <tr><td>InvoiceNo</td><td>DS1</td><td>ORDERS</td><td>order_number</td><td>String formatı korundu</td></tr>
+      <tr><td>InvoiceDate / CreatedAt</td><td>DS1, DS5</td><td>ORDERS</td><td>order_date</td><td>ISO 8601 formatına normalleştirme</td></tr>
+      <tr><td>GrandTotal / UnitPrice×Qty</td><td>DS1, DS5</td><td>ORDERS</td><td>total_amount</td><td>Para birimi normalleştirme (USD baz)</td></tr>
+      <tr><td>Status (DS4, DS5)</td><td>DS4, DS5</td><td>ORDERS</td><td>status</td><td>Enum eşleştirme (PLACED/DELIVERED vb.)</td></tr>
+      <tr><td>StockCode / SKU</td><td>DS1, DS4, DS5</td><td>PRODUCTS</td><td>sku</td><td>Birleşik unique key üretimi</td></tr>
+      <tr><td>Description / ProductTitle</td><td>DS1, DS6</td><td>PRODUCTS</td><td>name, description</td><td>Metin temizleme, deduplication</td></tr>
+      <tr><td>UnitPrice / Price</td><td>DS1, DS5</td><td>PRODUCTS</td><td>unit_price</td><td>Para birimi dönüşümü + ortalama alma</td></tr>
+      <tr><td>WarehouseBlock</td><td>DS3</td><td>SHIPMENTS</td><td>warehouse_block</td><td>Enum (A/B/C/D/F)</td></tr>
+      <tr><td>ModeOfShipment</td><td>DS3</td><td>SHIPMENTS</td><td>mode_of_shipment</td><td>Enum (Flight/Ship/Road)</td></tr>
+      <tr><td>ShipServiceLevel</td><td>DS4</td><td>SHIPMENTS</td><td>service_level</td><td>Enum (Expedited/Standard)</td></tr>
+      <tr><td>ReachingOnTime</td><td>DS3</td><td>SHIPMENTS</td><td>reaching_on_time</td><td>Boolean (0/1)</td></tr>
+      <tr><td>StarRating</td><td>DS6</td><td>REVIEWS</td><td>rating</td><td>1–5 integer</td></tr>
+      <tr><td>ReviewHeadline</td><td>DS6</td><td>REVIEWS</td><td>review_headline</td><td>Metin kırpma (500 karakter)</td></tr>
+      <tr><td>Sentiment</td><td>DS6</td><td>REVIEWS</td><td>sentiment</td><td>Enum (Positive/Negative/Neutral)</td></tr>
+      <tr><td>PaymentMethod</td><td>DS5</td><td>PAYMENTS</td><td>payment_type</td><td>Kategorik normalleştirme</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.3 Veri Dönüşüm Adımları</h3>
+
+  <p>ETL süreci beş ana aşamadan oluşmaktadır:</p>
+
+  <ol>
+    <li>
+      <strong>Ayıklama (Extract):</strong> Altı Kaggle veri seti CSV formatında indirilmiş,
+      Python/Pandas ile okunmuştur. Her veri setinin karakter kodlaması (UTF-8, Latin-1)
+      ve sütun adı tutarlılığı kontrol edilmiştir.
+    </li>
+    <li>
+      <strong>Temizleme (Cleanse):</strong> Eksik değerler tespit edilmiş; sayısal alanlar için
+      ortalama, kategorik alanlar için mod değeriyle veya "Unknown" sabit değeriyle doldurulmuştur.
+      Yinelenen kayıtlar SKU ve CustomerID birleşimine göre tekilleştirilmiştir.
+    </li>
+    <li>
+      <strong>Dönüşüm (Transform):</strong> Tüm tarih alanları ISO 8601 formatına (YYYY-MM-DD)
+      standardize edilmiştir. Para birimleri USD bazına normalleştirilmiştir. Kategorik
+      değerler (MembershipType, ModeOfShipment vb.) uygulamada tanımlı Enum değerleriyle
+      eşleştirilmiştir.
+    </li>
+    <li>
+      <strong>Anahtar Üretimi (ID Generation):</strong> Veri setlerinin kendi CustomerID değerleri
+      farklı sistemlere ait olduğundan, birleşik tablolar için otomatik artan surrogate key
+      (AUTO_INCREMENT) stratejisi benimsenmiştir.
+    </li>
+    <li>
+      <strong>Yükleme (Load):</strong> Dönüştürülen veriler Spring Boot başlatma sürecinde
+      (DataLoader bileşeni ile) veya doğrudan SQL INSERT scriptleriyle veritabanına
+      yüklenmiştir. Yükleme sırası yabancı anahtar kısıtlamalarına göre belirlenmiştir:
+      önce USERS, CATEGORIES, ardından STORES, PRODUCTS, son olarak ORDERS ve alt tabloları.
+    </li>
+  </ol>
+
+  <div class="warning-box">
+    <div class="box-title">ETL Zorlukları</div>
+    Veri setleri birbirinden bağımsız kaynaklardan geldiğinden müşteri kimliklerinin örtüşmesi,
+    para birimlerinin farklılığı ve tarih formatlarındaki tutarsızlıklar önemli zorluklar
+    yaratmıştır. Bu konudaki ayrıntılı deneyim Bölüm 7'de aktarılmaktadır.
+  </div>
+
+</div>
+
+<!-- ================================================================
+     BÖLÜM 3: VERİTABANI TASARIMI
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-num">Bölüm 3</div>
+    <h2>Veritabanı Tasarımı</h2>
+  </div>
+
+  <div class="chapter-intro">
+    Bu bölümde platformun ilişkisel veritabanı şeması, varlık-ilişki diyagramı ve tablo
+    tanımları detaylı biçimde sunulmaktadır. Şema, MySQL 8.0 üzerinde JPA/Hibernate
+    aracılığıyla yönetilmektedir.
+  </div>
+
+  <h3>3.1 Varlık-İlişki (ER) Diyagramı</h3>
+
+  <div class="er-diagram">
+<span class="er-entity">USERS</span> (id PK, email UNIQUE, password_hash, role_type, full_name, gender, phone)
+  │
+  ├──[1:1]──► <span class="er-entity">CUSTOMER_PROFILES</span> (id PK, <span class="er-fk">user_id FK</span>, age, city, membership_type,
+  │                              total_spend, items_purchased, average_rating,
+  │                              discount_applied, days_since_last_purchase, satisfaction_level)
+  │
+  ├──[1:N]──► <span class="er-entity">STORES</span> (id PK, name, status, <span class="er-fk">owner_id FK→USERS</span>)
+  │                │
+  │                └──[1:N]──► <span class="er-entity">PRODUCTS</span> (id PK, sku UNIQUE, name, description, unit_price,
+  │                                         cost, stock_quantity, icon, is_active,
+  │                                         <span class="er-fk">category_id FK</span>, <span class="er-fk">store_id FK</span>)
+  │                                  │
+  │                                  └──[1:N]──► <span class="er-entity">REVIEWS</span> (id PK, rating, comment, review_headline,
+  │                                                         sentiment, date, store_response,
+  │                                                         <span class="er-fk">product_id FK</span>, <span class="er-fk">user_id FK</span>)
+  │
+  └──[1:N]──► <span class="er-entity">ORDERS</span> (id PK, order_number, order_date, total_amount, status,
+                        <span class="er-fk">user_id FK</span>)
+                  │
+                  ├──[1:1]──► <span class="er-entity">SHIPMENTS</span> (id PK, warehouse_block, mode_of_shipment,
+                  │                        service_level, reaching_on_time,
+                  │                        product_importance, customer_rating,
+                  │                        discount_offered, weight_in_gms)
+                  │
+                  ├──[1:N]──► <span class="er-entity">ORDER_ITEMS</span> (id PK, quantity, price,
+                  │                         <span class="er-fk">order_id FK</span>, <span class="er-fk">product_id FK</span>)
+                  │
+                  └──[1:N]──► <span class="er-entity">PAYMENTS</span> (id PK, payment_type, amount, <span class="er-fk">order_id FK</span>)
+
+<span class="er-entity">CATEGORIES</span> (id PK, name UNIQUE, description, created_at, <span class="er-fk">parent_id FK→CATEGORIES</span>)
+  └──[1:N]──► PRODUCTS (category_id FK)
+
+<span class="er-entity">REFRESH_TOKENS</span> (id PK, token UNIQUE, expiry_date, <span class="er-fk">user_id FK UNIQUE→USERS</span>)
+  </div>
+
+  <h3>3.2 Tablo Açıklamaları ve Alanlar</h3>
+
+  <table>
+    <thead>
+      <tr><th>Tablo</th><th>Satır Sayısı (Est.)</th><th>Anahtar Alanlar</th><th>Amaç</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>USERS</strong></td>
+        <td>~5.000</td>
+        <td>id, email (UNIQUE), role_type</td>
+        <td>Tüm kullanıcıların birleşik tablosu; rol ayrımı (ADMIN/CORPORATE/INDIVIDUAL)</td>
+      </tr>
+      <tr>
+        <td><strong>CUSTOMER_PROFILES</strong></td>
+        <td>~4.000</td>
+        <td>user_id (FK, UNIQUE)</td>
+        <td>Bireysel müşterilerin demografik ve davranışsal profili</td>
+      </tr>
+      <tr>
+        <td><strong>STORES</strong></td>
+        <td>~200</td>
+        <td>id, owner_id (FK), status</td>
+        <td>Kurumsal satıcıların mağaza bilgileri</td>
+      </tr>
+      <tr>
+        <td><strong>CATEGORIES</strong></td>
+        <td>~50</td>
+        <td>id, name (UNIQUE), parent_id</td>
+        <td>Hiyerarşik ürün kategorisi yapısı (self-referential)</td>
+      </tr>
+      <tr>
+        <td><strong>PRODUCTS</strong></td>
+        <td>~10.000</td>
+        <td>id, sku (UNIQUE), store_id, category_id</td>
+        <td>Ürün kataloğu; bileşik index: sku, name, category_id, store_id</td>
+      </tr>
+      <tr>
+        <td><strong>ORDERS</strong></td>
+        <td>~50.000</td>
+        <td>id, order_number, user_id, status</td>
+        <td>Sipariş başlıkları; durum makinesi (PLACED → DELIVERED → RETURNED)</td>
+      </tr>
+      <tr>
+        <td><strong>ORDER_ITEMS</strong></td>
+        <td>~120.000</td>
+        <td>id, order_id (FK), product_id (FK)</td>
+        <td>Sipariş satır detayları; satın alma anındaki fiyat korunur</td>
+      </tr>
+      <tr>
+        <td><strong>PAYMENTS</strong></td>
+        <td>~50.000</td>
+        <td>id, order_id (FK), payment_type</td>
+        <td>Ödeme kayıtları; çoklu ödeme tipini destekler</td>
+      </tr>
+      <tr>
+        <td><strong>SHIPMENTS</strong></td>
+        <td>~50.000</td>
+        <td>id, order_id (FK, UNIQUE)</td>
+        <td>Lojistik takip; DS3/DS4 kaynaklı sevkiyat verileri</td>
+      </tr>
+      <tr>
+        <td><strong>REVIEWS</strong></td>
+        <td>~80.000</td>
+        <td>id, product_id (FK), user_id (FK), rating</td>
+        <td>Ürün değerlendirmeleri; duygu analizi (sentiment) alanı içerir</td>
+      </tr>
+      <tr>
+        <td><strong>REFRESH_TOKENS</strong></td>
+        <td>Aktif oturum sayısı</td>
+        <td>user_id (FK, UNIQUE), token (UNIQUE)</td>
+        <td>JWT refresh token yönetimi</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3.3 İlişkiler ve Yabancı Anahtar Yapısı</h3>
+
+  <table>
+    <thead>
+      <tr><th>İlişki Türü</th><th>Kaynak Tablo</th><th>Hedef Tablo</th><th>JPA Anotasyonu</th><th>Cascade</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1:1</td><td>USERS</td><td>CUSTOMER_PROFILES</td><td>@OneToOne (mappedBy: user)</td><td>ALL</td></tr>
+      <tr><td>1:N</td><td>USERS</td><td>STORES</td><td>@OneToMany (mappedBy: owner)</td><td>—</td></tr>
+      <tr><td>1:N</td><td>USERS</td><td>ORDERS</td><td>@OneToMany (mappedBy: user)</td><td>—</td></tr>
+      <tr><td>M:1</td><td>STORES</td><td>USERS</td><td>@ManyToOne</td><td>—</td></tr>
+      <tr><td>1:N</td><td>STORES</td><td>PRODUCTS</td><td>@OneToMany (mappedBy: store)</td><td>—</td></tr>
+      <tr><td>M:1</td><td>PRODUCTS</td><td>CATEGORIES</td><td>@ManyToOne</td><td>—</td></tr>
+      <tr><td>1:N</td><td>PRODUCTS</td><td>REVIEWS</td><td>@OneToMany (cascade: ALL, orphanRemoval)</td><td>ALL</td></tr>
+      <tr><td>1:1</td><td>ORDERS</td><td>SHIPMENTS</td><td>@OneToOne (cascade: ALL)</td><td>ALL</td></tr>
+      <tr><td>1:N</td><td>ORDERS</td><td>ORDER_ITEMS</td><td>@OneToMany (cascade: ALL, orphanRemoval)</td><td>ALL</td></tr>
+      <tr><td>1:N</td><td>ORDERS</td><td>PAYMENTS</td><td>@OneToMany (cascade: ALL, orphanRemoval)</td><td>ALL</td></tr>
+      <tr><td>M:1 (self)</td><td>CATEGORIES</td><td>CATEGORIES</td><td>@ManyToOne (parent_id)</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    <div class="box-title">Tasarım Kararı: ORDER_ITEMS'da Tarihsel Fiyat</div>
+    ORDER_ITEMS tablosundaki <em>price</em> alanı, sipariş anındaki ürün fiyatını saklar.
+    Bu yaklaşım, ürün fiyatı sonradan değişse bile sipariş tutarı doğruluğunu
+    korumak için bilinçli olarak tercih edilmiştir (snapshot pattern).
+  </div>
+
+</div>
+
+<!-- ================================================================
+     BÖLÜM 4: SPRING BOOT API
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-num">Bölüm 4</div>
+    <h2>Backend: Spring Boot API ve Güvenlik Mimarisi</h2>
+  </div>
+
+  <div class="chapter-intro">
+    Bu bölümde Spring Boot ile geliştirilen RESTful API'nin güvenlik altyapısı (JWT, RBAC)
+    ve mevcut uç noktaların (endpoints) genel görünümü sunulmaktadır.
+  </div>
+
+  <h3>4.1 JWT Kimlik Doğrulama Akışı</h3>
+
+  <p>
+    Platform, oturum (session) tabanlı yaklaşım yerine <strong>stateless JWT (JSON Web Token)</strong>
+    mimarisini benimsemiştir. Bu tercih, özellikle Python AI servisi gibi farklı dil ve platformlardaki
+    bileşenlerin aynı token ile kimlik doğrulayabilmesi açısından kritik bir avantaj sağlamaktadır.
+  </p>
+
+  <p>
+    Kimlik doğrulama süreci şu adımları izler: Kullanıcı <code>/api/auth/login</code> uç noktasına
+    e-posta ve şifre ile istek gönderir. Şifre, veritabanındaki BCrypt hash ile karşılaştırılır.
+    Doğrulama başarılıysa HS256 algoritmasıyla imzalanmış bir JWT ve bir refresh token üretilir.
+    Sonraki isteklerde istemci bu token'ı <code>Authorization: Bearer &lt;token&gt;</code> başlığında iletir.
+    <code>JwtAuthenticationFilter</code>, her istekte token imzasını ve son kullanma tarihini doğrular;
+    ardından kullanıcı rolünü token'dan değil, veritabanından çekerek güvenliği güçlendirir.
+  </p>
+
+  <table>
+    <thead><tr><th>JWT Özelliği</th><th>Değer</th></tr></thead>
+    <tbody>
+      <tr><td>İmzalama Algoritması</td><td>HMAC-SHA256 (HS256)</td></tr>
+      <tr><td>Token Geçerlilik Süresi</td><td>86.400.000 ms (24 saat)</td></tr>
+      <tr><td>Refresh Token</td><td>Tek kullanımlık, veritabanında saklanır</td></tr>
+      <tr><td>Oturum Tipi</td><td>Stateless (SessionCreationPolicy.STATELESS)</td></tr>
+      <tr><td>CORS İzin Verilen Origin</td><td>http://localhost:4200 (Angular dev server)</td></tr>
+      <tr><td>Şifre Hashleme</td><td>BCrypt</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 RBAC Güvenlik Mimarisi</h3>
+
+  <p>
+    Rol tabanlı erişim kontrolü (RBAC), iki katmanda uygulanmaktadır:
+  </p>
+
+  <ol>
+    <li>
+      <strong>Rota seviyesi (SecurityConfig):</strong> <code>/api/admin/**</code> rotaları yalnızca
+      ADMIN rolüne açıktır. <code>/api/auth/**</code> public endpointlere serbesttir.
+    </li>
+    <li>
+      <strong>Metod seviyesi (@PreAuthorize):</strong> Her kontrolör metoduna rol kısıtlaması
+      anotasyonla eklenir. Örneğin, ürün oluşturma yalnızca CORPORATE veya ADMIN rolüne izin verir;
+      checkout yalnızca INDIVIDUAL rolüne açıktır.
+    </li>
+  </ol>
+
+  <table>
+    <thead><tr><th>Rol</th><th>API Erişim Kapsamı</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>ADMIN</strong></td>
+        <td>Tüm endpointler; kullanıcı yönetimi (CRUD), mağaza aktif/pasif toggle, kategori yönetimi, platform analitikleri, ham SQL çalıştırma</td>
+      </tr>
+      <tr>
+        <td><strong>CORPORATE</strong></td>
+        <td>Kendi mağazasının ürün CRUD işlemleri, sipariş durum güncelleme, mağaza analitiği, müşteri listesi, yorumlara yanıt</td>
+      </tr>
+      <tr>
+        <td><strong>INDIVIDUAL</strong></td>
+        <td>Ürün gezinme, sepet, checkout, kendi siparişleri, kendi yorumları, kişisel profil ve harcama analitiği</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>4.3 REST API Uç Noktaları</h3>
+
+  <div class="endpoint-block">
+<span class="comment-text">## Kimlik Doğrulama — /api/auth</span>
+<span class="method-post">POST</span> <span class="path-text">/api/auth/register</span>        <span class="comment-text">// Yeni kullanıcı kaydı</span>
+<span class="method-post">POST</span> <span class="path-text">/api/auth/login</span>           <span class="comment-text">// Giriş → JWT + refresh token döner</span>
+<span class="method-post">POST</span> <span class="path-text">/api/auth/refresh</span>         <span class="comment-text">// Refresh token ile yeni JWT üretir</span>
+  </div>
+
+  <div class="endpoint-block">
+<span class="comment-text">## Ürün Yönetimi — /api/products</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/products</span>             <span class="comment-text">// Sayfalı liste; kategori/arama filtresi</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/products/{id}</span>        <span class="comment-text">// Tek ürün detayı</span>
+<span class="method-post">POST</span>   <span class="path-text">/api/products</span>             <span class="comment-text">// Yeni ürün [CORPORATE, ADMIN]</span>
+<span class="method-put">PUT</span>    <span class="path-text">/api/products/{id}</span>        <span class="comment-text">// Ürün güncelleme [CORPORATE, ADMIN]</span>
+<span class="method-delete">DELETE</span> <span class="path-text">/api/products/{id}</span>        <span class="comment-text">// Ürün silme [CORPORATE, ADMIN]</span>
+  </div>
+
+  <div class="endpoint-block">
+<span class="comment-text">## Sipariş Yönetimi — /api/orders</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/orders</span>               <span class="comment-text">// Rol bazlı liste (ADMIN: hepsi, CORP: mağazası, IND: kendisi)</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/orders/my</span>            <span class="comment-text">// Aktif kullanıcının siparişleri</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/orders/{id}</span>          <span class="comment-text">// Sipariş detayı</span>
+<span class="method-patch">PATCH</span>  <span class="path-text">/api/orders/{id}/status</span>   <span class="comment-text">// Durum güncelleme [ADMIN, CORPORATE]</span>
+<span class="method-post">POST</span>   <span class="path-text">/api/orders/checkout</span>      <span class="comment-text">// Sipariş oluştur [INDIVIDUAL]</span>
+  </div>
+
+  <div class="endpoint-block">
+<span class="comment-text">## Analitik — /api/analytics</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/analytics/platform/kpis</span>       <span class="comment-text">// Platform geneli KPI'lar</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/analytics/revenue/trend</span>        <span class="comment-text">// Gelir trendi</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/analytics/products/top</span>         <span class="comment-text">// En çok satan ürünler</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/analytics/users/demographics</span>  <span class="comment-text">// Kullanıcı demografisi</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/analytics/corporate/kpis</span>       <span class="comment-text">// Mağaza KPI [CORPORATE]</span>
+<span class="method-get">GET</span>    <span class="path-text">/api/analytics/my/stats</span>             <span class="comment-text">// Kişisel istatistik</span>
+  </div>
+
+  <div class="endpoint-block">
+<span class="comment-text">## Diğer Controllerlar</span>
+<span class="method-post">POST</span>   <span class="path-text">/api/chat/ask</span>             <span class="comment-text">// AI ajanına soru yönlendirme</span>
+<span class="method-post">POST</span>   <span class="path-text">/api/query/execute</span>        <span class="comment-text">// Ham SQL çalıştırma [ADMIN only]</span>
+<span class="comment-text">// + /api/reviews, /api/categories, /api/stores, /api/users, /api/shipments</span>
+  </div>
+
+</div>
+
+<!-- ================================================================
+     BÖLÜM 5: ANGULAR
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-num">Bölüm 5</div>
+    <h2>Frontend: Angular Mimarisi</h2>
+  </div>
+
+  <div class="chapter-intro">
+    Bu bölümde Angular 21 ile geliştirilen frontend uygulamasının bileşen yapısı,
+    yönlendirme stratejisi ve kullanılan kütüphaneler açıklanmaktadır.
+  </div>
+
+  <h3>5.1 Bileşen Hiyerarşisi ve Modül Yapısı</h3>
+
+  <p>
+    Uygulama, Angular'ın modern <strong>Standalone Components</strong> mimarisini benimseyerek
+    NgModule bağımlılığından arındırılmıştır. Dizin yapısı üç ana katmana ayrılmıştır:
+  </p>
+
+  <table>
+    <thead><tr><th>Katman</th><th>Dizin</th><th>İçerik</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Core</strong></td>
+        <td><code>src/app/core/</code></td>
+        <td>Route guard'lar (admin, corporate, individual, auth), HTTP interceptor (JWT ekleme + 401 yönetimi), model (interface) tanımları, tüm entity servisleri</td>
+      </tr>
+      <tr>
+        <td><strong>Features</strong></td>
+        <td><code>src/app/features/</code></td>
+        <td>
+          <strong>admin/</strong>: Dashboard, kullanıcı/mağaza/kategori yönetimi, platform analitiği, denetim logları<br>
+          <strong>corporate/</strong>: Mağaza dashboard'u, ürün yönetimi, sipariş takibi, müşteri listesi, satış analitiği, yorumlara yanıt<br>
+          <strong>individual/</strong>: Ürün arama, sepet, checkout, sipariş takibi, yorumlar, profil, kişisel harcama analitiği
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Shared</strong></td>
+        <td><code>src/app/shared/</code></td>
+        <td>Navbar, sidebar, AI chat widget, sayfalama, grafik bileşenleri (bar/line/pie/KPI kartı), veri tablosu, yüklenme animasyonu, onay diyaloğu, bildirim tostu</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 Yönlendirme ve Guard Yapısı</h3>
+
+  <p>
+    Tüm feature rotaları <code>loadComponent()</code> ile <strong>lazy-load</strong> edilmektedir.
+    Bu yaklaşım sayesinde kullanıcı uygulamayı açtığında yalnızca login ekranına ait kod
+    indirilir; diğer modüller yalnızca ihtiyaç anında yüklenir.
+  </p>
+
+  <p>
+    Yetkilendirme dört adet guard ile sağlanır. Kullanıcı giriş yaptıktan sonra,
+    <code>AuthService</code> localStorage'a saklanan role değerine göre hangi dashboard'a
+    yönlendirileceğini belirler.
+  </p>
+
+  <table>
+    <thead><tr><th>Guard</th><th>Kontrol Edilen Koşul</th><th>Başarısızlık Durumu</th></tr></thead>
+    <tbody>
+      <tr><td><code>authGuard</code></td><td>Token var mı?</td><td>Login sayfasına yönlendir</td></tr>
+      <tr><td><code>adminGuard</code></td><td>Role === 'ADMIN'?</td><td>Login sayfasına yönlendir</td></tr>
+      <tr><td><code>corporateGuard</code></td><td>Role === 'CORPORATE'?</td><td>Login sayfasına yönlendir</td></tr>
+      <tr><td><code>individualGuard</code></td><td>Role === 'INDIVIDUAL'?</td><td>Login sayfasına yönlendir</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.3 Kullanılan Kütüphaneler ve Seçim Gerekçeleri</h3>
+
+  <table>
+    <thead><tr><th>Kütüphane</th><th>Versiyon</th><th>Kullanım Amacı</th></tr></thead>
+    <tbody>
+      <tr><td><strong>@angular/core</strong></td><td>21.1.0</td><td>Uygulama çerçevesi</td></tr>
+      <tr><td><strong>@swimlane/ngx-charts</strong></td><td>23.1.0</td><td>Çubuk, çizgi ve pasta grafikleri; Angular ile doğal entegrasyon</td></tr>
+      <tr><td><strong>D3.js</strong></td><td>7.9.0</td><td>ngx-charts'ın altta kullandığı SVG render motoru</td></tr>
+      <tr><td><strong>RxJS</strong></td><td>7.8.0</td><td>Reaktif HTTP iletişimi; HTTP interceptor ve asenkron veri akışı</td></tr>
+      <tr><td><strong>@angular/router</strong></td><td>21.1.0</td><td>Lazy-loading ve guard destekli yönlendirme</td></tr>
+      <tr><td><strong>@angular/forms</strong></td><td>21.1.0</td><td>Reactive Forms ile form validasyonu</td></tr>
+    </tbody>
+  </table>
+
+  <div class="success-box">
+    <div class="box-title">AI Chat Widget Entegrasyonu</div>
+    Shared katmanındaki <strong>AI Chat</strong> bileşeni, ekranın sağ alt köşesine sabitlenmiş
+    bir sohbet arayüzü sunar. Kullanıcının doğal dil sorusu <code>ChatService</code> aracılığıyla
+    <code>POST /api/chat/ask</code> endpointine gönderilir; dönen yanıt metin olarak ve
+    varsa grafik spec JSON'u olarak render edilir.
+  </div>
+
+</div>
+
+<!-- ================================================================
+     BÖLÜM 6: AI CHATBOT
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-num">Bölüm 6</div>
+    <h2>AI Chatbot: Multi-Agent LangGraph Mimarisi</h2>
+  </div>
+
+  <div class="chapter-intro">
+    Bu bölümde DataPulse AI'ın merkezi yapay zeka bileşeni olan Text2SQL çok-ajanlı sistem
+    ayrıntılı olarak açıklanmaktadır. Sistem, Python ve LangGraph kullanılarak geliştirilmiş
+    olup FastAPI üzerinden REST API sunmaktadır.
+  </div>
+
+  <h3>6.1 Mimari Genel Bakış</h3>
+
+  <p>
+    Sistem, <strong>LangGraph durum makinesi (state machine)</strong> üzerine inşa edilmiştir.
+    Tüm ajanlar ortak bir <code>AgentState</code> (TypedDict) nesnesi üzerinden iletişim kurar;
+    bu nesne bir ajan tarafından güncellenerek bir sonrakine aktarılır. LLM modeli olarak
+    <strong>Google Gemini 2.0 Flash</strong> (sıcaklık=0, deterministik) kullanılmakta, OpenAI
+    GPT modelleri ise alternatif olarak yapılandırılabilmektedir.
+  </p>
+
+  <p><strong>AgentState içeriği:</strong></p>
+  <ul>
+    <li><strong>Girdi:</strong> <code>question</code> (kullanıcı sorusu), <code>user_id</code></li>
+    <li><strong>Güvenlik:</strong> <code>verified_role</code>, <code>verified_store_ids</code>, <code>guardrail_status</code>, <code>guardrail_blocked_reason</code></li>
+    <li><strong>İşleme:</strong> <code>is_in_scope</code>, <code>iteration_count</code> (yeniden deneme sayacı)</li>
+    <li><strong>SQL:</strong> <code>sql_query</code>, <code>query_result</code>, <code>query_data</code>, <code>error</code></li>
+    <li><strong>Çıktı:</strong> <code>final_answer</code>, <code>visualization_code</code>, <code>needs_visualization</code></li>
+  </ul>
+
+  <h3>6.2 Ajan Tanımları ve Sorumlulukları</h3>
+
+  <table>
+    <thead><tr><th>Ajan</th><th>Rol Başlığı</th><th>Temel Sorumluluk</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Guardrails Agent</strong></td>
+        <td>Güvenlik ve Kapsam Yöneticisi</td>
+        <td>Kullanıcı kimliğini DB'den doğrular, prompt injection'ı engeller, sorgunun e-ticaret kapsamında olup olmadığını belirler, rakip platform karşılaştırmalarını bloklar</td>
+      </tr>
+      <tr>
+        <td><strong>SQL Agent</strong></td>
+        <td>SQL Uzmanı</td>
+        <td>Role özgü şema bağlamıyla LLM'e SQL ürettirir; INDIVIDUAL için STORES tablosu yasağı, CORPORATE için owner_id filtresi zorunluluğu</td>
+      </tr>
+      <tr>
+        <td><strong>Execute SQL</strong></td>
+        <td>Güvenli Çalıştırıcı</td>
+        <td>SQLAlchemy üzerinden sorguyu çalıştırır, max 200 satır döner, tarih alanlarını JSON-serializable formatına çevirir</td>
+      </tr>
+      <tr>
+        <td><strong>Error Agent</strong></td>
+        <td>Hata Kurtarma Uzmanı</td>
+        <td>Başarısız SQL'i LLM'e teşhis ettirir ve düzelttirir; maksimum 3 deneme hakkı vardır</td>
+      </tr>
+      <tr>
+        <td><strong>Analysis Agent</strong></td>
+        <td>Veri Analisti</td>
+        <td>Sorgu sonuçlarını Türkçe sade dille açıklar; görselleştirme gerekip gerekmediğine karar verir</td>
+      </tr>
+      <tr>
+        <td><strong>Visualization Agent</strong></td>
+        <td>Görselleştirme Uzmanı</td>
+        <td>Veri boyutuna ve soru bağlamına göre çubuk/çizgi/pasta grafik JSON spec'i üretir; Angular chat widget'ında render edilir</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>6.3 Güvenlik ve RBAC Katmanı</h3>
+
+  <p>
+    AI sisteminin en kritik bileşeni <strong>Guardrails Agent</strong>'tır. Bu ajan frontend'den
+    gelen user_id'ye körü körüne güvenmek yerine her sorguda veritabanına doğrudan bağlanarak
+    kullanıcı rolünü ve mağaza sahipliğini teyit eder. Bu yaklaşım, token manipülasyonu veya
+    API doğrulama atlaması durumlarında bile veri sızıntısını önlemektedir.
+  </p>
+
+  <p>Güvenlik katmanının denetim noktaları:</p>
+  <ul>
+    <li><strong>Kimlik doğrulama:</strong> <code>SELECT role_type FROM USERS WHERE id = ?</code> sorgusuyla veritabanından doğrulama</li>
+    <li><strong>Prompt injection engelleme:</strong> "ignore instructions", "önceki talimatları unut", "DAN mode" gibi 20+ Türkçe ve İngilizce regex kalıbı</li>
+    <li><strong>Filtre atlatma engelleme:</strong> WHERE clause'u kaldırmaya yönelik kalıpları (örn. "without store_id filter") tespit eder</li>
+    <li><strong>Çapraz kiracı erişim engeli:</strong> CORPORATE kullanıcının başka mağaza verilerini sorgulamaması</li>
+    <li><strong>Rol kısıtlamaları:</strong> INDIVIDUAL rolü STORES tablosuna hiçbir koşulda erişemez</li>
+    <li><strong>Rakip platform engeli:</strong> Amazon, Trendyol, eBay, Shopify gibi anahtar kelimeler bloklanır</li>
+  </ul>
+
+  <h3>6.4 Ajanlar Arası İletişim Akışı</h3>
+
+  <div class="flow-container">
+    <div class="flow-node start">BAŞLANGIÇ — Kullanıcı Sorusu</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-node guard">1. Guardrails Agent</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-branches">
+      <div class="flow-branch">
+        <div class="flow-branch-label">Selamlama / Kapsam Dışı / Engellendi</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node branch-end">final_answer → BİTİŞ</div>
+      </div>
+      <div class="flow-branch">
+        <div class="flow-branch-label">Kapsam İçi (is_in_scope = True)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node sql">2. SQL Agent</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node exec">3. Execute SQL</div>
+        <div class="flow-branches">
+          <div class="flow-branch">
+            <div class="flow-branch-label">Hata + retry &lt; 3</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node error">4. Error Agent</div>
+            <div class="flow-arrow">↺ Execute SQL'e döner</div>
+          </div>
+          <div class="flow-branch">
+            <div class="flow-branch-label">Başarılı</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node analysis">5. Analysis Agent</div>
+            <div class="flow-branches">
+              <div class="flow-branch">
+                <div class="flow-branch-label">Görsel gerekmez</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-node end">BİTİŞ</div>
+              </div>
+              <div class="flow-branch">
+                <div class="flow-branch-label">Görsel gerekir</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-node viz">6. Visualization Agent</div>
+                <div class="flow-arrow">↓</div>
+                <div class="flow-node end">BİTİŞ</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================
+     BÖLÜM 7: ZORLUKLAR
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-num">Bölüm 7</div>
+    <h2>Karşılaşılan Zorluklar ve Çözümler</h2>
+  </div>
+
+  <h3>7.1 ETL: Eksik Sütun Sorunu ve Nasıl Aşıldı</h3>
+
+  <p>
+    Projenin en çok zaman alan ve en zorlu teknik kısmı <strong>veri setlerinin veritabanı
+    tablolarına doğru biçimde dağıtılması</strong> olmuştur. Altı farklı Kaggle veri seti
+    birbirinden tamamen bağımsız sistemlere ait olduğundan, bu veri setlerini tek bir
+    normalize şemada birleştirmek öngörülenden çok daha karmaşık bir hal aldı.
+  </p>
+
+  <p>
+    Temel sorun şuydu: Bir tabloyu doldurmaya başladığımızda bazı sütunlar sürekli boş
+    kalıyordu. Örneğin, PRODUCTS tablosunu DS1 (UCI Online Retail) ile doldurduğumuzda
+    <code>cost</code>, <code>stock_quantity</code> ve <code>icon</code> alanları tamamen
+    boş kalıyordu, çünkü bu veri seti sadece fatura bazlı kayıtlar içeriyordu ve ürün
+    katalog bilgisi sunmuyordu.
+  </p>
+
+  <div class="warning-box">
+    <div class="box-title">Karşılaşılan Sorun: Alanlar Arası Örtüşme Eksikliği</div>
+    DS1 → DS4 → DS5 aynı "ürün" kavramını farklı granülerlikte temsil ediyordu:
+    DS1 StockCode bazında fatura satırı, DS4 SKU bazında kategori, DS5 ise GrandTotal
+    bazında toplam sipariş tutarı sunuyordu. Bu üç veri setinin örtüşen kayıtları
+    bulunmadığından birini diğeriyle birleştirmek mümkün olmuyordu.
+  </div>
+
+  <p>
+    Çözüm sürecimiz iteratif (adım adım) bir yaklaşımla ilerledi:
+  </p>
+
+  <ol>
+    <li>
+      <strong>Önce temel alanları doldurduk:</strong> Her tablo için kritik sütunları
+      (PK, FK, zorunlu alanlar) mutlaka dolu olan veri setiyle eşleştirdik. Bu aşamada
+      her veri setinin hangi tabloyu "birincil olarak" beslediğini belgeledik.
+    </li>
+    <li>
+      <strong>Sonra "boş kalan" sütunları tespit ettik:</strong> Her tabloyu yükledikten
+      sonra SQL ile boş (NULL) sütunların oranını kontrol ettik.
+      <code>SELECT COUNT(*) FROM products WHERE cost IS NULL</code> gibi sorgularla
+      hangi alanların doldurulmadığını sistematik olarak izledik.
+    </li>
+    <li>
+      <strong>Ek veri çekme stratejisi geliştirdik:</strong> Boş kalan sütunlar için
+      önce mevcut diğer veri setlerini taradık. Örneğin, ürün maliyeti (<code>cost</code>)
+      bilgisi DS3'te "CostOfProduct" olarak geçiyordu; bu alanı PRODUCTS tablosuna
+      <code>cost</code> sütununa eşleştirdik. Ancak DS3 kayıtları PRODUCTS satırlarıyla
+      doğrudan ilişkilendirilemediğinden kategoriye göre ortalama maliyet değeri hesaplayıp
+      NULL'ları bu ortalama ile doldurduk.
+    </li>
+    <li>
+      <strong>Sentetik veri tamamlama:</strong> Bazı alanlar (örn. <code>stock_quantity</code>,
+      <code>icon</code>) hiçbir veri setinde bulunmuyordu. Bu alanlar için gerçekçi
+      rastgele değer üretim script'leri yazdık: stok miktarı için kategori bazında
+      normal dağılım, ikon için ürün kategorisiyle eşleşen emoji/svg kodu.
+    </li>
+    <li>
+      <strong>Yükleme sırası sorunlarını çözdük:</strong> Yabancı anahtar kısıtlamaları
+      nedeniyle tablolar doğru sırada yüklenmeliydi. Önce USERS, ardından CATEGORIES,
+      STORES, PRODUCTS, sonra ORDERS ve bağımlı tablolar. Bu sırayı ihlal ettiğimizde
+      FK constraint hatası alıyorduk. Sıra şemasını belgeleştirerek ve bir yükleme
+      script'i yazarak bu sorunu kalıcı olarak çözdük.
+    </li>
+  </ol>
+
+  <div class="success-box">
+    <div class="box-title">Sonuç</div>
+    Bu iteratif süreç yaklaşık 2-3 haftalık fazladan çalışma gerektirdi. Ancak sonunda
+    tüm tablolar tutarlı ve ilişkisel bütünlüğü korunan verilerle dolduruldu. Ayrıca
+    bu deneyim, ETL sürecinde "önce şema, sonra veri" yaklaşımının ve her aşamada NULL
+    kontrolü yapmanın önemini bize somut biçimde öğretti.
+  </div>
+
+  <h3>7.2 Diğer Teknik Zorluklar</h3>
+
+  <table>
+    <thead><tr><th>Zorluk</th><th>Açıklama</th><th>Çözüm Yaklaşımı</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>RBAC ve LangGraph entegrasyonu</strong></td>
+        <td>Python AI servisi, Spring Boot'tan bağımsız çalıştığından JWT token'ına erişimi yoktu; rol bilgisini nasıl doğrulayacaktık?</td>
+        <td>AI servisine user_id parametresi eklendi; ajan her istekte doğrudan DB'ye bağlanarak rolü teyit eder. Token'a güvenme, DB'ye güven prensibi benimsendi.</td>
+      </tr>
+      <tr>
+        <td><strong>SQL hata döngüsü kontrolü</strong></td>
+        <td>LLM'nin ürettiği SQL bazen çalışmayan sorgular üretiyordu ve sonsuz döngüye girilme riski vardı.</td>
+        <td><code>iteration_count</code> alanı AgentState'e eklendi; 3 denemede düzelemeyen sorgu için kullanıcı dostu bir hata mesajıyla döngü sonlandırılıyor.</td>
+      </tr>
+      <tr>
+        <td><strong>Angular Standalone + Lazy Loading</strong></td>
+        <td>NgModule'den Standalone'a geçiş bazı shared bileşenlerin import edilme biçimini değiştirdi.</td>
+        <td>Ortak kullanılan bileşenler <code>shared-module.ts</code> altında toplandı; her standalone bileşen bu modülü doğrudan import eder.</td>
+      </tr>
+      <tr>
+        <td><strong>CORS yapılandırması</strong></td>
+        <td>Angular dev server (4200) ile Spring Boot (8080) ve Python AI (8000) arası CORS hataları alındı.</td>
+        <td>Spring SecurityConfig'de allowedOrigins, Angular proxy.config.json'da hedef servise yönlendirme ayarları yapıldı.</td>
+      </tr>
+      <tr>
+        <td><strong>Grafik türü otomatik seçimi</strong></td>
+        <td>Visualization Agent her sorgu için doğru grafik türünü nasıl belirleyecekti?</td>
+        <td>Soru metninde zaman ifadeleri (ay, hafta, trend) çizgi grafik; dağılım ifadeleri pasta grafik; diğerleri için çubuk grafik kuralı benimsendi.</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<!-- ================================================================
+     BÖLÜM 8: SONUÇ
+     ================================================================ -->
+<div class="page-break"></div>
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-num">Bölüm 8</div>
+    <h2>Sonuç</h2>
+  </div>
+
+  <h3>8.1 Proje Değerlendirmesi</h3>
+
+  <p>
+    DataPulse AI, B2B2C e-ticaret modelinde çalışan çok katmanlı bir analitik platform olarak
+    başarıyla tamamlanmıştır. Spring Boot ile geliştirilen backend, JWT tabanlı stateless kimlik
+    doğrulama ve katmanlı RBAC güvenlik modeliyle 40'tan fazla REST uç noktasına güvenli erişim
+    sağlamaktadır. Angular 21 ile geliştirilen frontend, role özgü dashboard'lar ve entegre AI
+    chat widget'ı ile kullanıcı deneyimini ön planda tutmaktadır.
+  </p>
+
+  <p>
+    Projenin en özgün katkısı, doğal dil sorularını güvenli biçimde SQL'e dönüştüren ve
+    sonuçları otomatik görselleştiren <strong>altı ajanlı LangGraph mimarisidir</strong>.
+    Bu sistem; prompt injection saldırılarına, kiracılar arası veri sızıntısına ve hatalı
+    SQL çalıştırmasına karşı çok katmanlı güvenlik önlemleri içermektedir.
+  </p>
+
+  <p>
+    Süreç boyunca karşılaşılan en büyük teknik zorluk, birbirinden bağımsız altı veri
+    setinin tek bir normalize şemada bütünleştirilmesi olmuştur. Iteratif ETL yaklaşımı,
+    NULL sütun izleme ve sentetik veri tamamlama stratejileriyle bu sorun aşılmıştır.
+    Bu deneyim, gerçek dünya veri entegrasyon projelerinin karmaşıklığı hakkında değerli
+    bir pratik bilgi sağlamıştır.
+  </p>
+
+  <table>
+    <thead><tr><th>Değerlendirme Kriteri</th><th>Karşılanma Durumu</th><th>Not</th></tr></thead>
+    <tbody>
+      <tr><td>Veritabanı tasarımı ve veri entegrasyonu</td><td>✅ Tamamlandı</td><td>11 tablo, 6 veri seti, normalize şema</td></tr>
+      <tr><td>Spring Boot RESTful API</td><td>✅ Tamamlandı</td><td>40+ endpoint, JWT, RBAC, Swagger</td></tr>
+      <tr><td>Angular responsive frontend</td><td>✅ Tamamlandı</td><td>3 rol dashboard'u, lazy loading, grafik</td></tr>
+      <tr><td>Multi-Agent Text2SQL chatbot</td><td>✅ Tamamlandı</td><td>6 ajan, LangGraph, güvenlik katmanı</td></tr>
+      <tr><td>Rol bazlı chatbot erişimi</td><td>✅ Tamamlandı</td><td>DB-doğrulamalı RBAC, prompt injection engeli</td></tr>
+      <tr><td>Veri görselleştirme</td><td>✅ Tamamlandı</td><td>ngx-charts + AI ile otomatik grafik seçimi</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box" style="margin-top: 32px;">
+    <div class="box-title">Gelecek Çalışmalar</div>
+    Projenin mevcut durumunun ötesine taşınabilecek potansiyel geliştirmeler şunlardır:
+    WebSocket tabanlı gerçek zamanlı bildirimler (sipariş durum değişiklikleri, düşük stok uyarıları);
+    Docker/Kubernetes dağıtım yapılandırması ile ortam bağımsızlığı; CI/CD pipeline entegrasyonu;
+    LangGraph konuşma geçmişi (multi-turn) desteğiyle chatbot bağlam sürekliliği.
+  </div>
+
+  <br><br>
+
+  <div style="text-align: center; margin-top: 40px; padding: 30px; background: linear-gradient(135deg, #f0f0ff, #fafaff); border-radius: 12px; border: 1px solid #e0e0f0;">
+    <p style="font-size: 13pt; font-weight: 700; color: #302b63; margin-bottom: 8px;">DataPulse AI — Teknik Rapor</p>
+    <p style="color: #666; font-size: 10pt; margin: 0;">
+      Beren Susam &amp; Yusuf Karaoğlan &nbsp;|&nbsp;
+      Advanced Application Development (CSE 214) &nbsp;|&nbsp;
+      Nisan 2026
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>

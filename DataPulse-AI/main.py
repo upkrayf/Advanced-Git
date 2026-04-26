@@ -10,17 +10,15 @@ from typing import Optional, List
 
 from state import AgentState
 from agents import (
-    security_guardrail_node,
-    blocked_response_node,
-    out_of_scope_node,
-    sql_generator_node,
-    sql_validator_node,
-    execute_query_node,
-    error_recovery_node,
-    analysis_node,
+    guardrails_agent,
+    sql_agent,
+    execute_sql,
+    error_agent,
+    analysis_agent,
+    visualization_agent,
 )
 
-app = FastAPI(title="DataPulse AI", version="3.0.0")
+app = FastAPI(title="DataPulse AI", version="4.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,95 +28,115 @@ app.add_middleware(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  ROUTING
+#  ROUTING FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def route_after_guardrail(state: AgentState) -> str:
-    if state.get("guardrail_status") == "blocked":
-        return "blocked_response"
-    if state.get("is_in_scope"):
-        return "sql_generator"
-    return "out_of_scope"
+    """
+    If guardrail already set final_answer (greeting / blocked / out-of-scope) → END.
+    Otherwise (in-scope) → sql_agent.
+    """
+    if state.get("final_answer") or not state.get("is_in_scope"):
+        return "end"
+    return "sql_agent"
 
 
-def route_after_execution(state: AgentState) -> str:
+def route_after_execute_sql(state: AgentState) -> str:
+    """
+    If a final_answer was set during execution (forbidden / no-data) → END.
+    If there's an error and retries remain → error_agent.
+    Otherwise → analysis_agent.
+    """
     if state.get("final_answer"):
         return "end"
-    if state.get("error") and state.get("iteration_count", 0) < 2:
-        return "error_recovery"
-    return "analysis"
+    if state.get("error") and state.get("iteration_count", 0) < 3:
+        return "error_agent"
+    return "analysis_agent"
 
 
-def route_after_recovery(state: AgentState) -> str:
+def route_after_error_agent(state: AgentState) -> str:
+    """
+    If max retries hit (final_answer set) → END.
+    Otherwise → execute_sql with the fixed SQL.
+    """
     if state.get("final_answer"):
         return "end"
-    return "sql_generator"
+    return "execute_sql"
+
+
+def route_after_analysis(state: AgentState) -> str:
+    """
+    Decide Graph Need: if data has 2+ rows → visualization_agent, else → END.
+    """
+    if state.get("needs_visualization"):
+        return "visualization_agent"
+    return "end"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  LANGGRAPH WORKFLOW
 # ─────────────────────────────────────────────────────────────────────────────
 #
-#  security_guardrail  (DB lookup → sets verified_role, verified_store_ids)
-#      ├─[blocked]──────────────→ blocked_response → END
-#      ├─[out_of_scope]─────────→ out_of_scope     → END
-#      └─[in_scope]─────────────→ sql_generator
-#                                      ↓
-#                                 sql_validator
-#                                      ↓
-#                                 execute_query
-#                                  ├─[error, retry<2]→ error_recovery → sql_generator
-#                                  ├─[max retries]───→ END
-#                                  └─[success]───────→ analysis → END
+#  START
+#    │
+#    ▼
+#  guardrails_agent ──[greeting / blocked / out-of-scope]──→ END
+#    │ [in-scope]
+#    ▼
+#  sql_agent (generate + validate)
+#    │
+#    ▼
+#  execute_sql ──[error, retry<3]──→ error_agent ──→ execute_sql (loop)
+#    │                                    └──[max retries]──→ END
+#    │ [success]
+#    ▼
+#  analysis_agent
+#    │
+#    ├──[needs_visualization=True]──→ visualization_agent ──→ END
+#    └──[needs_visualization=False]─────────────────────────→ END
 
 workflow = StateGraph(AgentState)
 
-workflow.add_node("security_guardrail", security_guardrail_node)
-workflow.add_node("blocked_response",   blocked_response_node)
-workflow.add_node("out_of_scope",       out_of_scope_node)
-workflow.add_node("sql_generator",      sql_generator_node)
-workflow.add_node("sql_validator",      sql_validator_node)
-workflow.add_node("execute_query",      execute_query_node)
-workflow.add_node("error_recovery",     error_recovery_node)
-workflow.add_node("analysis",           analysis_node)
+workflow.add_node("guardrails_agent",    guardrails_agent)
+workflow.add_node("sql_agent",           sql_agent)
+workflow.add_node("execute_sql",         execute_sql)
+workflow.add_node("error_agent",         error_agent)
+workflow.add_node("analysis_agent",      analysis_agent)
+workflow.add_node("visualization_agent", visualization_agent)
 
-workflow.set_entry_point("security_guardrail")
+workflow.set_entry_point("guardrails_agent")
 
 workflow.add_conditional_edges(
-    "security_guardrail",
+    "guardrails_agent",
     route_after_guardrail,
-    {
-        "blocked_response": "blocked_response",
-        "out_of_scope":     "out_of_scope",
-        "sql_generator":    "sql_generator",
-    },
+    {"sql_agent": "sql_agent", "end": END},
 )
 
-workflow.add_edge("sql_generator", "sql_validator")
-workflow.add_edge("sql_validator", "execute_query")
+workflow.add_edge("sql_agent", "execute_sql")
 
 workflow.add_conditional_edges(
-    "execute_query",
-    route_after_execution,
+    "execute_sql",
+    route_after_execute_sql,
     {
-        "error_recovery": "error_recovery",
-        "analysis":       "analysis",
+        "error_agent":    "error_agent",
+        "analysis_agent": "analysis_agent",
         "end":            END,
     },
 )
 
 workflow.add_conditional_edges(
-    "error_recovery",
-    route_after_recovery,
-    {
-        "sql_generator": "sql_generator",
-        "end":           END,
-    },
+    "error_agent",
+    route_after_error_agent,
+    {"execute_sql": "execute_sql", "end": END},
 )
 
-workflow.add_edge("blocked_response", END)
-workflow.add_edge("out_of_scope",     END)
-workflow.add_edge("analysis",         END)
+workflow.add_conditional_edges(
+    "analysis_agent",
+    route_after_analysis,
+    {"visualization_agent": "visualization_agent", "end": END},
+)
+
+workflow.add_edge("visualization_agent", END)
 
 app_graph = workflow.compile()
 
@@ -129,18 +147,17 @@ app_graph = workflow.compile()
 class ChatRequest(BaseModel):
     question: str
     user_id: Optional[int] = None
-    # role_type and store_id are intentionally NOT accepted from frontend.
-    # They are always resolved from the database by the guardrail agent.
+    # role_type and store_id intentionally NOT accepted from frontend.
+    # Resolved from the database by guardrails_agent.
 
 
 class ChatResponse(BaseModel):
     reply: Optional[str]
     sql_query: Optional[str]
     data: List[dict]
-    guardrail_status: str        # "passed" | "blocked"
+    guardrail_status: str
     blocked_reason: Optional[str]
     visualization: Optional[str]
-    # Resolved identity (for debugging / frontend display)
     resolved_role: Optional[str]
     resolved_store_id: Optional[int]
 
@@ -152,26 +169,22 @@ class ChatResponse(BaseModel):
 @app.post("/ask", response_model=ChatResponse)
 async def ask_ai(request: ChatRequest):
     initial_state: AgentState = {
-        "question":          request.question,
-        "user_id":           request.user_id,
-        # DB-verified fields are populated by security_guardrail_node
-        "verified_role":     None,
+        "question":           request.question,
+        "user_id":            request.user_id,
+        "verified_role":      None,
         "verified_store_ids": None,
-        "verified_store_id": None,
-        # Security
-        "guardrail_status":       None,
+        "verified_store_id":  None,
+        "guardrail_status":        None,
         "guardrail_blocked_reason": None,
-        # Scope
-        "is_in_scope":       False,
-        # SQL pipeline
-        "sql_query":         None,
-        "query_result":      None,
-        "query_data":        [],
-        "error":             None,
-        "iteration_count":   0,
-        # Output
-        "final_answer":      None,
+        "is_in_scope":        False,
+        "sql_query":          None,
+        "query_result":       None,
+        "query_data":         [],
+        "error":              None,
+        "iteration_count":    0,
+        "final_answer":       None,
         "visualization_code": None,
+        "needs_visualization": None,
     }
 
     try:
@@ -181,13 +194,13 @@ async def ask_ai(request: ChatRequest):
         blocked_reason   = output.get("guardrail_blocked_reason")
 
         return ChatResponse(
-            reply           = output.get("final_answer"),
-            sql_query       = output.get("sql_query"),
-            data            = output.get("query_data") or [],
-            guardrail_status= guardrail_status,
-            blocked_reason  = blocked_reason if guardrail_status == "blocked" else None,
-            visualization   = output.get("visualization_code"),
-            resolved_role   = output.get("verified_role"),
+            reply             = output.get("final_answer"),
+            sql_query         = output.get("sql_query"),
+            data              = output.get("query_data") or [],
+            guardrail_status  = guardrail_status,
+            blocked_reason    = blocked_reason if guardrail_status == "blocked" else None,
+            visualization     = output.get("visualization_code"),
+            resolved_role     = output.get("verified_role"),
             resolved_store_id = output.get("verified_store_id"),
         )
 
@@ -208,7 +221,7 @@ async def ask_ai(request: ChatRequest):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "3.0.0"}
+    return {"status": "ok", "version": "4.0.0"}
 
 
 if __name__ == "__main__":

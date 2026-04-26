@@ -1,15 +1,19 @@
 """
-DataPulse AI — Multi-Agent Text-to-SQL with DB-verified Security
+DataPulse AI — Multi-Agent Text-to-SQL (LangGraph Architecture)
 
-Architecture:
-  SecurityGuardrailAgent → SQLGeneratorAgent → SQLValidatorAgent
-  → ExecuteQueryAgent → AnalysisAgent
+Agents:
+  1. Guardrails Agent   — scope validation, security checks, DB-verified identity
+  2. SQL Agent          — SQL generation + post-generation security validation
+  3. Execute SQL        — safe DB execution
+  4. Error Agent        — LLM-powered SQL diagnosis & fix (max 3 retries)
+  5. Analysis Agent     — natural language explanation of results
+  6. Visualization Agent — Plotly code generation
 
 Security layers:
-  1. DB-verified identity: role and store ownership always read from DB, never trusted from frontend
-  2. Pattern-based guardrail: prompt injection, filter bypass, cross-store access (regex, no LLM)
-  3. Role-based routing: INDIVIDUAL / CORPORATE / ADMIN get different SQL contexts
-  4. Post-generation SQL validation: owner_id filter presence confirmed before execution
+  • DB-verified identity: role/store read from DB, never trusted from frontend
+  • Pattern-based guardrail: prompt injection, filter bypass, cross-store (regex)
+  • Role-scoped SQL prompts: INDIVIDUAL / CORPORATE / ADMIN get different contexts
+  • Post-generation SQL validation: owner_id filter confirmed before execution
 """
 
 import os
@@ -33,7 +37,7 @@ logging.basicConfig(
 logger = logging.getLogger("datapulse.agents")
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  LLM
+#  LLM  (temperature=0 for deterministic SQL)
 # ─────────────────────────────────────────────────────────────────────────────
 
 selected_model = os.getenv("SELECTED_MODEL", "gemini-2.0-flash")
@@ -77,9 +81,8 @@ def _get_engine():
 
 def _get_user_context(user_id: int) -> Dict:
     """
-    Fetches the user's actual role and all owned store IDs from the database.
-    This is the authoritative source — frontend-sent role/store values are never trusted.
-    Returns {"role": str, "store_ids": List[int], "store_id": Optional[int]}
+    Fetches the user's actual role and owned store IDs from the database.
+    This is the authoritative source — frontend-sent values are never trusted.
     """
     try:
         engine = _get_engine()
@@ -176,11 +179,34 @@ _ECOMMERCE_WORDS = {
     "detay", "açıkla", "ver", "getir",
 }
 
-# Keywords that, combined with a store reference, indicate store-level financial data
 _STORE_SALES_KWS = [
     "satış", "satışlar", "ciro", "gelir", "kazanç", "hasılat",
     "revenue", "sales", "earnings", "performans", "performance",
 ]
+
+_BLOCKED_MESSAGES = {
+    "Prompt Injection": (
+        "Güvenlik politikası gereği bu isteği işleyemiyorum."
+    ),
+    "Filter Bypass": (
+        "Yalnızca kendi verilerinize erişim yetkiniz bulunmaktadır."
+    ),
+    "Cross-store Data Access": (
+        "Bu mağazanın verilerine erişim yetkiniz bulunmamaktadır. "
+        "Yalnızca kendi mağazanıza ait verileri sorgulayabilirsiniz."
+    ),
+    "Individual Store Sales Access": (
+        "Mağazaya özel satış ve ciro verilerine bireysel hesapla erişilemez. "
+        "Ürün fiyatları, kategori listeleri ve kendi sipariş geçmişiniz "
+        "hakkında sorular sorabilirsiniz."
+    ),
+    "Cross-user Data Access": (
+        "Başka kullanıcılara ait verileri görüntüleme yetkiniz bulunmamaktadır."
+    ),
+    "External Platform Comparison": (
+        "Yalnızca DataPulse platformundaki verilerinizi analiz edebilirim."
+    ),
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  DATABASE SCHEMA
@@ -233,7 +259,6 @@ def _check_bypass(question: str) -> bool:
     return any(re.search(p, q) for p in _BYPASS_PATTERNS)
 
 
-# Patterns that capture an explicit store number from natural language
 _STORE_REF_PATTERNS = [
     r"(?:store[_\s]?id|mağaza[_\s]?(?:id|no))[_\s]*[=:]\s*(\d+)",
     r"id\s*'?s[ıiuü]\s+(\d+)\s+olan\s+mağaza",
@@ -245,7 +270,6 @@ _STORE_REF_PATTERNS = [
 
 
 def _extract_mentioned_store_ids(question: str) -> List[int]:
-    """Extract all store IDs explicitly mentioned in the question text."""
     q = question.lower()
     found = []
     for pattern in _STORE_REF_PATTERNS:
@@ -255,10 +279,8 @@ def _extract_mentioned_store_ids(question: str) -> List[int]:
 
 def _is_store_level_query(question: str) -> bool:
     """
-    True if the question asks about store-level sales/revenue data.
-    Uses substring matching (not word-split) to handle Turkish morphology:
-      'satışları' contains 'satış', 'cirolar' contains 'ciro', etc.
-    Does NOT catch pure product catalog queries ('en ucuz laptop', 'ürün fiyatı').
+    True if the question asks about store-level sales/revenue.
+    Uses substring matching to handle Turkish morphology (satışları ⊃ satış).
     """
     q = question.lower()
     has_store_ref = bool(re.search(r"\b(?:mağaza|store|shop)\b", q))
@@ -271,7 +293,6 @@ def _is_store_level_query(question: str) -> bool:
 
 
 def _check_cross_user(question: str, user_id: int) -> bool:
-    """True if a non-ADMIN user is asking about a DIFFERENT user's private data."""
     q = question.lower()
     mentioned = re.findall(
         r"(?:customer|müşteri|kullanıcı|user)[_\s]*(?:id[_\s]*[=:]?\s*)?(\d+)", q
@@ -281,12 +302,10 @@ def _check_cross_user(question: str, user_id: int) -> bool:
 
 
 def _validate_individual_sql(sql: str) -> bool:
-    """True if an INDIVIDUAL's generated SQL wrongly references the STORES table."""
     return bool(re.search(r"\bSTORES\b", sql.upper()))
 
 
 def _sql_contains_owner_filter(sql: str, user_id: int) -> bool:
-    """True if SQL contains the mandatory STORES.owner_id = {user_id} filter."""
     patterns = [
         rf"owner_id\s*=\s*{user_id}\b",
         rf"[a-z_]+\.owner_id\s*=\s*{user_id}\b",
@@ -296,25 +315,24 @@ def _sql_contains_owner_filter(sql: str, user_id: int) -> bool:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  NODE: SECURITY GUARDRAIL AGENT
+#  AGENT 1 — GUARDRAILS AGENT
 # ─────────────────────────────────────────────────────────────────────────────
 
-def security_guardrail_node(state: AgentState) -> Dict:
+def guardrails_agent(state: AgentState) -> Dict:
     """
-    Layer-1 Security Gate.
+    Security and Scope Manager.
 
-    Check order:
-      0. DB-verified identity lookup (role and owned store IDs from DB, NOT from frontend)
-      1. Greeting fast-path
-      2. Prompt injection (regex, no LLM)
-      3. Filter bypass (regex, no LLM)
-      4. Store-level data access — role-based:
-           INDIVIDUAL  → blocked (store sales are not public)
-           CORPORATE   → allowed only for own store IDs
-           ADMIN       → unrestricted
-      5. Cross-user data access (non-ADMIN)
-      6. External platform comparison
-      7. E-commerce scope (keyword fast-path, then LLM fallback)
+    Responsibilities:
+      • DB-verified identity lookup (role and owned store IDs — never from frontend)
+      • Greeting fast-path
+      • Prompt injection & filter bypass detection (regex)
+      • Store-level data access control (role-based)
+      • Cross-user data access check
+      • External platform comparison block
+      • E-commerce scope validation (keyword fast-path → LLM fallback)
+
+    Sets final_answer directly for all terminal cases (greeting / blocked / out-of-scope).
+    Downstream nodes only run when is_in_scope=True.
     """
     question = state["question"]
     q_norm   = question.strip().lower().rstrip("!?. ")
@@ -327,16 +345,20 @@ def security_guardrail_node(state: AgentState) -> Dict:
         ctx = {"role": "INDIVIDUAL", "store_ids": [], "store_id": None}
 
     role      = ctx["role"]
-    store_ids = ctx["store_ids"]    # List[int] — all stores owned by this user
-    store_id  = ctx["store_id"]     # primary store
+    store_ids = ctx["store_ids"]
+    store_id  = ctx["store_id"]
 
-    _identity = {"verified_role": role, "verified_store_ids": store_ids, "verified_store_id": store_id}
+    _identity = {
+        "verified_role":      role,
+        "verified_store_ids": store_ids,
+        "verified_store_id":  store_id,
+        "guardrail_status":   "passed",
+    }
 
     # ── 1. Greeting ──────────────────────────────────────────────────────────
     if q_norm in _GREETINGS:
         return {
             **_identity,
-            "guardrail_status": "passed",
             "is_in_scope": False,
             "final_answer": (
                 "Merhaba! Ben DataPulse AI asistanıyım. "
@@ -350,9 +372,10 @@ def security_guardrail_node(state: AgentState) -> Dict:
         logger.warning("[GUARDRAIL] Prompt injection | user=%s q=%s", user_id, question[:120])
         return {
             **_identity,
-            "guardrail_status": "blocked",
+            "guardrail_status":        "blocked",
             "guardrail_blocked_reason": "Prompt Injection",
             "is_in_scope": False,
+            "final_answer": _BLOCKED_MESSAGES["Prompt Injection"],
         }
 
     # ── 3. Filter Bypass ──────────────────────────────────────────────────────
@@ -360,24 +383,26 @@ def security_guardrail_node(state: AgentState) -> Dict:
         logger.warning("[GUARDRAIL] Filter bypass | user=%s q=%s", user_id, question[:120])
         return {
             **_identity,
-            "guardrail_status": "blocked",
+            "guardrail_status":        "blocked",
             "guardrail_blocked_reason": "Filter Bypass",
             "is_in_scope": False,
+            "final_answer": _BLOCKED_MESSAGES["Filter Bypass"],
         }
 
     # ── 4. Store-level data access — role-based ───────────────────────────────
     if _is_store_level_query(question):
         if role == "INDIVIDUAL":
-            logger.warning("[GUARDRAIL] INDIVIDUAL store-sales blocked | user=%s q=%s", user_id, question[:120])
+            logger.warning("[GUARDRAIL] INDIVIDUAL store-sales blocked | user=%s", user_id)
             return {
                 **_identity,
-                "guardrail_status": "blocked",
+                "guardrail_status":        "blocked",
                 "guardrail_blocked_reason": "Individual Store Sales Access",
                 "is_in_scope": False,
+                "final_answer": _BLOCKED_MESSAGES["Individual Store Sales Access"],
             }
 
         if role == "CORPORATE":
-            mentioned = _extract_mentioned_store_ids(question)
+            mentioned    = _extract_mentioned_store_ids(question)
             unauthorized = [sid for sid in mentioned if sid not in store_ids]
             if unauthorized:
                 logger.warning(
@@ -386,20 +411,22 @@ def security_guardrail_node(state: AgentState) -> Dict:
                 )
                 return {
                     **_identity,
-                    "guardrail_status": "blocked",
+                    "guardrail_status":        "blocked",
                     "guardrail_blocked_reason": "Cross-store Data Access",
                     "is_in_scope": False,
+                    "final_answer": _BLOCKED_MESSAGES["Cross-store Data Access"],
                 }
         # ADMIN → no restriction
 
-    # ── 5. Cross-user data access (non-ADMIN) ────────────────────────────────
+    # ── 5. Cross-user data access ─────────────────────────────────────────────
     if role != "ADMIN" and user_id and _check_cross_user(question, user_id):
-        logger.warning("[GUARDRAIL] Cross-user access | user=%s q=%s", user_id, question[:120])
+        logger.warning("[GUARDRAIL] Cross-user access | user=%s", user_id)
         return {
             **_identity,
-            "guardrail_status": "blocked",
+            "guardrail_status":        "blocked",
             "guardrail_blocked_reason": "Cross-user Data Access",
             "is_in_scope": False,
+            "final_answer": _BLOCKED_MESSAGES["Cross-user Data Access"],
         }
 
     # ── 6. External platform comparison ───────────────────────────────────────
@@ -407,20 +434,17 @@ def security_guardrail_node(state: AgentState) -> Dict:
     if words & _CROSS_SITE_WORDS:
         return {
             **_identity,
-            "guardrail_status": "blocked",
+            "guardrail_status":        "blocked",
             "guardrail_blocked_reason": "External Platform Comparison",
             "is_in_scope": False,
-            "final_answer": (
-                "Üzgünüm, başka platformlar veya rakip sitelerle karşılaştırma yapamam. "
-                "Yalnızca DataPulse platformundaki verilerinizi analiz edebilirim."
-            ),
+            "final_answer": _BLOCKED_MESSAGES["External Platform Comparison"],
         }
 
-    # ── 7. E-commerce scope ───────────────────────────────────────────────────
+    # ── 7. E-commerce scope check ─────────────────────────────────────────────
     if words & _ECOMMERCE_WORDS:
-        return {**_identity, "guardrail_status": "passed", "is_in_scope": True}
+        return {**_identity, "is_in_scope": True}
 
-    # LLM fallback for ambiguous questions (question text only — no user context sent)
+    # LLM fallback for ambiguous questions
     response = llm.invoke(
         "Is the following question related to e-commerce data analytics? "
         "(orders, products, sales, revenue, customers, stores, shipments, reviews, payments) "
@@ -428,74 +452,31 @@ def security_guardrail_node(state: AgentState) -> Dict:
         f"Question: {question}"
     )
     in_scope = "YES" in response.content.upper()
-    return {**_identity, "guardrail_status": "passed", "is_in_scope": in_scope}
+
+    if not in_scope:
+        return {
+            **_identity,
+            "is_in_scope": False,
+            "final_answer": (
+                "Üzgünüm, bu konuda yardımcı olamam. "
+                "Yalnızca e-ticaret verileri hakkındaki sorularınızı yanıtlayabilirim."
+            ),
+        }
+
+    return {**_identity, "is_in_scope": True}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  NODE: BLOCKED RESPONSE
+#  AGENT 2 — SQL AGENT
 # ─────────────────────────────────────────────────────────────────────────────
 
-def blocked_response_node(state: AgentState) -> Dict:
-    if state.get("final_answer"):
-        return {}
-
-    reason = state.get("guardrail_blocked_reason", "Security Policy Violation")
-
-    _messages = {
-        "Prompt Injection": (
-            "Güvenlik politikası gereği bu isteği işleyemiyorum."
-        ),
-        "Filter Bypass": (
-            "Yalnızca kendi verilerinize erişim yetkiniz bulunmaktadır."
-        ),
-        "Cross-store Data Access": (
-            "Bu mağazanın verilerine erişim yetkiniz bulunmamaktadır. "
-            "Yalnızca kendi mağazanıza ait verileri sorgulayabilirsiniz."
-        ),
-        "Individual Store Sales Access": (
-            "Mağazaya özel satış ve ciro verilerine bireysel hesapla erişilemez. "
-            "Ürün fiyatları, kategori listeleri ve kendi sipariş geçmişiniz hakkında sorular sorabilirsiniz."
-        ),
-        "Cross-user Data Access": (
-            "Başka kullanıcılara ait verileri görüntüleme yetkiniz bulunmamaktadır."
-        ),
-        "External Platform Comparison": (
-            "Yalnızca DataPulse platformundaki verilerinizi analiz edebilirim."
-        ),
-    }
-
-    return {
-        "final_answer": _messages.get(
-            reason,
-            "Bu istek güvenlik politikası gereği reddedildi. Lütfen farklı bir soru sorun.",
-        )
-    }
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  NODE: OUT OF SCOPE
-# ─────────────────────────────────────────────────────────────────────────────
-
-def out_of_scope_node(state: AgentState) -> Dict:
-    if state.get("final_answer"):
-        return {}
-    return {
-        "final_answer": (
-            "Üzgünüm, bu konuda yardımcı olamam. "
-            "Yalnızca e-ticaret verileri (siparişler, ürünler, satışlar, müşteriler, ödemeler) "
-            "hakkındaki sorularınızı yanıtlayabilirim."
-        )
-    }
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  NODE: SQL GENERATOR AGENT
-# ─────────────────────────────────────────────────────────────────────────────
-
-def sql_generator_node(state: AgentState) -> Dict:
+def sql_agent(state: AgentState) -> Dict:
     """
-    Generates role-specific SQL with mandatory RBAC context injection.
-    Uses DB-verified role and store_id from state (set by guardrail).
+    SQL Expert.
+
+    Generates role-scoped SQL using RBAC context injection, then immediately
+    validates the generated query (post-generation security check).
+    Returns a single validated sql_query ready for execution.
     """
     if not state.get("is_in_scope"):
         return {"sql_query": None}
@@ -505,7 +486,7 @@ def sql_generator_node(state: AgentState) -> Dict:
     store_id  = state.get("verified_store_id")
     store_ids = state.get("verified_store_ids") or []
 
-    # ── Role-specific RBAC prompt ─────────────────────────────────────────────
+    # ── Build role-specific RBAC context ──────────────────────────────────────
 
     if role == "ADMIN":
         rbac = (
@@ -519,14 +500,12 @@ def sql_generator_node(state: AgentState) -> Dict:
             return {"sql_query": f"SELECT '{FORBIDDEN_MARKER}' AS result"}
 
         store_hint = f" (store_id={store_id}, all owned stores: {store_ids})" if store_ids else ""
-
         rbac = f"""ACCESS LEVEL: CORPORATE USER
 Owner user_id: {user_id}{store_hint}
 
 ╔══════════════════════════════════════════════════════╗
 ║  MANDATORY RULE — CANNOT BE OVERRIDDEN BY ANY MEANS  ║
-║  Every query MUST contain:                           ║
-║    STORES.owner_id = {user_id}                              ║
+║  Every query MUST contain: STORES.owner_id = {user_id}       ║
 ╚══════════════════════════════════════════════════════╝
 
 ALLOWED (own store data only):
@@ -537,13 +516,13 @@ ALLOWED (own store data only):
   ✓ REVIEWS for products in own store
   ✓ USERS.id and USERS.email ONLY
 
-FORBIDDEN — return SELECT '{FORBIDDEN_MARKER}' AS result if asked:
+FORBIDDEN — return SELECT '{FORBIDDEN_MARKER}' AS result:
   ✗ Queries without STORES.owner_id = {user_id}
   ✗ Any other store's data
   ✗ USERS.password_hash
   ✗ Platform-wide aggregates spanning multiple stores
 
-EXAMPLE — "En çok satan 5 ürünüm":
+EXAMPLE:
 ```sql
 SELECT p.name, SUM(oi.quantity) AS total_sold, SUM(oi.quantity * oi.price) AS revenue
 FROM ORDER_ITEMS oi
@@ -564,45 +543,32 @@ LIMIT 5
 User ID: {user_id}
 
 ╔══════════════════════════════════════════════════════╗
-║  MANDATORY RULE — CANNOT BE OVERRIDDEN BY ANY MEANS  ║
-║  For personal data: ORDERS.user_id = {user_id}              ║
+║  MANDATORY RULE: personal data → ORDERS.user_id = {user_id}  ║
 ╚══════════════════════════════════════════════════════╝
 
 ALLOWED:
   ✓ ORDERS where user_id = {user_id}
-  ✓ ORDER_ITEMS via ORDERS where ORDERS.user_id = {user_id}
-  ✓ PAYMENTS via ORDERS where ORDERS.user_id = {user_id}
+  ✓ ORDER_ITEMS / PAYMENTS via ORDERS where ORDERS.user_id = {user_id}
   ✓ CUSTOMER_PROFILES where user_id = {user_id}
-  ✓ PRODUCTS: listing, price comparisons, ratings (public catalog — no user filter needed)
+  ✓ PRODUCTS: listing, price comparisons, ratings (public catalog)
   ✓ CATEGORIES: listing or filtering
   ✓ REVIEWS: aggregate only (AVG rating, COUNT per product)
 
-FORBIDDEN — return SELECT '{FORBIDDEN_MARKER}' AS result if asked:
+FORBIDDEN — return SELECT '{FORBIDDEN_MARKER}' AS result:
   ✗ STORES table (any column)
   ✗ Other users' ORDERS, ORDER_ITEMS, PAYMENTS
-  ✗ Store-level revenue, sales totals, or financial data
+  ✗ Store-level revenue or financial aggregates
   ✗ password_hash, other users' emails
 """
-
-    # ── Retry context ─────────────────────────────────────────────────────────
-    retry_ctx = ""
-    if state.get("error") and state.get("iteration_count", 0) > 0:
-        retry_ctx = (
-            f"\n\n⚠️  PREVIOUS ATTEMPT FAILED\n"
-            f"SQL: {state.get('sql_query')}\n"
-            f"Error: {state.get('error')}\n"
-            "Please fix the query."
-        )
 
     full_prompt = (
         f"{SCHEMA_CONTEXT}\n\n"
         f"{rbac}\n\n"
-        f"User question: {state['question']}"
-        f"{retry_ctx}\n\n"
+        f"User question: {state['question']}\n\n"
         "Generate the SQL query. Return ONLY the SQL inside a ```sql ... ``` block."
     )
 
-    logger.info("[SQL_GEN] role=%s user=%s store=%s q=%s", role, user_id, store_id, state["question"][:80])
+    logger.info("[SQL_AGENT] role=%s user=%s q=%s", role, user_id, state["question"][:80])
     response = llm.invoke(full_prompt)
     content  = response.content
 
@@ -612,80 +578,60 @@ FORBIDDEN — return SELECT '{FORBIDDEN_MARKER}' AS result if asked:
     elif content.strip().upper().startswith("SELECT"):
         sql = content.strip()
     else:
-        logger.error("[SQL_GEN] Could not extract SQL: %s", content[:300])
+        logger.error("[SQL_AGENT] Could not extract SQL: %s", content[:300])
         return {"sql_query": None}
 
-    logger.info("[SQL_GEN] Generated: %s", sql[:200])
+    # ── Post-generation security validation ───────────────────────────────────
+    if FORBIDDEN_MARKER not in sql:
+        if role == "INDIVIDUAL" and bool(re.search(r"\bSTORES\b", sql.upper())):
+            logger.warning("[SQL_AGENT] INDIVIDUAL SQL references STORES — blocked.")
+            sql = f"SELECT '{FORBIDDEN_MARKER}' AS result"
+
+        elif role == "CORPORATE" and user_id:
+            if not _sql_contains_owner_filter(sql, user_id):
+                logger.warning("[SQL_AGENT] Missing owner_id filter — attempting auto-fix.")
+                fix_prompt = (
+                    f"{SCHEMA_CONTEXT}\n\nCRITICAL SECURITY FIX:\n"
+                    f"Add mandatory `STORES.owner_id = {user_id}` to this query:\n"
+                    f"```sql\n{sql}\n```\n"
+                    "Return ONLY fixed SQL in ```sql ... ```."
+                )
+                fix_resp  = llm.invoke(fix_prompt)
+                fix_match = re.search(
+                    r"```sql\s*\n(.*?)\n```", fix_resp.content, re.DOTALL | re.IGNORECASE
+                )
+                if fix_match:
+                    fixed = fix_match.group(1).strip()
+                    sql = fixed if _sql_contains_owner_filter(fixed, user_id) \
+                          else f"SELECT '{FORBIDDEN_MARKER}' AS result"
+                else:
+                    sql = f"SELECT '{FORBIDDEN_MARKER}' AS result"
+
+    logger.info("[SQL_AGENT] Final SQL: %s", sql[:200])
     return {"sql_query": sql}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  NODE: SQL VALIDATOR AGENT
+#  AGENT 3 — EXECUTE SQL
 # ─────────────────────────────────────────────────────────────────────────────
 
-def sql_validator_node(state: AgentState) -> Dict:
+def execute_sql(state: AgentState) -> Dict:
     """
-    Post-generation safety check (last line of defense before DB execution).
-    CORPORATE: verifies STORES.owner_id filter is present; attempts auto-fix if missing.
-    INDIVIDUAL: verifies STORES table is not referenced.
+    Executes the validated SQL against the database.
+    Returns structured data for both LLM analysis and frontend rendering.
     """
-    sql     = state.get("sql_query")
-    role    = state.get("verified_role", "INDIVIDUAL")
-    user_id = state.get("user_id")
-
-    if not sql or FORBIDDEN_MARKER in sql:
-        return {}
-
-    if role == "INDIVIDUAL" and user_id:
-        if _validate_individual_sql(sql):
-            logger.warning("[SQL_VALIDATOR] INDIVIDUAL accessing STORES — blocked.")
-            return {"sql_query": f"SELECT '{FORBIDDEN_MARKER}' AS result"}
-        return {}
-
-    if role != "CORPORATE" or not user_id:
-        return {}
-
-    if _sql_contains_owner_filter(sql, user_id):
-        logger.info("[SQL_VALIDATOR] owner_id filter confirmed.")
-        return {}
-
-    # Missing filter — attempt LLM auto-fix
-    logger.warning("[SQL_VALIDATOR] Missing owner_id=%s filter. Attempting fix.", user_id)
-    fix_prompt = (
-        f"{SCHEMA_CONTEXT}\n\n"
-        f"CRITICAL SECURITY FIX:\n"
-        f"The SQL below is for CORPORATE user (owner user_id={user_id}) "
-        f"but is MISSING the mandatory `STORES.owner_id = {user_id}` filter.\n\n"
-        f"Original SQL:\n```sql\n{sql}\n```\n\n"
-        f"Rewrite to enforce `STORES.owner_id = {user_id}`. "
-        "Return ONLY the fixed SQL in ```sql ... ```."
-    )
-    fix_resp  = llm.invoke(fix_prompt)
-    fix_match = re.search(r"```sql\s*\n(.*?)\n```", fix_resp.content, re.DOTALL | re.IGNORECASE)
-
-    if fix_match:
-        fixed = fix_match.group(1).strip()
-        if _sql_contains_owner_filter(fixed, user_id):
-            logger.info("[SQL_VALIDATOR] Auto-fix successful.")
-            return {"sql_query": fixed}
-
-    logger.error("[SQL_VALIDATOR] Could not enforce owner_id filter — query blocked.")
-    return {"sql_query": f"SELECT '{FORBIDDEN_MARKER}' AS result"}
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  NODE: EXECUTE QUERY AGENT
-# ─────────────────────────────────────────────────────────────────────────────
-
-def execute_query_node(state: AgentState) -> Dict:
-    """Executes the validated SQL and returns structured data for both LLM and frontend."""
     sql = state.get("sql_query")
 
     if not sql:
         return {"query_result": None, "query_data": [], "error": "SQL üretimi başarısız oldu."}
 
     if FORBIDDEN_MARKER in sql:
-        return {"query_result": FORBIDDEN_MARKER, "query_data": [], "error": None}
+        return {
+            "query_result": FORBIDDEN_MARKER,
+            "query_data":   [],
+            "error":        None,
+            "final_answer": "Bu bilgiye erişim yetkiniz bulunmamaktadır.",
+        }
 
     try:
         engine = _get_engine()
@@ -695,7 +641,15 @@ def execute_query_node(state: AgentState) -> Dict:
             rows    = result.fetchall()
 
         if not rows:
-            return {"query_result": "NO_DATA", "query_data": [], "error": None}
+            return {
+                "query_result": "NO_DATA",
+                "query_data":   [],
+                "error":        None,
+                "final_answer": (
+                    "Belirtilen kriterlere uygun herhangi bir kayıt bulunamadı. "
+                    "Farklı bir tarih aralığı veya filtre deneyebilirsiniz."
+                ),
+            }
 
         structured: List[Dict] = []
         for row in rows:
@@ -712,26 +666,37 @@ def execute_query_node(state: AgentState) -> Dict:
                     record[col] = str(val)
             structured.append(record)
 
-        logger.info("[EXECUTE] %d rows returned.", len(structured))
+        logger.info("[EXECUTE_SQL] %d rows returned.", len(structured))
         return {
             "query_result": json.dumps(structured[:200], ensure_ascii=False),
-            "query_data": structured,
-            "error": None,
+            "query_data":   structured,
+            "error":        None,
         }
 
     except Exception as exc:
-        logger.error("[EXECUTE] DB error: %s", exc)
+        logger.error("[EXECUTE_SQL] DB error: %s", exc)
         return {"query_result": None, "query_data": [], "error": str(exc)}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  NODE: ERROR RECOVERY AGENT
+#  AGENT 4 — ERROR AGENT
 # ─────────────────────────────────────────────────────────────────────────────
 
-def error_recovery_node(state: AgentState) -> Dict:
+def error_agent(state: AgentState) -> Dict:
+    """
+    Error Recovery Specialist.
+
+    Diagnoses the SQL error using the LLM, generates a targeted fix,
+    and returns the corrected SQL to be retried by execute_sql.
+    Max 3 total attempts (iteration_count tracks retries).
+    Does NOT regenerate from scratch — fixes the specific error in-place.
+    """
+    error     = state.get("error", "Unknown error")
+    sql       = state.get("sql_query", "")
     iteration = state.get("iteration_count", 0) + 1
-    if iteration >= 2:
-        logger.warning("[RECOVERY] Max retries reached.")
+
+    if iteration >= 3:
+        logger.warning("[ERROR_AGENT] Max retries (%d) reached.", iteration)
         return {
             "iteration_count": iteration,
             "final_answer": (
@@ -739,34 +704,113 @@ def error_recovery_node(state: AgentState) -> Dict:
                 "Lütfen sorunuzu daha basit bir şekilde ifade edin."
             ),
         }
-    logger.info("[RECOVERY] Retry attempt %d.", iteration)
+
+    logger.info("[ERROR_AGENT] Diagnosing error (attempt %d): %s", iteration, error[:200])
+
+    fix_prompt = (
+        f"{SCHEMA_CONTEXT}\n\n"
+        f"The following SQL query failed with an error:\n\n"
+        f"SQL:\n```sql\n{sql}\n```\n\n"
+        f"Error message: {error}\n\n"
+        "You are an SQL error recovery specialist. Diagnose the exact cause of this error "
+        "and provide a corrected SQL query that fixes the issue. "
+        "Return ONLY the fixed SQL inside a ```sql ... ``` block, with zero explanation."
+    )
+
+    response  = llm.invoke(fix_prompt)
+    sql_match = re.search(
+        r"```sql\s*\n(.*?)\n```", response.content, re.DOTALL | re.IGNORECASE
+    )
+
+    if sql_match:
+        fixed_sql = sql_match.group(1).strip()
+        logger.info("[ERROR_AGENT] Fixed SQL (attempt %d): %s", iteration, fixed_sql[:150])
+        return {
+            "sql_query":       fixed_sql,
+            "error":           None,
+            "iteration_count": iteration,
+        }
+
+    logger.warning("[ERROR_AGENT] Could not extract fixed SQL from LLM response.")
     return {"iteration_count": iteration}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  CHART BUILDER
+#  AGENT 5 — ANALYSIS AGENT
 # ─────────────────────────────────────────────────────────────────────────────
 
-_TIME_KWS  = ["ay", "hafta", "gün", "günlük", "aylık", "trend", "zaman",
-               "tarih", "dönem", "weekly", "daily", "monthly", "tarihsel", "geçmiş"]
-_PIE_KWS   = ["dağılım", "oran", "yüzde", "pay", "pasta", "oranı",
-               "distribution", "percentage", "breakdown", "share"]
+def analysis_agent(state: AgentState) -> Dict:
+    """
+    Data Analyst.
+
+    Explains query results in natural Turkish language.
+    Also decides whether a visualization is warranted (needs_visualization flag).
+    """
+    res  = state.get("query_result")
+    data: List[Dict] = state.get("query_data") or []
+
+    if res == FORBIDDEN_MARKER or (res and FORBIDDEN_MARKER in str(res)):
+        return {
+            "final_answer":        "Bu bilgiye erişim yetkiniz bulunmamaktadır.",
+            "needs_visualization": False,
+            "visualization_code":  None,
+        }
+
+    if not data:
+        return {
+            "final_answer": (
+                "Belirtilen kriterlere uygun herhangi bir kayıt bulunamadı. "
+                "Farklı bir tarih aralığı veya filtre deneyebilirsiniz."
+            ),
+            "needs_visualization": False,
+            "visualization_code":  None,
+        }
+
+    prompt = (
+        f"Veri (SQL sorgu sonucu, JSON):\n"
+        f"{json.dumps(data[:50], ensure_ascii=False, indent=2)}\n\n"
+        f"Kullanıcı sorusu: {state['question']}\n\n"
+        "Soruya sağlanan verilerle doğrudan, net ve kısa bir şekilde cevap ver. "
+        "Önemli sayısal değerleri ve ürün/kategori isimlerini mutlaka belirt. "
+        "Giriş ve kapanış cümleleri ekleme. Markdown veya kod bloğu kullanma. "
+        "Yanıt Türkçe olmalı."
+    )
+
+    response = llm.invoke(prompt)
+
+    needs_viz = len(data) >= 2
+
+    logger.info("[ANALYSIS_AGENT] needs_visualization=%s", needs_viz)
+    return {
+        "final_answer":        response.content.strip(),
+        "needs_visualization": needs_viz,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CHART BUILDER  (deterministic — no LLM needed)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_TIME_KWS   = ["ay", "hafta", "gün", "günlük", "aylık", "haftalık", "trend",
+                "zaman", "tarih", "dönem", "weekly", "daily", "monthly", "tarihsel"]
+_PIE_KWS    = ["dağılım", "oran", "yüzde", "pay", "pasta", "oranı",
+                "distribution", "percentage", "breakdown", "share"]
 _NAME_HINTS = ["name", "ad", "isim", "category", "kategori", "month", "ay",
-               "date", "tarih", "status", "durum", "day", "gün", "label",
-               "product", "ürün", "store", "mağaza", "city", "şehir"]
+                "date", "tarih", "status", "durum", "day", "gün", "label",
+                "product", "ürün", "store", "mağaza", "city", "şehir"]
 _VAL_HINTS  = ["total", "sum", "count", "amount", "revenue", "value", "price",
-               "tutar", "gelir", "toplam", "adet", "sayi", "quantity",
-               "avg", "average", "rating", "puan", "oran"]
+                "tutar", "gelir", "toplam", "adet", "sayi", "quantity",
+                "avg", "average", "rating", "puan", "oran"]
 
 
 def _build_chart(data: List[Dict], question: str) -> Optional[str]:
     """
-    Builds a chart spec JSON string from query data.
-    Chart type is chosen based on question keywords:
-      - line  → time-series (trend, aylık, günlük, tarih)
-      - pie   → distribution (oran, dağılım, yüzde)
-      - bar   → comparisons (default)
-    Returns None if data is too sparse for a meaningful chart.
+    Builds a chart spec JSON string consumed by the Angular frontend.
+    Returns None if data is too sparse for a meaningful chart (< 2 rows).
+
+    Output format (JSON string):
+      {"type": "bar"|"line"|"pie", "title": str, "valueLabel": str,
+       "nameLabel": str, "data": [{"name": str, "value": float}, ...]}
     """
     if not data or len(data) < 2:
         return None
@@ -780,9 +824,9 @@ def _build_chart(data: List[Dict], question: str) -> Optional[str]:
     else:
         chart_type = "bar"
 
-    sample = data[0]
-    cols   = list(sample.keys())
-    name_col: Optional[str]  = None
+    sample    = data[0]
+    cols      = list(sample.keys())
+    name_col: Optional[str] = None
     value_col: Optional[str] = None
 
     for col in cols:
@@ -799,7 +843,8 @@ def _build_chart(data: List[Dict], question: str) -> Optional[str]:
         for col, val in sample.items():
             if isinstance(val, str) and name_col is None:
                 name_col = col
-            elif isinstance(val, (int, float)) and not isinstance(val, bool) and value_col is None:
+            elif (isinstance(val, (int, float)) and not isinstance(val, bool)
+                  and value_col is None):
                 value_col = col
 
     if name_col is None or value_col is None:
@@ -833,54 +878,20 @@ def _build_chart(data: List[Dict], question: str) -> Optional[str]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  NODE: ANALYSIS AGENT
+#  AGENT 6 — VISUALIZATION AGENT
 # ─────────────────────────────────────────────────────────────────────────────
 
-def analysis_node(state: AgentState) -> Dict:
-    """Produces the final Turkish text summary and deterministic chart JSON."""
-    error  = state.get("error")
-    res    = state.get("query_result")
+def visualization_agent(state: AgentState) -> Dict:
+    """
+    Visualization Specialist.
+
+    Builds a chart spec JSON string for the Angular frontend using the
+    deterministic _build_chart() helper.  Chart type is chosen from question
+    keywords (line / pie / bar).  Returns None when data is insufficient.
+    """
     data: List[Dict] = state.get("query_data") or []
+    question = state.get("question", "")
 
-    if error and not data:
-        return {
-            "final_answer": (
-                "Sorgu çalıştırılırken teknik bir hata oluştu. "
-                "Lütfen sorunuzu farklı bir şekilde ifade edin."
-            ),
-            "visualization_code": None,
-        }
-
-    if res == FORBIDDEN_MARKER or (res and FORBIDDEN_MARKER in str(res)):
-        return {
-            "final_answer": "Bu bilgiye erişim yetkiniz bulunmamaktadır.",
-            "visualization_code": None,
-        }
-
-    if not data:
-        return {
-            "final_answer": (
-                "Belirtilen kriterlere uygun herhangi bir kayıt bulunamadı. "
-                "Farklı bir tarih aralığı veya filtre deneyebilirsiniz."
-            ),
-            "visualization_code": None,
-        }
-
-    viz_json = _build_chart(data, state["question"])
-
-    prompt = (
-        f"Veri (SQL sorgu sonucu, JSON):\n"
-        f"{json.dumps(data[:50], ensure_ascii=False, indent=2)}\n\n"
-        f"Kullanıcı sorusu: {state['question']}\n\n"
-        "Soruya sağlanan verilerle doğrudan, net ve kısa bir şekilde cevap ver. "
-        "Önemli sayısal değerleri ve ürün/kategori isimlerini mutlaka belirt. "
-        "Giriş ve kapanış cümleleri ekleme. Markdown veya kod bloğu kullanma. "
-        "Yanıt Türkçe olmalı."
-    )
-
-    response = llm.invoke(prompt)
-
-    return {
-        "final_answer":       response.content.strip(),
-        "visualization_code": viz_json,
-    }
+    viz_json = _build_chart(data, question)
+    logger.info("[VIZ_AGENT] chart=%s", json.loads(viz_json).get("type") if viz_json else None)
+    return {"visualization_code": viz_json}

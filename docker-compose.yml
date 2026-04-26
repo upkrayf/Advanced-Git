@@ -1,0 +1,80 @@
+services:
+
+  # ── MySQL ──────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: datapulse-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - datapulse-network
+
+  # ── Spring Boot Backend ────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backendm
+    container_name: datapulse-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      APP_JWT_SECRET: ${JWT_SECRET}
+      APP_JWT_EXPIRATION: 86400000
+      APP_AI_SERVICE_URL: http://ai-service:8000/ask
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - datapulse-network
+
+  # ── Python / FastAPI AI Service ────────────────────────────────────────────
+  ai-service:
+    build:
+      context: ./DataPulse-AI
+    container_name: datapulse-ai
+    environment:
+      DATABASE_URL: mysql+pymysql://root:${MYSQL_ROOT_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SELECTED_MODEL: ${SELECTED_MODEL}
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - datapulse-network
+
+  # ── Angular Frontend (nginx) ───────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontendm
+    container_name: datapulse-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - datapulse-network
+
+# ── Shared network ────────────────────────────────────────────────────────────
+networks:
+  datapulse-network:
+    driver: bridge
+
+# ── Persistent storage ────────────────────────────────────────────────────────
+volumes:
+  mysql_data:

@@ -1,0 +1,130 @@
+# DataPulse: Advanced E-Commerce Analytics & AI-Powered Insights
+## Technical Report
+
+**Version:** 1.0  
+**Date:** April 26, 2026  
+**Subject:** Advanced Application Development Project  
+
+---
+
+### 1. Executive Summary
+DataPulse is a multi-tenant, role-aware e-commerce and analytics platform designed to bridge the gap between complex data structures and non-technical stakeholders. By integrating a Spring Boot backend, an Angular frontend, and a state-of-the-art Multi-Agent Text-to-SQL AI Chatbot, DataPulse provides actionable insights through natural language interaction. This report details the technical architecture, data engineering workflows, and AI implementations that constitute the system.
+
+---
+
+### 2. Architecture Decisions & Justifications
+
+#### 2.1 Technology Stack Overview
+The platform is built on a modern distributed architecture:
+- **Backend:** Spring Boot 3.x (Java 21)
+- **Frontend:** Angular 17+
+- **AI Engine:** Python (LangGraph, LangChain)
+- **Database:** MySQL (Primary) with PostgreSQL compatibility
+- **Authentication:** Stateless JWT with Refresh Token rotation
+
+#### 2.2 Backend Rationale
+Spring Boot was selected for its robust security ecosystem (Spring Security) and mature JPA/Hibernate integration. Given the requirement for multi-role access control (Admin, Corporate, Individual), Spring Security’s method-level authorization and filter chains provided the necessary granularity.
+
+#### 2.3 Frontend Rationale
+Angular’s component-based architecture and built-in state management capabilities (Service-based with RxJS) allowed for the creation of complex, reactive dashboards. The use of Lazy Loading ensures high performance even as the feature set grows.
+
+#### 2.4 AI Engine Rationale (LangGraph)
+Unlike traditional linear chains, LangGraph allows for a **state machine architecture**. This is critical for the "Error Agent" loop, where the system can cyclically diagnose and fix SQL errors before presenting them to the user.
+
+---
+
+### 3. Database Design & Data Modeling
+
+#### 3.1 Entity Relationship Overview
+The schema is designed for 3NF normalization while maintaining high query performance for the Text2SQL agent.
+
+- **USERS & CUSTOMER_PROFILES:** Handles authentication and demographic data.
+- **STORES:** Central entity for multi-tenancy. All products and sales are scoped to a Store.
+- **PRODUCTS & CATEGORIES:** Hierarchical catalog management.
+- **ORDERS & ORDER_ITEMS:** Transactional core.
+- **SHIPMENTS & PAYMENTS:** Fulfillment and financial tracking.
+- **REVIEWS:** Sentiment-indexed customer feedback.
+
+#### 3.2 Security and Multi-Tenancy
+Multi-tenancy is enforced at the database level:
+- **Corporate Users** are linked to Stores via `STORES.owner_id`.
+- **Individual Users** see only their own data via `ORDERS.user_id`.
+- **Admin Users** have a global view across all stores.
+
+---
+
+### 4. ETL Process (Extract, Transform, Load)
+
+#### 4.1 Data Sources
+We utilized six distinct Kaggle datasets to populate the system:
+1. **DS1 (Online Retail):** Product catalog and base pricing.
+2. **DS2 (Customer Behavior):** User demographics and satisfaction metrics.
+3. **DS3 (Shipping Data):** Logistics performance and warehouse blocks.
+4. **DS5 (E-Commerce Sales):** Historical transaction data.
+5. **DS6 (Amazon Reviews):** Customer feedback and rating distributions.
+
+#### 4.2 Transformation Logic (`EtlService.java`)
+The `EtlService` performs complex normalization:
+- **Date Normalization:** Various CSV date formats are standardized to `LocalDateTime`.
+- **Currency Handling:** Prices are normalized with a synthetic cost factor (60% of unit price) to enable profit margin analysis.
+- **ID Generation:** Surrogate keys are generated to link disparately sourced datasets (e.g., linking a customer from DS2 to an order in DS5).
+- **Data Cleansing:** Handling missing values and duplicates using `seenSkus` and `seenOrders` sets to ensure referential integrity.
+
+---
+
+### 5. API Documentation Overview
+
+#### 5.1 Authentication Layer
+- **Endpoint:** `/api/auth/login`
+- **Mechanism:** Returns an `AccessToken` (short-lived) and a `RefreshToken` (stored in DB).
+- **Security:** CSRF protection and role-based filters (`hasRole('ADMIN')`, etc.).
+
+#### 5.2 Key API Modules
+- **Product Module:** Search, Filter, and Store-specific catalog management.
+- **Order Module:** Status tracking (`PLACED`, `SHIPPED`, `DELIVERED`).
+- **Analytics Module:** Aggregated KPIs (Total Revenue, Sales Growth, Customer Satisfaction).
+- **AI Integration:** `/api/chat/ask` – Proxies natural language queries to the Python AI service.
+
+---
+
+### 6. Multi-Agent Text2SQL AI Chatbot
+
+#### 6.1 Agentic Architecture
+The chatbot employs six specialized agents in a LangGraph flow:
+
+1. **Guardrails Agent:** Validates scope (e-commerce only) and prevents Prompt Injection. It performs a **DB-verified identity check** to fetch the user's actual role and store IDs, ensuring the frontend cannot spoof permissions.
+2. **SQL Agent:** Uses role-scoped system prompts to generate MySQL queries.
+    - *Individual:* Filters by `user_id`.
+    - *Corporate:* Filters by `owner_id` (via Stores).
+    - *Admin:* No filters.
+3. **Execute SQL Agent:** Safe execution via SQLAlchemy with post-generation security validation.
+4. **Error Agent:** If execution fails, this agent analyzes the error and "heals" the SQL (max 3 retries).
+5. **Analysis Agent:** Converts raw JSON results into natural language (Turkish/English).
+6. **Visualization Agent:** Generates Plotly code if the data warrants a chart (e.g., time-series or category distribution).
+
+#### 6.2 Security Post-Validation
+A unique feature of DataPulse is the **Post-Generation SQL Validation**. The system regex-checks the generated SQL to ensure it contains the mandatory `owner_id` or `user_id` filters before it ever touches the database.
+
+---
+
+### 7. Challenges & Technical Solutions
+
+#### 7.1 Complex JOIN Management in Text2SQL
+- **Problem:** LLMs occasionally struggle with deep joins (e.g., joining 5 tables to find revenue by customer age).
+- **Solution:** We provided the SQL Agent with a "Key Relationships" map in the system prompt, clearly defining join paths (e.g., `ORDER_ITEMS → PRODUCTS → STORES`).
+
+#### 7.2 Performance of ETL Ingestion
+- **Problem:** Loading 5,000+ records across 10 tables was slow.
+- **Solution:** Implemented `deleteAllInBatch()` and optimized repository save calls to handle bulk data efficiently during initialization.
+
+#### 7.3 Real-time Chart Rendering
+- **Problem:** Dynamic Plotly code from the LLM could be inconsistent.
+- **Solution:** Implemented a hybrid "Chart Builder" that uses deterministic logic for common chart types and LLM generation for complex custom visualizations.
+
+---
+
+### 8. Conclusion
+DataPulse successfully demonstrates how modern AI can democratize data access. By combining a secure enterprise-grade backend with a self-healing multi-agent AI system, we have created a platform that not only stores and displays data but truly understands and explains it.
+
+---
+*Report generated for the Advanced Application Development Project, 2026.*

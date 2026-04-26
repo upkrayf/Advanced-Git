@@ -1,0 +1,7 @@
+.venv
+__pycache__
+*.pyc
+.env
+scratch
+test_models_py
+project_pdf.md
